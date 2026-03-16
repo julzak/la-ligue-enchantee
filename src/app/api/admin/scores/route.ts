@@ -35,7 +35,19 @@ export async function GET(request: Request) {
   });
 
   // Only return players that have a score OR belong to active clubs
-  const activeClubs = await prisma.clubValid.findMany({ where: { day, isValid: 1 } });
+  let activeClubs = await prisma.clubValid.findMany({ where: { day, isValid: 1 } });
+
+  // If no CLUB_VALID for this day, fallback to the latest day that has entries
+  if (activeClubs.length === 0) {
+    const latest = await prisma.clubValid.findFirst({
+      where: { isValid: 1 },
+      orderBy: { day: "desc" },
+    });
+    if (latest) {
+      activeClubs = await prisma.clubValid.findMany({ where: { day: latest.day, isValid: 1 } });
+    }
+  }
+
   const activeClubIds = new Set(activeClubs.map((c) => c.clubId));
 
   const filtered = data.filter((p) => scoreMap.has(p.playerId) || activeClubIds.has(p.clubId));
