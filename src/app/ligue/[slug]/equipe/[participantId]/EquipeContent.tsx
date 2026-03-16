@@ -144,7 +144,7 @@ export function EquipeContent({
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="flex items-center gap-1 text-xs text-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {player.clubLogo && <img src={player.clubLogo} alt="" className="w-3 h-3 object-contain" />}
+                {player.clubLogo && <img src={player.clubLogo} alt="" className="w-4 h-4 object-contain" />}
                 {player.clubShort || player.clubName}
               </span>
             </div>
