@@ -257,16 +257,26 @@ export async function getInterleagueStandings(day?: number) {
 export async function getDayStats(day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
 
+  // Stats du jour
   const scores = await prisma.score.findMany({ where: { day: currentDay } });
   const totalGoals = scores.reduce((sum, s) => sum + s.goals, 0);
   const totalPoints = scores.reduce((sum, s) => sum + dec(s.points) + 2 * s.goals + s.passes, 0);
   const playerCount = scores.filter((s) => s.used > 0).length;
+
+  // Cumul saison (toutes journées) pour les moyennes
+  const allScores = await prisma.score.findMany();
+  const seasonGoals = allScores.reduce((sum, s) => sum + s.goals, 0);
+  const seasonPoints = allScores.reduce((sum, s) => sum + dec(s.points) + 2 * s.goals + s.passes, 0);
+  const seasonPlayerCount = allScores.filter((s) => s.used > 0).length;
 
   return {
     totalGoals,
     totalPoints: Math.round(totalPoints * 10) / 10,
     avgPerPlayer: playerCount > 0 ? Math.round(totalPoints / playerCount * 100) / 100 : 0,
     currentDay,
+    seasonAvgGoals: currentDay > 0 ? Math.round(seasonGoals / currentDay * 10) / 10 : 0,
+    seasonAvgPoints: currentDay > 0 ? Math.round(seasonPoints / currentDay) : 0,
+    seasonAvgPerPlayer: seasonPlayerCount > 0 ? Math.round(seasonPoints / seasonPlayerCount * 100) / 100 : 0,
   };
 }
 

@@ -80,17 +80,17 @@ export default async function HomePage() {
             <div className="bg-surface rounded-lg border border-white/[0.07] p-4 text-center">
               <span className="text-3xl font-serif font-bold text-gold">{dayStats.totalGoals}</span>
               <p className="text-xs text-muted mt-1">Buts marqués</p>
-              <p className="text-[10px] text-white/20 italic mt-0.5">moy. {(dayStats.totalGoals / currentMatchday).toFixed(1)}/j</p>
+              <p className="text-[10px] text-white/20 italic mt-0.5">moy. saison : {dayStats.seasonAvgGoals}/j</p>
             </div>
             <div className="bg-surface rounded-lg border border-white/[0.07] p-4 text-center">
               <span className="text-3xl font-serif font-bold text-white">{dayStats.totalPoints.toFixed(0)}</span>
               <p className="text-xs text-muted mt-1">Points cumulés</p>
-              <p className="text-[10px] text-white/20 italic mt-0.5">moy. {(dayStats.totalPoints / currentMatchday).toFixed(0)}/j</p>
+              <p className="text-[10px] text-white/20 italic mt-0.5">moy. saison : {dayStats.seasonAvgPoints}/j</p>
             </div>
             <div className="bg-surface rounded-lg border border-white/[0.07] p-4 text-center">
               <span className="text-3xl font-serif font-bold text-white/70">{dayStats.avgPerPlayer.toFixed(2)}</span>
               <p className="text-xs text-muted mt-1">Pts par joueur</p>
-              <p className="text-[10px] text-white/20 italic mt-0.5">moy. saison</p>
+              <p className="text-[10px] text-white/20 italic mt-0.5">moy. saison : {dayStats.seasonAvgPerPlayer}</p>
             </div>
           </div>
 
