@@ -13,6 +13,8 @@ interface TeamPlayer {
   playerName: string;
   position: Position;
   clubName: string;
+  clubShort: string;
+  clubLogo: string | null;
   clubId: number;
   isStarter: boolean;
   indx: number;
@@ -38,6 +40,8 @@ interface CumulativeStat {
   playerName: string;
   position: Position;
   clubName: string;
+  clubShort: string;
+  clubLogo: string | null;
   daysPlayed: number;
   daysInLineup: number;
   notes: number;
@@ -138,7 +142,11 @@ export function EquipeContent({
               <span className="text-white font-medium">{player.playerName}</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs text-muted">{player.clubName}</span>
+              <span className="flex items-center gap-1 text-xs text-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {player.clubLogo && <img src={player.clubLogo} alt="" className="w-3 h-3 object-contain" />}
+                {player.clubShort || player.clubName}
+              </span>
             </div>
           </div>
           <span className="text-center tabular-nums">{daysPlayed}</span>

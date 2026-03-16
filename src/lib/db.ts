@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
+import { getClubLogoUrl, getClubShortName } from "./assets";
 
 // ── Helpers ───────────────────────────────────────────────
 function dec(v: Decimal | number | null): number {
@@ -400,6 +401,8 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
       playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${t.playerId}`,
       position: player ? mapPosition(player.position) : "MID" as Position,
       clubName: club?.name ?? "",
+      clubShort: getClubShortName(player?.clubId ?? 0, club?.name),
+      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
       clubId: player?.clubId ?? 0,
       isStarter,
       indx: lineupEntry?.indx ?? 99,
@@ -439,6 +442,8 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
       playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${l.playerId}`,
       position: player ? mapPosition(player.position) : "MID" as Position,
       clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
+      clubShort: getClubShortName(player?.clubId ?? 0),
+      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
       indx: l.indx,
       rating: score ? dec(score.points) : null,
       goals: score?.goals ?? 0,
@@ -506,6 +511,8 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
       playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${playerId}`,
       position: player ? mapPosition(player.position) : "MID" as Position,
       clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
+      clubShort: getClubShortName(player?.clubId ?? 0),
+      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
       daysPlayed: stats.daysPlayed,
       daysInLineup,
       notes: Math.round(stats.notes * 10) / 10,
