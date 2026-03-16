@@ -152,19 +152,24 @@ export async function getLeagueStandings(leagueDbId: number, day?: number) {
   // Get current day stats for per-day score and rank
   const todayStats = allStats.filter((s) => s.day === currentDay);
 
-  // Get previous day stats for delta
-  const prevStats = allStats.filter((s) => s.day === currentDay - 1);
-  const prevRankMap = new Map(prevStats.map((s) => [s.userId, s.rankLeague]));
-
-  // Sort by cumulative total descending
+  // Sort by cumulative total descending to get current cumulative rank
   const sortedUsers = Array.from(cumulMap.entries())
     .sort((a, b) => b[1].total - a[1].total);
+
+  // Compute previous day cumulative totals to get previous cumulative rank
+  const prevCumulMap = new Map<number, number>();
+  allStats.filter((s) => s.day < currentDay).forEach((s) => {
+    prevCumulMap.set(s.userId, (prevCumulMap.get(s.userId) ?? 0) + dec(s.ptsTot));
+  });
+  const prevSorted = Array.from(prevCumulMap.entries())
+    .sort((a, b) => b[1] - a[1]);
+  const prevRankMap = new Map(prevSorted.map(([userId], i) => [userId, i + 1]));
 
   const standings: StandingRow[] = sortedUsers.map(([userId, cumul], i) => {
     const user = participantMap.get(userId);
     const todayStat = todayStats.find((s) => s.userId === userId);
-    const prevRank = prevRankMap.get(userId) ?? (i + 1);
-    const currentRank = todayStat?.rankLeague ?? (i + 1);
+    const currentRank = i + 1; // rank from cumulative sort
+    const prevRank = prevRankMap.get(userId) ?? currentRank;
 
     return {
       userId,
