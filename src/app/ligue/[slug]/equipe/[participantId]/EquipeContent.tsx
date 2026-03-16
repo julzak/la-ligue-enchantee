@@ -277,25 +277,94 @@ export function EquipeContent({
               <span className="text-right">Ratio</span>
             </div>
 
-            {/* Rows grouped by position */}
-            {grouped.map((group) => (
-              <div key={group.position}>
-                {/* Position header */}
-                <div className="px-3 py-1.5 bg-surface-2/50 border-b border-white/[0.05]">
-                  <div className="flex items-center gap-2">
-                    <PositionBadge position={group.position} />
-                    <span className="text-xs text-muted">{group.label}</span>
+            {showCumul && cumulativeStats ? (
+              <>
+                {/* Cumul view: show ALL players who contributed this season */}
+                {(() => {
+                  // Current team player IDs
+                  const currentIds = new Set(team.map((t) => t.playerId));
+                  // Former players (in cumulative but not in current team)
+                  const formerPlayers = cumulativeStats
+                    .filter((c) => !currentIds.has(c.playerId) && c.total > 0)
+                    .sort((a, b) => b.total - a.total);
+
+                  return (
+                    <>
+                      {/* Current squad by position */}
+                      {grouped.map((group) => (
+                        <div key={group.position}>
+                          <div className="px-3 py-1.5 bg-surface-2/50 border-b border-white/[0.05]">
+                            <div className="flex items-center gap-2">
+                              <PositionBadge position={group.position} />
+                              <span className="text-xs text-muted">{group.label}</span>
+                            </div>
+                          </div>
+                          {group.starters.map((sp) => {
+                            rowIndex++;
+                            return renderPlayerRow(sp, true, rowIndex);
+                          })}
+                          {group.bench.map((sp) => renderPlayerRow(sp, false, 0))}
+                        </div>
+                      ))}
+
+                      {/* Former players */}
+                      {formerPlayers.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1.5 bg-surface-2/50 border-b border-white/[0.05]">
+                            <span className="text-xs text-muted italic">Anciens joueurs</span>
+                          </div>
+                          {formerPlayers.map((c) => {
+                            totalPoints += c.total;
+                            totalNotes += c.notes;
+                            totalButs += c.goals;
+                            totalPasses += c.passes;
+                            rowIndex++;
+                            return (
+                              <div
+                                key={c.playerId}
+                                className="grid grid-cols-[2rem_2.5rem_minmax(8rem,1fr)_3.5rem_4rem_3rem_3rem_4rem_3.5rem] items-center px-3 py-2 text-sm border-b border-white/[0.05] text-white/40"
+                              >
+                                <span className="text-muted text-xs">{rowIndex}</span>
+                                <PlayerAvatar name={c.playerName} size={28} />
+                                <div className="min-w-0">
+                                  <span className="font-medium">{c.playerName}</span>
+                                  <div className="text-xs opacity-60">{c.clubName}</div>
+                                </div>
+                                <span className="text-center tabular-nums">{c.daysPlayed}</span>
+                                <span className="text-center tabular-nums">{c.notes.toFixed(1)}</span>
+                                <span className="text-center tabular-nums">{c.goals}</span>
+                                <span className="text-center tabular-nums">{c.passes}</span>
+                                <span className="text-center tabular-nums">{c.total.toFixed(1)}</span>
+                                <span className="text-right tabular-nums">{c.ratio.toFixed(2)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </>
+            ) : (
+              /* Day view or cumul without data: show by position */
+              <>
+                {grouped.map((group) => (
+                  <div key={group.position}>
+                    <div className="px-3 py-1.5 bg-surface-2/50 border-b border-white/[0.05]">
+                      <div className="flex items-center gap-2">
+                        <PositionBadge position={group.position} />
+                        <span className="text-xs text-muted">{group.label}</span>
+                      </div>
+                    </div>
+                    {group.starters.map((sp) => {
+                      rowIndex++;
+                      return renderPlayerRow(sp, true, rowIndex);
+                    })}
+                    {group.bench.map((sp) => renderPlayerRow(sp, false, 0))}
                   </div>
-                </div>
-                {/* Starters */}
-                {group.starters.map((sp) => {
-                  rowIndex++;
-                  return renderPlayerRow(sp, true, rowIndex);
-                })}
-                {/* Bench players in this position */}
-                {group.bench.map((sp) => renderPlayerRow(sp, false, 0))}
-              </div>
-            ))}
+                ))}
+              </>
+            )}
 
             {/* Total row */}
             <div className="grid grid-cols-[2rem_2.5rem_minmax(8rem,1fr)_3.5rem_4rem_3rem_3rem_4rem_3.5rem] items-center px-3 py-3 bg-surface-2 text-sm font-semibold border-t border-white/[0.07]">
