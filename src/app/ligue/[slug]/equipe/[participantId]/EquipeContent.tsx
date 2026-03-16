@@ -33,6 +33,20 @@ interface DayScore {
   total: number;
 }
 
+interface CumulativeStat {
+  playerId: number;
+  playerName: string;
+  position: Position;
+  clubName: string;
+  daysPlayed: number;
+  daysInLineup: number;
+  notes: number;
+  goals: number;
+  passes: number;
+  total: number;
+  ratio: number;
+}
+
 interface EquipeContentProps {
   slug: string;
   participantId: number;
@@ -40,6 +54,7 @@ interface EquipeContentProps {
   participantTrophies: TrophyType[];
   team: TeamPlayer[];
   dayScores: DayScore[] | null;
+  cumulativeStats: CumulativeStat[] | null;
   selectedJournee: number | null;
   currentMatchday: number;
   leagueRank: number | null;
@@ -49,7 +64,7 @@ interface EquipeContentProps {
 const positionOrder: Position[] = ["GK", "DEF", "MID", "ATT"];
 const positionLabels: Record<Position, string> = {
   GK: "Gardien",
-  DEF: "Defenses",
+  DEF: "Défense",
   MID: "Milieu",
   ATT: "Attaque",
 };
@@ -61,6 +76,7 @@ export function EquipeContent({
   participantTrophies,
   team,
   dayScores,
+  cumulativeStats,
   selectedJournee,
   currentMatchday,
   leagueRank,
@@ -94,7 +110,20 @@ export function EquipeContent({
 
   function renderPlayerRow(player: TeamPlayer, isStarter: boolean, index: number) {
     if (showCumul) {
-      // Cumulative view: no real cumulative data yet, show placeholder
+      const cumul = cumulativeStats?.find((c) => c.playerId === player.playerId);
+      const daysPlayed = cumul?.daysPlayed ?? 0;
+      const notes = cumul?.notes ?? 0;
+      const goals = cumul?.goals ?? 0;
+      const passes = cumul?.passes ?? 0;
+      const total = cumul?.total ?? 0;
+      const ratio = cumul?.ratio ?? 0;
+
+      totalPoints += total;
+      totalNotes += notes;
+      totalButs += goals;
+      totalPasses += passes;
+      rowIndex++;
+
       return (
         <div
           key={player.playerId}
@@ -112,12 +141,12 @@ export function EquipeContent({
               <span className="text-xs text-muted">{player.clubName}</span>
             </div>
           </div>
-          <span className="text-center tabular-nums text-muted">-</span>
-          <span className="text-center tabular-nums text-muted">-</span>
-          <span className="text-center tabular-nums text-muted">-</span>
-          <span className="text-center tabular-nums text-muted">-</span>
-          <span className="text-center tabular-nums text-muted">-</span>
-          <span className="text-right tabular-nums text-muted">-</span>
+          <span className="text-center tabular-nums">{daysPlayed}</span>
+          <span className="text-center tabular-nums">{notes.toFixed(1)}</span>
+          <span className={`text-center tabular-nums ${goals > 0 ? "text-vert font-medium" : ""}`}>{goals}</span>
+          <span className={`text-center tabular-nums ${passes > 0 ? "text-gold font-medium" : ""}`}>{passes}</span>
+          <span className="text-center tabular-nums font-medium">{total.toFixed(1)}</span>
+          <span className="text-right tabular-nums text-muted">{ratio.toFixed(2)}</span>
         </div>
       );
     }
@@ -208,7 +237,7 @@ export function EquipeContent({
                 showCumul ? "bg-gold text-night font-medium" : "bg-surface-2 text-muted hover:text-white"
               }`}
             >
-              Cumule
+              Cumulé
             </Link>
             <select
               value={selectedJournee ?? ""}

@@ -7,6 +7,7 @@ import {
   getInterleagueStandings,
   getCurrentMatchday,
   getParticipantDayScores,
+  getParticipantCumulativeStats,
 } from "@/lib/db";
 import { EquipeContent } from "./EquipeContent";
 
@@ -36,9 +37,13 @@ export default async function EquipeParticipantPage({
 
   const selectedJournee = j ? Number(j) : null;
 
-  // Fetch day scores if a specific journee is selected
+  // Fetch day scores or cumulative stats
   const dayScores = selectedJournee
     ? await getParticipantDayScores(league.dbId, participantId, selectedJournee)
+    : null;
+
+  const cumulativeStats = !selectedJournee
+    ? await getParticipantCumulativeStats(league.dbId, participantId, currentDay)
     : null;
 
   // Find this participant's rank in league standings
@@ -57,6 +62,7 @@ export default async function EquipeParticipantPage({
       participantTrophies={participant.trophies}
       team={team}
       dayScores={dayScores}
+      cumulativeStats={cumulativeStats}
       selectedJournee={selectedJournee}
       currentMatchday={currentDay}
       leagueRank={leagueRank}

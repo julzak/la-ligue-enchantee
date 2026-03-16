@@ -448,6 +448,75 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
   });
 }
 
+// ── Cumulative player stats for a participant ─────────────
+export async function getParticipantCumulativeStats(leagueDbId: number, userId: number, upToDay?: number) {
+  const currentDay = upToDay ?? await getCurrentMatchday();
+
+  // Get all days this participant had a lineup
+  const allLineups = await prisma.teamDay.findMany({
+    where: { leagueId: leagueDbId, userId, day: { lte: currentDay } },
+  });
+
+  // Get unique player IDs
+  const playerIds = Array.from(new Set(allLineups.map((l) => l.playerId)));
+
+  // Get all scores for these players up to current day
+  const allScores = await prisma.score.findMany({
+    where: { playerId: { in: playerIds }, day: { lte: currentDay } },
+  });
+
+  // Get player details
+  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
+  const playerMap = new Map(players.map((p) => [p.id, p]));
+  const clubs = await prisma.club.findMany();
+  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+
+  // Build per-player: which days were they in the lineup?
+  const playerDays = new Map<number, Set<number>>();
+  allLineups.forEach((l) => {
+    const days = playerDays.get(l.playerId) ?? new Set();
+    days.add(l.day);
+    playerDays.set(l.playerId, days);
+  });
+
+  // Aggregate scores only for days the player was in the lineup
+  const scoresByPlayer = new Map<number, { notes: number; goals: number; passes: number; total: number; daysPlayed: number }>();
+  allScores.forEach((s) => {
+    const days = playerDays.get(s.playerId);
+    if (!days || !days.has(s.day)) return; // Only count if player was in lineup that day
+
+    const prev = scoresByPlayer.get(s.playerId) ?? { notes: 0, goals: 0, passes: 0, total: 0, daysPlayed: 0 };
+    const pts = dec(s.points);
+    scoresByPlayer.set(s.playerId, {
+      notes: prev.notes + pts,
+      goals: prev.goals + s.goals,
+      passes: prev.passes + s.passes,
+      total: prev.total + pts + 2 * s.goals + s.passes,
+      daysPlayed: prev.daysPlayed + 1,
+    });
+  });
+
+  return playerIds.map((playerId) => {
+    const player = playerMap.get(playerId);
+    const stats = scoresByPlayer.get(playerId) ?? { notes: 0, goals: 0, passes: 0, total: 0, daysPlayed: 0 };
+    const daysInLineup = playerDays.get(playerId)?.size ?? 0;
+
+    return {
+      playerId,
+      playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${playerId}`,
+      position: player ? mapPosition(player.position) : "MID" as Position,
+      clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
+      daysPlayed: stats.daysPlayed,
+      daysInLineup,
+      notes: Math.round(stats.notes * 10) / 10,
+      goals: stats.goals,
+      passes: stats.passes,
+      total: Math.round(stats.total * 10) / 10,
+      ratio: daysInLineup > 0 ? Math.round(stats.total / daysInLineup * 100) / 100 : 0,
+    };
+  });
+}
+
 // ── Clubs with player counts ──────────────────────────────
 export async function getClubsWithStats(leagueDbId: number, day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
