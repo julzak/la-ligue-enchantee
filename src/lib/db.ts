@@ -494,3 +494,137 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
     };
   }).filter((c) => c.effectif > 0);
 }
+
+// ── Player stats (cumulative across all matchdays) ────────
+export async function getPlayerStats(limit = 10) {
+  const scores = await prisma.score.findMany({ where: { used: { gt: 0 } } });
+  const players = await prisma.player.findMany();
+  const playerMap = new Map(players.map((p) => [p.id, p]));
+  const clubs = await prisma.club.findMany();
+  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+
+  // Aggregate per player
+  const agg = new Map<number, { totalPts: number; goals: number; passes: number; days: number }>();
+  scores.forEach((s) => {
+    const prev = agg.get(s.playerId) ?? { totalPts: 0, goals: 0, passes: 0, days: 0 };
+    agg.set(s.playerId, {
+      totalPts: prev.totalPts + dec(s.points) + 2 * s.goals + s.passes,
+      goals: prev.goals + s.goals,
+      passes: prev.passes + s.passes,
+      days: prev.days + 1,
+    });
+  });
+
+  function buildList(sortKey: "totalPts" | "goals" | "passes", ascending = false) {
+    const sorted = Array.from(agg.entries())
+      .filter(([, v]) => v.days >= 5) // minimum 5 appearances
+      .sort((a, b) => ascending ? a[1][sortKey] - b[1][sortKey] : b[1][sortKey] - a[1][sortKey])
+      .slice(0, limit);
+
+    return sorted.map(([playerId, stats], i) => {
+      const player = playerMap.get(playerId);
+      return {
+        rank: i + 1,
+        name: player ? `${player.fname} ${player.lname}`.trim() : `Player ${playerId}`,
+        club: player ? (clubMap.get(player.clubId) ?? "") : "",
+        position: player ? mapPosition(player.position) : "MID" as Position,
+        value: stats[sortKey],
+        days: stats.days,
+      };
+    });
+  }
+
+  return {
+    meilleursJoueurs: buildList("totalPts"),
+    meilleursButeurs: buildList("goals"),
+    meilleursPasseurs: buildList("passes"),
+    piresJoueurs: buildList("totalPts", true),
+  };
+}
+
+// ── League stats (vainqueurs par journée, meilleures journées) ──
+export async function getLeagueStats(leagueDbId: number) {
+  const allStats = await prisma.statsUser.findMany({
+    where: { leagueId: leagueDbId },
+    orderBy: { day: "asc" },
+  });
+
+  const participants = await getLeagueParticipants(leagueDbId);
+  const participantMap = new Map(participants.map((p) => [p.id, p]));
+
+  // Vainqueurs par journée (best PTS_TOT per day)
+  const dayMap = new Map<number, { userId: number; pts: number }>();
+  allStats.forEach((s) => {
+    const prev = dayMap.get(s.day);
+    const pts = dec(s.ptsTot);
+    if (!prev || pts > prev.pts) {
+      dayMap.set(s.day, { userId: s.userId, pts });
+    }
+  });
+
+  const vainqueursParJournee = Array.from(dayMap.entries())
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, 10)
+    .map(([day, { userId, pts }]) => ({
+      journee: day,
+      name: participantMap.get(userId)?.cleanName ?? `User ${userId}`,
+      points: Math.round(pts * 10) / 10,
+    }));
+
+  // Meilleures journées ever (top single-day scores)
+  const allDayScores = allStats.map((s) => ({
+    userId: s.userId,
+    day: s.day,
+    pts: dec(s.ptsTot),
+  }));
+  const meilleuresJournees = allDayScores
+    .sort((a, b) => b.pts - a.pts)
+    .slice(0, 10)
+    .map((s, i) => ({
+      rank: i + 1,
+      name: participantMap.get(s.userId)?.cleanName ?? `User ${s.userId}`,
+      journee: s.day,
+      points: Math.round(s.pts * 10) / 10,
+    }));
+
+  // Biggest progressions ever (rank change)
+  const rankByDayUser = new Map<string, number>();
+  // Build cumulative totals per day to compute real ranks
+  const cumulByUser = new Map<number, number>();
+  const days = Array.from(new Set(allStats.map((s) => s.day))).sort((a, b) => a - b);
+
+  days.forEach((day) => {
+    const dayEntries = allStats.filter((s) => s.day === day);
+    dayEntries.forEach((s) => {
+      cumulByUser.set(s.userId, (cumulByUser.get(s.userId) ?? 0) + dec(s.ptsTot));
+    });
+    // Rank by cumul
+    const sorted = Array.from(cumulByUser.entries()).sort((a, b) => b[1] - a[1]);
+    sorted.forEach(([userId], idx) => {
+      rankByDayUser.set(`${userId}-${day}`, idx + 1);
+    });
+  });
+
+  const progressions: { name: string; journee: number; delta: number }[] = [];
+  days.forEach((day, idx) => {
+    if (idx === 0) return;
+    const prevDay = days[idx - 1];
+    const dayEntries = allStats.filter((s) => s.day === day);
+    dayEntries.forEach((s) => {
+      const curRank = rankByDayUser.get(`${s.userId}-${day}`) ?? 0;
+      const prevRank = rankByDayUser.get(`${s.userId}-${prevDay}`) ?? curRank;
+      const delta = prevRank - curRank;
+      if (delta > 0) {
+        progressions.push({
+          name: participantMap.get(s.userId)?.cleanName ?? `User ${s.userId}`,
+          journee: day,
+          delta,
+        });
+      }
+    });
+  });
+
+  const topProgressions = progressions.sort((a, b) => b.delta - a.delta).slice(0, 10);
+
+  return { vainqueursParJournee, meilleuresJournees, topProgressions };
+}
