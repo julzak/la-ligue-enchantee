@@ -128,51 +128,60 @@ export async function getLeagueStandings(leagueDbId: number, day?: number) {
   const participants = await getLeagueParticipants(leagueDbId);
   const participantMap = new Map(participants.map((p) => [p.id, p]));
 
-  // Get cumulative stats for this day
-  const stats = await prisma.statsUser.findMany({
-    where: { leagueId: leagueDbId, day: currentDay },
-    orderBy: { ptsTot: "desc" },
+  // PTS_TOT in STATS_USER is PER-DAY score (not cumulative!)
+  // We need to sum all days to get the cumulative total
+  const allStats = await prisma.statsUser.findMany({
+    where: { leagueId: leagueDbId, day: { lte: currentDay } },
   });
 
+  // Build cumulative totals per user
+  const cumulMap = new Map<number, { total: number; ptsGk: number; ptsDf: number; ptsMf: number; ptsSt: number; ptsPas: number; ptsGls: number }>();
+  allStats.forEach((s) => {
+    const prev = cumulMap.get(s.userId) ?? { total: 0, ptsGk: 0, ptsDf: 0, ptsMf: 0, ptsSt: 0, ptsPas: 0, ptsGls: 0 };
+    cumulMap.set(s.userId, {
+      total: prev.total + dec(s.ptsTot),
+      ptsGk: prev.ptsGk + dec(s.ptsGk),
+      ptsDf: prev.ptsDf + dec(s.ptsDf),
+      ptsMf: prev.ptsMf + dec(s.ptsMf),
+      ptsSt: prev.ptsSt + dec(s.ptsSt),
+      ptsPas: prev.ptsPas + s.ptsPas,
+      ptsGls: prev.ptsGls + s.ptsGls,
+    });
+  });
+
+  // Get current day stats for per-day score and rank
+  const todayStats = allStats.filter((s) => s.day === currentDay);
+
   // Get previous day stats for delta
-  const prevStats = currentDay > 1
-    ? await prisma.statsUser.findMany({
-        where: { leagueId: leagueDbId, day: currentDay - 1 },
-      })
-    : [];
+  const prevStats = allStats.filter((s) => s.day === currentDay - 1);
   const prevRankMap = new Map(prevStats.map((s) => [s.userId, s.rankLeague]));
 
-  // To get matchday-only points, we need current - previous cumulative
-  const prevTotMap = new Map<number, number>();
-  if (currentDay > 1) {
-    const prevCum = await prisma.statsUser.findMany({
-      where: { leagueId: leagueDbId, day: currentDay - 1 },
-    });
-    prevCum.forEach((s) => prevTotMap.set(s.userId, dec(s.ptsTot)));
-  }
+  // Sort by cumulative total descending
+  const sortedUsers = Array.from(cumulMap.entries())
+    .sort((a, b) => b[1].total - a[1].total);
 
-  const standings: StandingRow[] = stats.map((s, i) => {
-    const user = participantMap.get(s.userId);
-    const prevRank = prevRankMap.get(s.userId) ?? (i + 1);
-    const prevTotal = prevTotMap.get(s.userId) ?? 0;
-    const matchdayPts = dec(s.ptsTot) - prevTotal;
+  const standings: StandingRow[] = sortedUsers.map(([userId, cumul], i) => {
+    const user = participantMap.get(userId);
+    const todayStat = todayStats.find((s) => s.userId === userId);
+    const prevRank = prevRankMap.get(userId) ?? (i + 1);
+    const currentRank = todayStat?.rankLeague ?? (i + 1);
 
     return {
-      userId: s.userId,
-      userName: user?.cleanName ?? `User ${s.userId}`,
+      userId,
+      userName: user?.cleanName ?? `User ${userId}`,
       trophies: user?.trophies ?? [],
       initials: user ? getInitials(user.cleanName) : "??",
-      rank: s.rankLeague,
-      totalPoints: dec(s.ptsTot),
-      lastMatchdayPoints: Math.round(matchdayPts * 10) / 10,
-      ptsPerDay: s.playerUsed > 0 ? Math.round(dec(s.ptsTot) / currentDay * 100) / 100 : 0,
-      delta: prevRank - s.rankLeague,
-      ptsGk: dec(s.ptsGk),
-      ptsDf: dec(s.ptsDf),
-      ptsMf: dec(s.ptsMf),
-      ptsSt: dec(s.ptsSt),
-      ptsPas: s.ptsPas,
-      ptsGls: s.ptsGls,
+      rank: currentRank,
+      totalPoints: Math.round(cumul.total * 10) / 10,
+      lastMatchdayPoints: todayStat ? dec(todayStat.ptsTot) : 0,
+      ptsPerDay: currentDay > 0 ? Math.round(cumul.total / currentDay * 100) / 100 : 0,
+      delta: prevRank - currentRank,
+      ptsGk: Math.round(cumul.ptsGk * 10) / 10,
+      ptsDf: Math.round(cumul.ptsDf * 10) / 10,
+      ptsMf: Math.round(cumul.ptsMf * 10) / 10,
+      ptsSt: Math.round(cumul.ptsSt * 10) / 10,
+      ptsPas: cumul.ptsPas,
+      ptsGls: cumul.ptsGls,
     };
   });
 
@@ -194,13 +203,29 @@ export async function getInterleagueStandings(day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
   const leagues = await getLeagues();
 
+  // PTS_TOT is per-day, need to sum all days for cumulative
   const allStats = await prisma.statsUser.findMany({
-    where: { day: currentDay, leagueId: { gt: 0 } },
-    orderBy: { ptsTot: "desc" },
-    take: 20,
+    where: { leagueId: { gt: 0 }, day: { lte: currentDay } },
   });
 
-  const userIds = allStats.map((s) => s.userId);
+  // Build cumulative totals per user+league
+  const cumulMap = new Map<string, { userId: number; leagueId: number; total: number }>();
+  allStats.forEach((s) => {
+    const key = `${s.userId}-${s.leagueId}`;
+    const prev = cumulMap.get(key);
+    cumulMap.set(key, {
+      userId: s.userId,
+      leagueId: s.leagueId,
+      total: (prev?.total ?? 0) + dec(s.ptsTot),
+    });
+  });
+
+  // Sort by total and take top 20
+  const sorted = Array.from(cumulMap.values())
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 20);
+
+  const userIds = sorted.map((s) => s.userId);
   const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
   const userMap = new Map(users.map((u) => {
     const { cleanName, trophies } = parseUserName(u.name);
@@ -209,7 +234,7 @@ export async function getInterleagueStandings(day?: number) {
 
   const leagueMap = new Map(leagues.map((l) => [l.dbId, l.name]));
 
-  return allStats.map((s, i) => {
+  return sorted.map((s, i) => {
     const user = userMap.get(s.userId);
     return {
       rank: i + 1,
@@ -218,7 +243,7 @@ export async function getInterleagueStandings(day?: number) {
       trophies: user?.trophies ?? [],
       leagueName: leagueMap.get(s.leagueId) ?? "?",
       leagueSlug: leagues.find((l) => l.dbId === s.leagueId)?.slug ?? "ligue-1",
-      totalPoints: dec(s.ptsTot),
+      totalPoints: Math.round(s.total * 10) / 10,
     };
   });
 }
