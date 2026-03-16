@@ -25,15 +25,14 @@ export function TopoJournee({ matchday, leagueName, slug }: TopoJourneeProps) {
     <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
       <div className="flex items-center gap-2 px-5 pt-4 pb-2">
         <Sparkles className="w-4 h-4 text-gold" />
-        <h3 className="font-serif text-sm text-gold">Topo Journée {matchday}</h3>
-        <span className="text-[9px] uppercase tracking-wider text-muted bg-surface-2 px-1.5 py-0.5 rounded">IA</span>
+        <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia 🤖</h3>
       </div>
       <div className="px-5 pb-4">
         <p className="text-sm text-white/75 leading-relaxed italic">
           {content}
         </p>
         <p className="text-sm text-white/75 leading-relaxed italic mt-3">
-          Sur ce, voici le nouveau{" "}
+          C&apos;est ça mon analyse. Sur ce, voici le nouveau{" "}
           <Link href={`/ligue/${slug}/classement-general`} className="text-gold hover:underline not-italic font-medium">
             classement général
           </Link>.
