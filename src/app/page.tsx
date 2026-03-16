@@ -1,27 +1,37 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import {
-  leagues,
-  leagueStandings,
-  interleagueStandings,
-  bestPerformances,
-  dayStats,
-  currentMatchday,
-} from "@/lib/fixtures";
+  getLeagues,
+  getInterleagueStandings,
+  getDayStats,
+  getBestPerformances,
+  getWorstPerformances,
+  getCurrentMatchday,
+  getLeagueStandings,
+} from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
-import { getParticipant, getLeagueForParticipant } from "@/lib/fixtures";
 import { ChevronRight, Flame, ThumbsDown } from "lucide-react";
 
-// Mock worst performances (Onze des Saucisses)
-const worstPerformances = [
-  { playerName: "Steve Mandanda", club: "SRFC", points: 2.0, detail: "3.0 pts, 0 action" },
-  { playerName: "Nico C", club: "MHSC", points: 2.5, detail: "2.5 pts, remplace a 30 min" },
-  { playerName: "Nico B", club: "FCN", points: 3.0, detail: "3.0 pts, carton jaune" },
-  { playerName: "Yunis Abdelhamid", club: "SDR", points: 3.0, detail: "3.0 pts, CSC" },
-  { playerName: "Teji Savanier", club: "MHSC", points: 3.5, detail: "3.5 pts, invisible" },
-];
+export default async function HomePage() {
+  const [leagues, interleagueStandings, dayStats, bestPerformances, worstPerformances, currentMatchday] =
+    await Promise.all([
+      getLeagues(),
+      getInterleagueStandings(),
+      getDayStats(),
+      getBestPerformances(),
+      getWorstPerformances(),
+      getCurrentMatchday(),
+    ]);
 
-export default function HomePage() {
+  // Fetch league standings for each league in parallel
+  const leagueStandingsMap = new Map<string, Awaited<ReturnType<typeof getLeagueStandings>>>();
+  const leagueStandingsResults = await Promise.all(
+    leagues.map((league) => getLeagueStandings(league.dbId))
+  );
+  leagues.forEach((league, i) => {
+    leagueStandingsMap.set(league.slug, leagueStandingsResults[i]);
+  });
+
   return (
     <div className="min-h-screen">
       {/* Top bar */}
@@ -107,9 +117,9 @@ export default function HomePage() {
             <h2 className="font-serif text-lg text-white mb-4">Les ligues</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {leagues.map((league) => {
-                const stats = leagueStandings[league.slug];
+                const stats = leagueStandingsMap.get(league.slug);
                 if (!stats) return null;
-                const leaderName = stats.standings[0]?.participantName ?? "";
+                const leaderName = stats.standings[0]?.userName ?? "";
                 return (
                   <Link
                     key={league.id}
@@ -125,7 +135,7 @@ export default function HomePage() {
                     <div className="space-y-1.5 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted">Participants</span>
-                        <span className="text-white">{league.participantCount}</span>
+                        <span className="text-white">{stats.standings.length}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted">Leader</span>
@@ -160,29 +170,25 @@ export default function HomePage() {
                 <span>Ligue</span>
                 <span className="text-right">Points</span>
               </div>
-              {interleagueStandings.map((s) => {
-                const participant = getParticipant(s.participantId);
-                const pLeague = getLeagueForParticipant(s.participantId);
-                return (
-                  <Link
-                    key={s.participantId}
-                    href={pLeague ? `/ligue/${pLeague.slug}/equipe/${s.participantId}` : "#"}
-                    className="grid grid-cols-[2rem_1fr_4.5rem_3.5rem] px-3 py-2 items-center text-xs hover:bg-white/[0.04] transition-colors"
-                  >
-                    <span className={`font-bold ${s.rank <= 3 ? "text-gold" : "text-muted"}`}>
-                      {s.rank}
-                    </span>
-                    <span className="text-white truncate flex items-center hover:text-gold transition-colors">
-                      {s.participantName}
-                      {participant && <TrophyBadges trophies={participant.trophies} />}
-                    </span>
-                    <span className="text-[10px] text-muted truncate">{s.leagueName.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")}</span>
-                    <span className="text-right text-white font-medium tabular-nums">
-                      {s.totalPoints.toFixed(1)}
-                    </span>
-                  </Link>
-                );
-              })}
+              {interleagueStandings.map((s) => (
+                <Link
+                  key={s.userId}
+                  href={`/ligue/${s.leagueSlug}/equipe/${s.userId}`}
+                  className="grid grid-cols-[2rem_1fr_4.5rem_3.5rem] px-3 py-2 items-center text-xs hover:bg-white/[0.04] transition-colors"
+                >
+                  <span className={`font-bold ${s.rank <= 3 ? "text-gold" : "text-muted"}`}>
+                    {s.rank}
+                  </span>
+                  <span className="text-white truncate flex items-center hover:text-gold transition-colors">
+                    {s.userName}
+                    <TrophyBadges trophies={s.trophies} />
+                  </span>
+                  <span className="text-[10px] text-muted truncate">{s.leagueName.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")}</span>
+                  <span className="text-right text-white font-medium tabular-nums">
+                    {s.totalPoints.toFixed(1)}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         </aside>

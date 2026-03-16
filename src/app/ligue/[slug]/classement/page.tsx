@@ -1,17 +1,11 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import { ClassementTable } from "@/components/classement/ClassementTable";
-import {
-  getLeague,
-  getLeagueStandings,
-  currentMatchday,
-  getParticipant,
-} from "@/lib/fixtures";
+import { getLeagueBySlug, getLeagueStandings } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { Crown, TrendingUp, TrendingDown, Target } from "lucide-react";
 import Link from "next/link";
 import { TopoJournee } from "@/components/classement/TopoJournee";
+import { notFound } from "next/navigation";
+import type { Standing, Participant } from "@/lib/types";
 
 const forumExcerpts = [
   { title: "Jokers 2025-2026", author: "DimitriS", excerpt: "hello apka auxerre out balerdi om in ..." },
@@ -19,18 +13,38 @@ const forumExcerpts = [
   { title: "Résultats journée 24", author: "laurent", excerpt: "Magnifique, Quelle belle inspiration..." },
 ];
 
-export default function ClassementPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const league = getLeague(slug);
-  const standings = getLeagueStandings(slug);
-
-  if (!league || !standings) {
-    return <div className="text-muted p-8">Ligue non trouvée</div>;
+export default async function ClassementPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
+  const league = await getLeagueBySlug(slug);
+  if (!league) {
+    notFound();
   }
 
+  const standings = await getLeagueStandings(league.dbId);
+  const currentMatchday = standings.currentDay;
+
+  // Transform DB data into the format ClassementTable expects
+  const tableStandings: Standing[] = standings.standings.map((s) => ({
+    rank: s.rank,
+    participantId: String(s.userId),
+    participantName: s.userName,
+    totalPoints: s.totalPoints,
+    lastMatchdayPoints: s.lastMatchdayPoints,
+    ptsPerDay: s.ptsPerDay,
+    delta: s.delta,
+  }));
+
+  const participants: Participant[] = standings.standings.map((s) => ({
+    id: String(s.userId),
+    name: s.userName,
+    avatarInitials: s.initials,
+    trophies: s.trophies,
+  }));
+
   const leader = standings.standings[0];
-  const leaderP = getParticipant(leader.participantId);
+  if (!leader) {
+    return <div className="text-muted p-8">Aucun classement disponible</div>;
+  }
 
   // Top progressions and biggest drops
   const progressions = standings.standings
@@ -48,7 +62,7 @@ export default function ClassementPage() {
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Left column - Classement */}
       <div className="w-full lg:w-72 lg:shrink-0 overflow-x-auto">
-        <ClassementTable standings={standings.standings} participants={league.participants} />
+        <ClassementTable standings={tableStandings} participants={participants} />
       </div>
 
       {/* Center */}
@@ -62,8 +76,8 @@ export default function ClassementPage() {
             <div>
               <p className="text-[10px] uppercase tracking-widest text-gold-dim mb-1">L&apos;homme a abattre</p>
               <p className="text-lg font-serif text-white flex items-center gap-2">
-                {leader.participantName}
-                {leaderP && <TrophyBadges trophies={leaderP.trophies} />}
+                {leader.userName}
+                <TrophyBadges trophies={leader.trophies} />
               </p>
               <p className="text-sm text-muted">
                 {leader.totalPoints.toFixed(1)} pts - {leader.lastMatchdayPoints.toFixed(1)} pts a la J{currentMatchday}
@@ -82,22 +96,19 @@ export default function ClassementPage() {
             </div>
             {progressions.length > 0 ? (
               <div className="space-y-3">
-                {progressions.map((s) => {
-                  const p = getParticipant(s.participantId);
-                  return (
-                    <div key={s.participantId} className="flex items-center gap-3">
-                      <span className="text-2xl font-serif font-bold text-vert">+{s.delta}</span>
-                      <span className="text-xl">🔥</span>
-                      <div>
-                        <span className="text-sm text-white flex items-center gap-1">
-                          {s.participantName}
-                          {p && <TrophyBadges trophies={p.trophies} />}
-                        </span>
-                        <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday}</span>
-                      </div>
+                {progressions.map((s) => (
+                  <div key={s.userId} className="flex items-center gap-3">
+                    <span className="text-2xl font-serif font-bold text-vert">+{s.delta}</span>
+                    <span className="text-xl">🔥</span>
+                    <div>
+                      <span className="text-sm text-white flex items-center gap-1">
+                        {s.userName}
+                        <TrophyBadges trophies={s.trophies} />
+                      </span>
+                      <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday}</span>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-sm text-muted">Pas de progression cette journée</p>
@@ -112,22 +123,19 @@ export default function ClassementPage() {
             </div>
             {drops.length > 0 ? (
               <div className="space-y-3">
-                {drops.map((s) => {
-                  const p = getParticipant(s.participantId);
-                  return (
-                    <div key={s.participantId} className="flex items-center gap-3">
-                      <span className="text-2xl font-serif font-bold text-rouge">{s.delta}</span>
-                      <span className="text-xl">🌭</span>
-                      <div>
-                        <span className="text-sm text-white flex items-center gap-1">
-                          {s.participantName}
-                          {p && <TrophyBadges trophies={p.trophies} />}
-                        </span>
-                        <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday}</span>
-                      </div>
+                {drops.map((s) => (
+                  <div key={s.userId} className="flex items-center gap-3">
+                    <span className="text-2xl font-serif font-bold text-rouge">{s.delta}</span>
+                    <span className="text-xl">🌭</span>
+                    <div>
+                      <span className="text-sm text-white flex items-center gap-1">
+                        {s.userName}
+                        <TrophyBadges trophies={s.trophies} />
+                      </span>
+                      <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday}</span>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ) : (
               <p className="text-sm text-muted">Pas de chute cette journée</p>
@@ -158,19 +166,16 @@ export default function ClassementPage() {
             <h3 className="font-serif text-sm text-gold">Tete de ligue</h3>
           </div>
           <div className="divide-y divide-white/[0.05]">
-            {top5.map((s) => {
-              const p = getParticipant(s.participantId);
-              return (
-                <div key={s.participantId} className="flex items-center px-3 py-2 text-xs">
-                  <span className={`w-5 font-medium ${s.rank <= 3 ? "text-gold" : "text-muted"}`}>{s.rank}</span>
-                  <span className="flex-1 text-white truncate flex items-center">
-                    {s.participantName}
-                    {p && <TrophyBadges trophies={p.trophies} />}
-                  </span>
-                  <span className="text-white font-medium tabular-nums">{s.totalPoints.toFixed(1)}</span>
-                </div>
-              );
-            })}
+            {top5.map((s) => (
+              <div key={s.userId} className="flex items-center px-3 py-2 text-xs">
+                <span className={`w-5 font-medium ${s.rank <= 3 ? "text-gold" : "text-muted"}`}>{s.rank}</span>
+                <span className="flex-1 text-white truncate flex items-center">
+                  {s.userName}
+                  <TrophyBadges trophies={s.trophies} />
+                </span>
+                <span className="text-white font-medium tabular-nums">{s.totalPoints.toFixed(1)}</span>
+              </div>
+            ))}
           </div>
         </div>
 

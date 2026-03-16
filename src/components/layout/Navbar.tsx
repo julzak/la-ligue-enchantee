@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { currentMatchday } from "@/lib/fixtures";
+import { useSession, signOut } from "next-auth/react";
 import { Logo } from "@/components/ui/Logo";
+import { LogOut } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
   const params = useParams();
+  const { data: session } = useSession();
   const slug = params.slug as string | undefined;
 
   const navLinks = slug
@@ -15,9 +17,18 @@ export function Navbar() {
         { href: `/ligue/${slug}/classement`, label: "Classement" },
         { href: `/ligue/${slug}/mon-equipe`, label: "Mon équipe" },
         { href: `/ligue/${slug}/coupe`, label: "Coupe" },
-        { href: `/ligue/${slug}/forum`, label: "Forum" },
+        { href: "https://www.ligueenchantee.com/phpBB/", label: "Forum", external: true },
       ]
     : [];
+
+  const initials = session?.user?.name
+    ? session.user.name
+        .split(/[\s/]+/)
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : null;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 h-[52px] bg-surface border-b border-white/[0.07] flex items-center px-4 md:px-6">
@@ -32,17 +43,20 @@ export function Navbar() {
       {/* Nav links */}
       <div className="flex-1 flex items-center justify-center gap-0.5 sm:gap-1 overflow-x-auto">
         {navLinks.map((link) => {
-          const isActive = pathname.startsWith(link.href);
+          const isExternal = "external" in link;
+          const isActive = !isExternal && pathname.startsWith(link.href);
+          const cls = `px-2 sm:px-3 py-1.5 text-xs sm:text-sm whitespace-nowrap transition-colors relative ${
+            isActive ? "text-white" : "text-white/40 hover:text-white/60"
+          }`;
+          if (isExternal) {
+            return (
+              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" className={cls}>
+                {link.label}
+              </a>
+            );
+          }
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm whitespace-nowrap transition-colors relative ${
-                isActive
-                  ? "text-white"
-                  : "text-white/40 hover:text-white/60"
-              }`}
-            >
+            <Link key={link.href} href={link.href} className={cls}>
               {link.label}
               {isActive && (
                 <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-gold rounded-full" />
@@ -54,12 +68,32 @@ export function Navbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-3 shrink-0">
-        <span className="text-xs font-medium bg-gold text-night px-2.5 py-1 rounded">
-          J{currentMatchday}
-        </span>
         <Link href="/" className="text-xs text-white/40 hover:text-white/60">
           Accueil
         </Link>
+
+        {session?.user ? (
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center text-[10px] font-semibold text-gold">
+              {initials}
+            </div>
+            <span className="text-xs text-white/60 hidden sm:block">{session.user.name}</span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="p-1.5 text-white/30 hover:text-white/60 transition-colors"
+              title="Se déconnecter"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className="text-xs font-medium bg-gold text-night px-2.5 py-1 rounded hover:bg-gold/90 transition-colors"
+          >
+            Connexion
+          </Link>
+        )}
       </div>
     </nav>
   );

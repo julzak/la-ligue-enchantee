@@ -4,14 +4,19 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { LockCountdown } from "@/components/layout/LockCountdown";
-import { getLeague, currentMatchday } from "@/lib/fixtures";
 import { Search } from "lucide-react";
+
+const leagueNames: Record<string, string> = {
+  "ligue-1": "Ligue 1 (Baudens League)",
+  "ligue-2": "Ligue 2",
+  "national-1": "National 1",
+};
 
 export default function LigueLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const pathname = usePathname();
   const slug = params.slug as string;
-  const league = getLeague(slug);
+  const leagueName = leagueNames[slug] ?? slug;
 
   // Mock: next lock is tomorrow 13h
   const lockAt = new Date();
@@ -19,7 +24,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
   lockAt.setHours(13, 0, 0, 0);
 
   const tabs = [
-    { href: `/ligue/${slug}/classement`, label: `RÉSULTATS J${currentMatchday}`, live: true },
+    { href: `/ligue/${slug}/classement`, label: "RÉSULTATS", live: true },
     { href: `/ligue/${slug}/classement-general`, label: "GÉNÉRAL" },
     { href: `/ligue/${slug}/statistiques`, label: "STATS" },
   ];
@@ -42,7 +47,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
         <div className="bg-night border-b border-gold/20">
           {/* League name */}
           <div className="max-w-7xl mx-auto px-4 md:px-6 pt-3 pb-0">
-            <h1 className="font-serif text-base text-gold text-center sm:text-left">{league?.name ?? slug}</h1>
+            <h1 className="font-serif text-base text-gold text-center sm:text-left">{leagueName}</h1>
           </div>
 
           {/* Tab bar */}

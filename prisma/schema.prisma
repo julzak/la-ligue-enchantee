@@ -3,254 +3,166 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Club {
+  id       Int    @id @default(autoincrement()) @map("ID_CLUB") @db.UnsignedInt
+  idClubEq String @map("ID_CLUB_EQ") @db.VarChar(10)
+  name     String @default("") @map("NAME") @db.VarChar(50)
 
-  participations LeagueParticipant[]
-  forumTopics    ForumTopic[]
-  forumComments  ForumComment[]
-  bids           Bid[]
-  claims         Claim[]
+  @@index([id], map: "ID_CLUB")
+  @@index([name], map: "NAME")
+  @@map("CLUB")
+}
+
+model ClubValid {
+  clubId  Int      @map("ID_CLUB")
+  day     Int      @map("DAY")
+  isValid Int      @map("IS_VALID")
+  dtValid DateTime @map("DT_VALID") @db.DateTime(0)
+
+  @@id([clubId, day])
+  @@map("CLUB_VALID")
 }
 
 model League {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  name      String
-  season    String
-  createdAt DateTime @default(now())
+  id        Int    @id @default(autoincrement()) @map("ID_LEAGUE") @db.UnsignedInt
+  chiefId   Int    @default(0) @map("ID_CHIEF")
+  forumId   Int    @default(0) @map("ID_FORUM")
+  name      String @default("") @map("NAME") @db.VarChar(50)
+  firstYear Int    @default(0) @map("FIRST_YEAR")
 
-  participants LeagueParticipant[]
-  matchdays    Matchday[]
-  cupMatches   CupMatch[]
-  forumTopics  ForumTopic[]
+  @@index([firstYear], map: "FIRST_YEAR")
+  @@index([chiefId], map: "ID_CHIEF")
+  @@index([forumId], map: "ID_FORUM")
+  @@index([id], map: "ID_LEAGUE")
+  @@index([name], map: "NAME")
+  @@map("LEAGUE")
 }
 
-model LeagueParticipant {
-  id             String  @id @default(cuid())
-  userId         String
-  leagueId       String
-  budgetTotal    Int     @default(130)
-  budgetSpent    Int     @default(0)
-  paid           Boolean @default(false)
-  jokersRemaining Int    @default(4)
+model LeagueUser {
+  leagueId Int @default(0) @map("ID_LEAGUE") @db.UnsignedInt
+  userId   Int @default(0) @map("ID_USER") @db.UnsignedInt
 
-  user   User   @relation(fields: [userId], references: [id])
-  league League @relation(fields: [leagueId], references: [id])
-
-  squad     SquadPlayer[]
-  lineups   Lineup[]
-  bids      Bid[]
-  standings Standing[]
-
-  @@unique([userId, leagueId])
-}
-
-model Club {
-  id        String @id @default(cuid())
-  name      String
-  shortName String
-  logoUrl   String
-
-  players Player[]
+  @@id([leagueId, userId])
+  @@index([leagueId], map: "ID_LEAGUE")
+  @@index([userId], map: "ID_USER")
+  @@map("LEAGUE_USER")
 }
 
 model Player {
-  id       String   @id @default(cuid())
-  name     String
-  position Position
-  clubId   String
+  id       Int     @id @default(autoincrement()) @map("ID_PLAYER") @db.UnsignedInt
+  clubId   Int     @default(0) @map("ID_CLUB") @db.UnsignedInt
+  fname    String  @default("") @map("FNAME") @db.VarChar(50)
+  lname    String  @default("") @map("LNAME") @db.VarChar(50)
+  position String  @default("") @map("POSITION") @db.VarChar(50)
+  link     String? @map("LINK") @db.VarChar(150)
 
-  club         Club          @relation(fields: [clubId], references: [id])
-  squadPlayers SquadPlayer[]
-  performances Performance[]
+  @@index([fname], map: "FNAME")
+  @@index([clubId], map: "ID_CLUB")
+  @@index([id], map: "ID_PLAYER")
+  @@index([link], map: "LINK")
+  @@index([lname], map: "LNAME")
+  @@index([position], map: "POSITION")
+  @@map("PLAYER")
 }
 
-model SquadPlayer {
-  id            String @id @default(cuid())
-  participantId String
-  playerId      String
-  acquiredAt    DateTime @default(now())
-  acquiredPrice Int
+model Score {
+  playerId Int     @default(0) @map("ID_PLAYER") @db.UnsignedInt
+  day      Int     @default(0) @map("DAY") @db.UnsignedInt
+  used     Int     @default(0) @map("USED") @db.UnsignedInt
+  points   Decimal @default(0.0) @map("POINTS") @db.Decimal(3, 1)
+  goals    Int     @default(0) @map("GOALS") @db.UnsignedInt
+  passes   Int     @default(0) @map("PASSES") @db.UnsignedInt
 
-  participant LeagueParticipant @relation(fields: [participantId], references: [id])
-  player      Player            @relation(fields: [playerId], references: [id])
-
-  @@unique([participantId, playerId])
+  @@id([playerId, day])
+  @@index([day], map: "DAY")
+  @@index([goals], map: "GOALS")
+  @@index([playerId], map: "ID_PLAYER")
+  @@index([passes], map: "PASSES")
+  @@index([points], map: "POINTS")
+  @@index([used], map: "USED")
+  @@map("SCORE")
 }
 
-model Matchday {
-  id          String         @id @default(cuid())
-  leagueId    String
-  number      Int
-  status      MatchdayStatus @default(UPCOMING)
-  lockAt      DateTime
-  publishedAt DateTime?
+model StatsUser {
+  userId     Int     @default(0) @map("ID_USER")
+  leagueId   Int     @default(0) @map("ID_LEAGUE")
+  day        Int     @default(0) @map("DAY")
+  rankDay    Int     @default(0) @map("RANK_DAY")
+  rankLeague Int     @default(0) @map("RANK_LEAGUE")
+  rankGlobal Int     @default(0) @map("RANK_GLOBAL")
+  playerUsed Int     @default(0) @map("PLAYER_USED")
+  ptsGk      Decimal @default(0.0) @map("PTS_GK") @db.Decimal(5, 1)
+  ptsDf      Decimal @default(0.0) @map("PTS_DF") @db.Decimal(5, 1)
+  ptsMf      Decimal @default(0.0) @map("PTS_MF") @db.Decimal(5, 1)
+  ptsSt      Decimal @default(0.0) @map("PTS_ST") @db.Decimal(5, 1)
+  ptsPas     Int     @default(0) @map("PTS_PAS")
+  ptsGls     Int     @default(0) @map("PTS_GLS")
+  ptsFrf     Decimal @default(0.0) @map("PTS_FRF") @db.Decimal(5, 1)
+  ptsTot     Decimal @default(0.0) @map("PTS_TOT") @db.Decimal(5, 1)
 
-  league       League        @relation(fields: [leagueId], references: [id])
-  performances Performance[]
-  lineups      Lineup[]
-  standings    Standing[]
-
-  @@unique([leagueId, number])
+  @@id([userId, leagueId, day])
+  @@index([day], map: "DAY")
+  @@index([leagueId], map: "ID_LEAGUE")
+  @@index([userId], map: "ID_USER")
+  @@index([playerUsed], map: "PLAYER_USED")
+  @@index([ptsDf], map: "PTS_DF")
+  @@index([ptsFrf], map: "PTS_FRF")
+  @@index([ptsGk], map: "PTS_GK")
+  @@index([ptsGls], map: "PTS_GLS")
+  @@index([ptsMf], map: "PTS_MF")
+  @@index([ptsPas], map: "PTS_PAS")
+  @@index([ptsSt], map: "PTS_ST")
+  @@index([ptsTot], map: "PTS_TOT")
+  @@index([rankDay], map: "RANK_DAY")
+  @@index([rankGlobal], map: "RANK_GLOBAL")
+  @@index([rankLeague], map: "RANK_LEAGUE")
+  @@map("STATS_USER")
 }
 
-model Performance {
-  id            String  @id @default(cuid())
-  matchdayId    String
-  playerId      String
-  minutesPlayed Int?
-  rating        Float?
-  goals         Int     @default(0)
-  assists       Int     @default(0)
-  ownGoals      Int     @default(0)
-  redCard       Boolean @default(false)
-  penaltySaved  Int     @default(0)
-  penaltyMissed Int     @default(0)
+model Team {
+  leagueId Int @default(0) @map("ID_LEAGUE") @db.UnsignedInt
+  userId   Int @default(0) @map("ID_USER") @db.UnsignedInt
+  playerId Int @default(0) @map("ID_PLAYER") @db.UnsignedInt
+  dayFirst Int @default(1) @map("DAY_FIRST")
+  dayLast  Int @default(38) @map("DAY_LAST")
+  isSubs   Int @default(0) @map("IS_SUBS")
 
-  matchday Matchday @relation(fields: [matchdayId], references: [id])
-  player   Player   @relation(fields: [playerId], references: [id])
-
-  @@unique([matchdayId, playerId])
+  @@id([leagueId, userId, playerId, dayFirst])
+  @@index([dayFirst], map: "DAY_FIRST")
+  @@index([dayLast], map: "DAY_LAST")
+  @@index([leagueId], map: "ID_LEAGUE")
+  @@index([playerId], map: "ID_PLAYER")
+  @@index([userId], map: "ID_USER")
+  @@map("TEAM")
 }
 
-model Lineup {
-  id            String @id @default(cuid())
-  participantId String
-  matchdayId    String
-  starterIds    String[] // array of player IDs
-  submittedAt   DateTime @default(now())
+model TeamDay {
+  leagueId Int      @map("ID_LEAGUE")
+  userId   Int      @map("ID_USER")
+  playerId Int      @map("ID_PLAYER")
+  day      Int      @map("DAY")
+  indx     Int      @map("INDX")
+  isValid  Int      @default(0) @map("IS_VALID")
+  dtSave   DateTime @map("DT_SAVE") @db.DateTime(0)
+  dtValid  DateTime @map("DT_VALID") @db.DateTime(0)
 
-  participant LeagueParticipant @relation(fields: [participantId], references: [id])
-  matchday    Matchday          @relation(fields: [matchdayId], references: [id])
-
-  @@unique([participantId, matchdayId])
+  @@id([leagueId, userId, playerId, day])
+  @@map("TEAM_DAY")
 }
 
-model Standing {
-  id                 String @id @default(cuid())
-  participantId      String
-  matchdayId         String
-  rank               Int
-  totalPoints        Float
-  matchdayPoints     Float
-  previousRank       Int?
+model User {
+  id       Int    @id @default(autoincrement()) @map("ID_USER") @db.UnsignedInt
+  name     String @default("") @map("NAME") @db.VarChar(150)
+  password String @default("") @map("PASSWORD") @db.VarChar(50)
+  email    String @default("") @map("EMAIL") @db.VarChar(50)
 
-  participant LeagueParticipant @relation(fields: [participantId], references: [id])
-  matchday    Matchday          @relation(fields: [matchdayId], references: [id])
-
-  @@unique([participantId, matchdayId])
-}
-
-model Bid {
-  id            String    @id @default(cuid())
-  participantId String
-  userId        String
-  playerId      String
-  amount        Int
-  status        BidStatus @default(PENDING)
-  createdAt     DateTime  @default(now())
-
-  participant LeagueParticipant @relation(fields: [participantId], references: [id])
-  user        User              @relation(fields: [userId], references: [id])
-}
-
-model CupMatch {
-  id             String @id @default(cuid())
-  leagueId       String
-  round          String
-  participant1Id String
-  participant2Id String
-  score1         Float?
-  score2         Float?
-  matchdayNumber Int
-
-  league League @relation(fields: [leagueId], references: [id])
-}
-
-model ForumTopic {
-  id        String   @id @default(cuid())
-  leagueId  String
-  authorId  String
-  title     String
-  pinned    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  league   League         @relation(fields: [leagueId], references: [id])
-  author   User           @relation(fields: [authorId], references: [id])
-  comments ForumComment[]
-}
-
-model ForumComment {
-  id        String   @id @default(cuid())
-  topicId   String
-  authorId  String
-  content   String
-  createdAt DateTime @default(now())
-
-  topic  ForumTopic @relation(fields: [topicId], references: [id])
-  author User       @relation(fields: [authorId], references: [id])
-}
-
-model Claim {
-  id          String      @id @default(cuid())
-  userId      String
-  matchdayNum Int
-  playerId    String
-  reason      String
-  status      ClaimStatus @default(PENDING)
-  createdAt   DateTime    @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-model Joker {
-  id            String   @id @default(cuid())
-  participantId String
-  playerOutId   String
-  playerInId    String
-  status        JokerStatus @default(PENDING)
-  createdAt     DateTime @default(now())
-}
-
-enum Position {
-  GK
-  DEF
-  MID
-  ATT
-}
-
-enum MatchdayStatus {
-  UPCOMING
-  LOCKED
-  PUBLISHED
-}
-
-enum BidStatus {
-  PENDING
-  WON
-  LOST
-  CANCELLED
-}
-
-enum ClaimStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-}
-
-enum JokerStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  @@index([email], map: "EMAIL")
+  @@index([id], map: "ID_USER")
+  @@index([name], map: "NAME")
+  @@index([password], map: "PASSWORD")
+  @@map("USER")
 }
