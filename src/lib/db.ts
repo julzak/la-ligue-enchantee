@@ -339,6 +339,7 @@ export async function getWorstPerformances(day?: number, limit = 5) {
         detail: `${dec(s.points)} pts`,
       };
     })
+    .filter((p) => p.points > 0) // Exclure les 0 pts (joueurs n'ayant pas joué)
     .sort((a, b) => a.points - b.points)
     .slice(0, limit);
 
