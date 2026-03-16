@@ -23,9 +23,12 @@ export default async function ClassementPage({ params }: { params: { slug: strin
   const standings = await getLeagueStandings(league.dbId);
   const currentMatchday = standings.currentDay;
 
-  // Transform DB data into the format ClassementTable expects
-  const tableStandings: Standing[] = standings.standings.map((s) => ({
-    rank: s.rank,
+  // ClassementTable = "Classement de la journée" -> sorted by day score, not cumulative
+  const dayRanked = [...standings.standings]
+    .sort((a, b) => b.lastMatchdayPoints - a.lastMatchdayPoints);
+
+  const tableStandings: Standing[] = dayRanked.map((s, i) => ({
+    rank: i + 1,
     participantId: String(s.userId),
     participantName: s.userName,
     totalPoints: s.totalPoints,
