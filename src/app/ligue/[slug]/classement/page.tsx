@@ -146,18 +146,8 @@ export default async function ClassementPage({ params }: { params: { slug: strin
           </div>
         </div>
 
-        {/* CTA classement général */}
-        <Link
-          href={`/ligue/${slug}/classement-general`}
-          className="block bg-gradient-to-r from-gold/[0.06] to-gold/[0.02] rounded-lg border border-gold/20 p-4 text-center hover:border-gold/40 transition-colors group"
-        >
-          <span className="text-sm font-serif text-gold group-hover:text-white transition-colors">
-            Arrêtez ce suspense → Découvrir le classement général
-          </span>
-        </Link>
-
-        {/* Topo IA */}
-        <TopoJournee matchday={currentMatchday} leagueName={league.name} />
+        {/* Topo IA (with CTA to classement général at the end) */}
+        <TopoJournee matchday={currentMatchday} leagueName={league.name} slug={slug} />
 
         {/* Stats - compact */}
         <div className="bg-surface rounded-lg border border-white/[0.07] p-4 text-sm text-white/60">

@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 interface TopoJourneeProps {
   matchday: number;
   leagueName: string;
+  slug: string;
 }
 
 const topos: Record<string, string> = {
@@ -13,11 +15,11 @@ const topos: Record<string, string> = {
   "national-1": `Troyan survole les débats avec 60 pts et creuse l'écart sur FC Terrich. Le secret ? Avoir misé sur Thauvin au mercato quand tout le monde rigolait. Benhijk perd 1 place après le carton rouge de Fofana - la note zéro fait toujours aussi mal. Dario et Chris B. ferment la marche avec un score combiné inférieur au total de Troyan seul. On appelle ça de la domination. 👑`,
 };
 
-export function TopoJournee({ matchday, leagueName }: TopoJourneeProps) {
-  const slug = leagueName.toLowerCase().includes("baudens") ? "ligue-1"
+export function TopoJournee({ matchday, leagueName, slug }: TopoJourneeProps) {
+  const topoSlug = leagueName.toLowerCase().includes("baudens") ? "ligue-1"
     : leagueName.toLowerCase().includes("national") ? "national-1"
     : "ligue-2";
-  const content = topos[slug] ?? topos["ligue-1"];
+  const content = topos[topoSlug] ?? topos["ligue-1"];
 
   return (
     <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
@@ -30,6 +32,13 @@ export function TopoJournee({ matchday, leagueName }: TopoJourneeProps) {
         <p className="text-sm text-white/75 leading-relaxed italic">
           {content}
         </p>
+        <p className="text-sm text-white/75 leading-relaxed italic mt-3">
+          Sur ce, voici le nouveau{" "}
+          <Link href={`/ligue/${slug}/classement-general`} className="text-gold hover:underline not-italic font-medium">
+            classement général
+          </Link>.
+        </p>
+
       </div>
     </div>
   );
