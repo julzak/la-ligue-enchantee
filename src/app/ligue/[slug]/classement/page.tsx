@@ -163,10 +163,10 @@ export default async function ClassementPage({ params }: { params: { slug: strin
 
       {/* Right sidebar */}
       <aside className="w-full xl:w-64 xl:shrink-0 space-y-6">
-        {/* Tete de ligue */}
+        {/* Tête de ligue */}
         <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
           <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07]">
-            <h3 className="font-serif text-sm text-gold">Tete de ligue</h3>
+            <h3 className="font-serif text-sm text-gold">Tête de ligue</h3>
           </div>
           <div className="divide-y divide-white/[0.05]">
             {top5.map((s) => (
@@ -180,6 +180,12 @@ export default async function ClassementPage({ params }: { params: { slug: strin
               </div>
             ))}
           </div>
+          <Link
+            href={`/ligue/${slug}/classement-general`}
+            className="block px-4 py-2.5 text-center text-xs font-medium text-gold hover:bg-gold/5 border-t border-white/[0.07] transition-colors"
+          >
+            Classement général complet →
+          </Link>
         </div>
 
         {/* Perles du forum - bigger */}
