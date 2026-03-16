@@ -23,7 +23,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
   const standings = await getLeagueStandings(league.dbId);
   const currentMatchday = standings.currentDay;
 
-  // ClassementTable = "Classement de la journée" -> sorted by day score, not cumulative
+  // ClassementTable = "Classement de la journée" -> sorted by day score, no delta (delta is for general)
   const dayRanked = [...standings.standings]
     .sort((a, b) => b.lastMatchdayPoints - a.lastMatchdayPoints);
 
@@ -34,7 +34,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
     totalPoints: s.totalPoints,
     lastMatchdayPoints: s.lastMatchdayPoints,
     ptsPerDay: s.ptsPerDay,
-    delta: s.delta,
+    delta: 0, // pas de delta dans le classement de la journée
   }));
 
   const participants: Participant[] = standings.standings.map((s) => ({
@@ -108,7 +108,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
                         {s.userName}
                         <TrophyBadges trophies={s.trophies} />
                       </span>
-                      <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday}</span>
+                      <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday} - maintenant {s.rank}e</span>
                     </div>
                   </div>
                 ))}
@@ -135,7 +135,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
                         {s.userName}
                         <TrophyBadges trophies={s.trophies} />
                       </span>
-                      <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday}</span>
+                      <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday} - tombe à la {s.rank}e place</span>
                     </div>
                   </div>
                 ))}
@@ -145,6 +145,16 @@ export default async function ClassementPage({ params }: { params: { slug: strin
             )}
           </div>
         </div>
+
+        {/* CTA classement général */}
+        <Link
+          href={`/ligue/${slug}/classement-general`}
+          className="block bg-gradient-to-r from-gold/[0.06] to-gold/[0.02] rounded-lg border border-gold/20 p-4 text-center hover:border-gold/40 transition-colors group"
+        >
+          <span className="text-sm font-serif text-gold group-hover:text-white transition-colors">
+            Arrêtez ce suspense → Découvrir le classement général
+          </span>
+        </Link>
 
         {/* Topo IA */}
         <TopoJournee matchday={currentMatchday} leagueName={league.name} />
