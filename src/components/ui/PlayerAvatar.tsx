@@ -1,17 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
 interface PlayerAvatarProps {
   imageUrl?: string;
+  playerId?: number;
   name: string;
   size?: number;
 }
 
-export function PlayerAvatar({ imageUrl, name, size = 40 }: PlayerAvatarProps) {
+// Client-side cache shared across all instances
+const imageCache = new Map<number, string | null>();
+
+export function PlayerAvatar({ imageUrl, playerId, name, size = 40 }: PlayerAvatarProps) {
   const [error, setError] = useState(false);
-  const showFallback = !imageUrl || error;
+  const [dynamicUrl, setDynamicUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (imageUrl || !playerId || !name) return;
+
+    // Check cache first
+    if (imageCache.has(playerId)) {
+      setDynamicUrl(imageCache.get(playerId) ?? null);
+      return;
+    }
+
+    // Fetch from API
+    fetch(`/api/player-image?id=${playerId}&name=${encodeURIComponent(name)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        imageCache.set(playerId, data.url);
+        setDynamicUrl(data.url);
+        })
+      .catch(() => {
+        imageCache.set(playerId, null);
+        });
+  }, [imageUrl, playerId, name]);
+
+  const finalUrl = imageUrl || dynamicUrl;
+  const showFallback = !finalUrl || error;
 
   return (
     <div
@@ -27,12 +55,13 @@ export function PlayerAvatar({ imageUrl, name, size = 40 }: PlayerAvatarProps) {
           unoptimized
         />
       ) : (
-        <Image
-          src={imageUrl}
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={finalUrl}
           alt={name}
           width={size}
           height={size}
-          className="object-cover"
+          className="object-cover w-full h-full"
           onError={() => setError(true)}
         />
       )}
