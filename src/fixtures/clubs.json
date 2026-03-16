@@ -1,0 +1,20 @@
+[
+  { "id": "psg", "name": "Paris Saint-Germain", "shortName": "PSG", "logoUrl": "https://img.sofascore.com/api/v1/team/1644/image" },
+  { "id": "om", "name": "Olympique de Marseille", "shortName": "OM", "logoUrl": "https://img.sofascore.com/api/v1/team/1641/image" },
+  { "id": "ol", "name": "Olympique Lyonnais", "shortName": "OL", "logoUrl": "https://img.sofascore.com/api/v1/team/1649/image" },
+  { "id": "asm", "name": "AS Monaco", "shortName": "ASM", "logoUrl": "https://img.sofascore.com/api/v1/team/1651/image" },
+  { "id": "losc", "name": "LOSC Lille", "shortName": "LOSC", "logoUrl": "https://img.sofascore.com/api/v1/team/1648/image" },
+  { "id": "rcl", "name": "RC Lens", "shortName": "RCL", "logoUrl": "https://img.sofascore.com/api/v1/team/1679/image" },
+  { "id": "srfc", "name": "Stade Rennais", "shortName": "SRFC", "logoUrl": "https://img.sofascore.com/api/v1/team/1647/image" },
+  { "id": "ogcn", "name": "OGC Nice", "shortName": "OGCN", "logoUrl": "https://img.sofascore.com/api/v1/team/1642/image" },
+  { "id": "asse", "name": "AS Saint-Etienne", "shortName": "ASSE", "logoUrl": "https://img.sofascore.com/api/v1/team/1643/image" },
+  { "id": "rcsa", "name": "RC Strasbourg", "shortName": "RCSA", "logoUrl": "https://img.sofascore.com/api/v1/team/1653/image" },
+  { "id": "fcn", "name": "FC Nantes", "shortName": "FCN", "logoUrl": "https://img.sofascore.com/api/v1/team/1646/image" },
+  { "id": "mhsc", "name": "Montpellier HSC", "shortName": "MHSC", "logoUrl": "https://img.sofascore.com/api/v1/team/1652/image" },
+  { "id": "tfc", "name": "Toulouse FC", "shortName": "TFC", "logoUrl": "https://img.sofascore.com/api/v1/team/1662/image" },
+  { "id": "sdr", "name": "Stade de Reims", "shortName": "SDR", "logoUrl": "https://img.sofascore.com/api/v1/team/1654/image" },
+  { "id": "lh", "name": "Le Havre AC", "shortName": "HAC", "logoUrl": "https://img.sofascore.com/api/v1/team/2381/image" },
+  { "id": "cf63", "name": "Clermont Foot 63", "shortName": "CF63", "logoUrl": "https://img.sofascore.com/api/v1/team/34267/image" },
+  { "id": "fcl", "name": "FC Lorient", "shortName": "FCL", "logoUrl": "https://img.sofascore.com/api/v1/team/1681/image" },
+  { "id": "estac", "name": "ESTAC Troyes", "shortName": "ESTAC", "logoUrl": "https://img.sofascore.com/api/v1/team/1680/image" }
+]

@@ -1,0 +1,9 @@
+[
+  { "round": "Quarts de finale", "participant1Id": "pierre", "participant2Id": "hugo", "score1": 68, "score2": 51, "matchday": 20 },
+  { "round": "Quarts de finale", "participant1Id": "tom", "participant2Id": "jules", "score1": 72, "score2": 59, "matchday": 20 },
+  { "round": "Quarts de finale", "participant1Id": "maxime", "participant2Id": "romain", "score1": 61, "score2": 64, "matchday": 20 },
+  { "round": "Quarts de finale", "participant1Id": "lucas", "participant2Id": "antoine", "score1": 55, "score2": 58, "matchday": 20 },
+  { "round": "Demi-finales", "participant1Id": "pierre", "participant2Id": "tom", "score1": null, "score2": null, "matchday": 30 },
+  { "round": "Demi-finales", "participant1Id": "romain", "participant2Id": "antoine", "score1": null, "score2": null, "matchday": 30 },
+  { "round": "Finale", "participant1Id": "", "participant2Id": "", "score1": null, "score2": null, "matchday": 36 }
+]

@@ -1,0 +1,114 @@
+{
+  "matchday": 25,
+  "leagues": {
+    "ligue-1": {
+      "totalPoints": 21011,
+      "pointsJournee": 855,
+      "ratio": 47.50,
+      "standings": [
+        { "rank": 1, "participantId": "blek", "participantName": "Blek le Roc", "totalPoints": 1329, "lastMatchdayPoints": 59, "ptsPerDay": 5.36, "delta": 0 },
+        { "rank": 2, "participantId": "lst", "participantName": "LST", "totalPoints": 1309, "lastMatchdayPoints": 58, "ptsPerDay": 5.80, "delta": 0 },
+        { "rank": 3, "participantId": "thib", "participantName": "Thib", "totalPoints": 1303, "lastMatchdayPoints": 58, "ptsPerDay": 5.27, "delta": 1 },
+        { "rank": 4, "participantId": "nene", "participantName": "Nenefin", "totalPoints": 1282, "lastMatchdayPoints": 56, "ptsPerDay": 5.09, "delta": 1 },
+        { "rank": 5, "participantId": "jun", "participantName": "Jun", "totalPoints": 1282, "lastMatchdayPoints": 55, "ptsPerDay": 5.50, "delta": -2 },
+        { "rank": 6, "participantId": "duch", "participantName": "Duch", "totalPoints": 1254, "lastMatchdayPoints": 54, "ptsPerDay": 5.40, "delta": 0 },
+        { "rank": 7, "participantId": "mathieu-l", "participantName": "Mathieu L.", "totalPoints": 1249, "lastMatchdayPoints": 54, "ptsPerDay": 4.91, "delta": 0 },
+        { "rank": 8, "participantId": "shima", "participantName": "Shima / Jay", "totalPoints": 1248, "lastMatchdayPoints": 54, "ptsPerDay": 4.91, "delta": 0 },
+        { "rank": 9, "participantId": "nums", "participantName": "Nums", "totalPoints": 1244, "lastMatchdayPoints": 52, "ptsPerDay": 4.73, "delta": 0 },
+        { "rank": 10, "participantId": "david-a", "participantName": "David A", "totalPoints": 1210, "lastMatchdayPoints": 50, "ptsPerDay": 5.00, "delta": 1 },
+        { "rank": 11, "participantId": "capra", "participantName": "Capra", "totalPoints": 1195, "lastMatchdayPoints": 49, "ptsPerDay": 4.90, "delta": -1 },
+        { "rank": 12, "participantId": "kazu", "participantName": "Kazu", "totalPoints": 1180, "lastMatchdayPoints": 45, "ptsPerDay": 4.50, "delta": 0 },
+        { "rank": 13, "participantId": "zenigata", "participantName": "Zenigata", "totalPoints": 1170, "lastMatchdayPoints": 41, "ptsPerDay": 5.86, "delta": 2 },
+        { "rank": 14, "participantId": "thomas-p", "participantName": "Thomas P", "totalPoints": 1155, "lastMatchdayPoints": 41, "ptsPerDay": 4.10, "delta": -1 },
+        { "rank": 15, "participantId": "martial", "participantName": "Martial", "totalPoints": 1140, "lastMatchdayPoints": 40, "ptsPerDay": 4.44, "delta": -1 },
+        { "rank": 16, "participantId": "nico-c", "participantName": "Nico C", "totalPoints": 1100, "lastMatchdayPoints": 39, "ptsPerDay": 3.90, "delta": 0 },
+        { "rank": 17, "participantId": "dimitri-s", "participantName": "Dimitri S", "totalPoints": 1070, "lastMatchdayPoints": 36, "ptsPerDay": 4.00, "delta": 0 },
+        { "rank": 18, "participantId": "nico-b", "participantName": "Nico B", "totalPoints": 1020, "lastMatchdayPoints": 31, "ptsPerDay": 4.43, "delta": 0 }
+      ]
+    },
+    "ligue-2": {
+      "totalPoints": 20970,
+      "pointsJournee": 822,
+      "ratio": 45.67,
+      "standings": [
+        { "rank": 1, "participantId": "francis", "participantName": "Francis Llacer", "totalPoints": 1417, "lastMatchdayPoints": 62, "ptsPerDay": 5.67, "delta": 0 },
+        { "rank": 2, "participantId": "le-general", "participantName": "Le General", "totalPoints": 1384, "lastMatchdayPoints": 58, "ptsPerDay": 5.54, "delta": 0 },
+        { "rank": 3, "participantId": "rom-aulas", "participantName": "Rom Aulas", "totalPoints": 1338, "lastMatchdayPoints": 55, "ptsPerDay": 5.35, "delta": 1 },
+        { "rank": 4, "participantId": "laurent", "participantName": "Laurent", "totalPoints": 1335, "lastMatchdayPoints": 53, "ptsPerDay": 5.34, "delta": -1 },
+        { "rank": 5, "participantId": "tom-p", "participantName": "Tom P", "totalPoints": 1310, "lastMatchdayPoints": 51, "ptsPerDay": 5.24, "delta": 0 },
+        { "rank": 6, "participantId": "romain-d", "participantName": "Romain D.", "totalPoints": 1295, "lastMatchdayPoints": 50, "ptsPerDay": 5.18, "delta": 1 },
+        { "rank": 7, "participantId": "alex-m", "participantName": "Alex M.", "totalPoints": 1290, "lastMatchdayPoints": 49, "ptsPerDay": 5.16, "delta": -1 },
+        { "rank": 8, "participantId": "julien-b", "participantName": "Julien B.", "totalPoints": 1280, "lastMatchdayPoints": 48, "ptsPerDay": 5.12, "delta": 0 },
+        { "rank": 9, "participantId": "pierrot", "participantName": "Pierrot", "totalPoints": 1265, "lastMatchdayPoints": 46, "ptsPerDay": 5.06, "delta": 0 },
+        { "rank": 10, "participantId": "yann-k", "participantName": "Yann K.", "totalPoints": 1245, "lastMatchdayPoints": 45, "ptsPerDay": 4.98, "delta": 1 },
+        { "rank": 11, "participantId": "sam-l", "participantName": "Sam L.", "totalPoints": 1235, "lastMatchdayPoints": 44, "ptsPerDay": 4.94, "delta": -1 },
+        { "rank": 12, "participantId": "gonz", "participantName": "Gonz", "totalPoints": 1280, "lastMatchdayPoints": 43, "ptsPerDay": 5.12, "delta": 0 },
+        { "rank": 13, "participantId": "max-b", "participantName": "Max B.", "totalPoints": 1210, "lastMatchdayPoints": 42, "ptsPerDay": 4.84, "delta": 0 },
+        { "rank": 14, "participantId": "enzo", "participantName": "Enzo", "totalPoints": 1195, "lastMatchdayPoints": 41, "ptsPerDay": 4.78, "delta": 0 },
+        { "rank": 15, "participantId": "cedric-r", "participantName": "Cedric R.", "totalPoints": 1180, "lastMatchdayPoints": 39, "ptsPerDay": 4.72, "delta": 0 },
+        { "rank": 16, "participantId": "raph-g", "participantName": "Raph G.", "totalPoints": 1150, "lastMatchdayPoints": 37, "ptsPerDay": 4.60, "delta": 0 },
+        { "rank": 17, "participantId": "troy", "participantName": "Troy", "totalPoints": 1248, "lastMatchdayPoints": 35, "ptsPerDay": 4.99, "delta": 0 },
+        { "rank": 18, "participantId": "momo", "participantName": "Momo", "totalPoints": 1080, "lastMatchdayPoints": 32, "ptsPerDay": 4.32, "delta": 0 }
+      ]
+    },
+    "national-1": {
+      "totalPoints": 20428,
+      "pointsJournee": 798,
+      "ratio": 44.33,
+      "standings": [
+        { "rank": 1, "participantId": "troyan", "participantName": "Troyan", "totalPoints": 1388, "lastMatchdayPoints": 60, "ptsPerDay": 5.55, "delta": 0 },
+        { "rank": 2, "participantId": "fc-terrich", "participantName": "FC Terrich", "totalPoints": 1338, "lastMatchdayPoints": 56, "ptsPerDay": 5.35, "delta": 0 },
+        { "rank": 3, "participantId": "gelo59", "participantName": "GeLo 59", "totalPoints": 1325, "lastMatchdayPoints": 54, "ptsPerDay": 5.30, "delta": 0 },
+        { "rank": 4, "participantId": "damoki", "participantName": "Damoki Sakai", "totalPoints": 1304, "lastMatchdayPoints": 53, "ptsPerDay": 5.22, "delta": 1 },
+        { "rank": 5, "participantId": "benhijk", "participantName": "Benhijk", "totalPoints": 1283, "lastMatchdayPoints": 51, "ptsPerDay": 5.13, "delta": -1 },
+        { "rank": 6, "participantId": "vince77", "participantName": "Vince77", "totalPoints": 1270, "lastMatchdayPoints": 50, "ptsPerDay": 5.08, "delta": 0 },
+        { "rank": 7, "participantId": "batistuta", "participantName": "Batistuta", "totalPoints": 1249, "lastMatchdayPoints": 48, "ptsPerDay": 5.00, "delta": 0 },
+        { "rank": 8, "participantId": "paul-r", "participantName": "Paul R.", "totalPoints": 1230, "lastMatchdayPoints": 47, "ptsPerDay": 4.92, "delta": 1 },
+        { "rank": 9, "participantId": "mehdi-k", "participantName": "Mehdi K.", "totalPoints": 1215, "lastMatchdayPoints": 46, "ptsPerDay": 4.86, "delta": -1 },
+        { "rank": 10, "participantId": "seb-f", "participantName": "Seb F.", "totalPoints": 1200, "lastMatchdayPoints": 45, "ptsPerDay": 4.80, "delta": 0 },
+        { "rank": 11, "participantId": "antoine-v", "participantName": "Antoine V.", "totalPoints": 1185, "lastMatchdayPoints": 44, "ptsPerDay": 4.74, "delta": 0 },
+        { "rank": 12, "participantId": "greg-m", "participantName": "Greg M.", "totalPoints": 1160, "lastMatchdayPoints": 42, "ptsPerDay": 4.64, "delta": 0 },
+        { "rank": 13, "participantId": "ludo-p", "participantName": "Ludo P.", "totalPoints": 1140, "lastMatchdayPoints": 40, "ptsPerDay": 4.56, "delta": 0 },
+        { "rank": 14, "participantId": "fredo", "participantName": "Fredo", "totalPoints": 1120, "lastMatchdayPoints": 38, "ptsPerDay": 4.48, "delta": 0 },
+        { "rank": 15, "participantId": "mat-h", "participantName": "Mat H.", "totalPoints": 1100, "lastMatchdayPoints": 37, "ptsPerDay": 4.40, "delta": 0 },
+        { "rank": 16, "participantId": "nico-g", "participantName": "Nico G.", "totalPoints": 1080, "lastMatchdayPoints": 35, "ptsPerDay": 4.32, "delta": 0 },
+        { "rank": 17, "participantId": "dario", "participantName": "Dario", "totalPoints": 1050, "lastMatchdayPoints": 33, "ptsPerDay": 4.20, "delta": 0 },
+        { "rank": 18, "participantId": "chris-b", "participantName": "Chris B.", "totalPoints": 1020, "lastMatchdayPoints": 30, "ptsPerDay": 4.08, "delta": 0 }
+      ]
+    }
+  },
+  "interleague": [
+    { "rank": 1, "participantId": "francis", "participantName": "Francis Llacer", "leagueName": "Ligue 2", "totalPoints": 1417 },
+    { "rank": 2, "participantId": "troyan", "participantName": "Troyan", "leagueName": "National 1", "totalPoints": 1388 },
+    { "rank": 3, "participantId": "le-general", "participantName": "Le General", "leagueName": "Ligue 2", "totalPoints": 1384 },
+    { "rank": 4, "participantId": "rom-aulas", "participantName": "Rom Aulas", "leagueName": "National 1", "totalPoints": 1338 },
+    { "rank": 5, "participantId": "fc-terrich", "participantName": "FC Terrich", "leagueName": "National 1", "totalPoints": 1338 },
+    { "rank": 6, "participantId": "blek", "participantName": "Blek le Roc", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1329 },
+    { "rank": 7, "participantId": "gelo59", "participantName": "GeLo 59", "leagueName": "National 1", "totalPoints": 1325 },
+    { "rank": 8, "participantId": "lst", "participantName": "LST", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1309 },
+    { "rank": 9, "participantId": "damoki", "participantName": "Damoki Sakai", "leagueName": "National 1", "totalPoints": 1304 },
+    { "rank": 10, "participantId": "duch", "participantName": "Duch", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1303 },
+    { "rank": 11, "participantId": "thib", "participantName": "Thib", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1303 },
+    { "rank": 12, "participantId": "jun", "participantName": "Jun", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1282 },
+    { "rank": 13, "participantId": "gonz", "participantName": "Gonz", "leagueName": "Ligue 2", "totalPoints": 1280 },
+    { "rank": 14, "participantId": "zenigata", "participantName": "Zenigata", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1279 },
+    { "rank": 15, "participantId": "vince77", "participantName": "Vince77", "leagueName": "National 1", "totalPoints": 1270 },
+    { "rank": 16, "participantId": "david-a", "participantName": "David A", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1254 },
+    { "rank": 17, "participantId": "batistuta", "participantName": "Batistuta", "leagueName": "National 1", "totalPoints": 1249 },
+    { "rank": 18, "participantId": "kazu", "participantName": "Kazu", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1249 },
+    { "rank": 19, "participantId": "troy", "participantName": "Troy", "leagueName": "Ligue 2", "totalPoints": 1248 },
+    { "rank": 20, "participantId": "shima", "participantName": "Shima / Jay", "leagueName": "Ligue 1 (Baudens League)", "totalPoints": 1248 }
+  ],
+  "bestPerformances": [
+    { "playerName": "Folarin Balogun", "club": "ASM", "points": 10.0, "detail": "1 but, 1 passe, 7.0 pts" },
+    { "playerName": "Maghnes Akliouche", "club": "ASM", "points": 10.0, "detail": "1 but, 1 passe, 7.0 pts" },
+    { "playerName": "Florian Thauvin", "club": "RCL", "points": 10.0, "detail": "1 but, 8.0 pts" },
+    { "playerName": "Amadou Haidara", "club": "RCL", "points": 9.0, "detail": "1 but, 7.0 pts" },
+    { "playerName": "Mohamed Amine Sbai", "club": "SCO", "points": 9.0, "detail": "1 but, 7.0 pts" }
+  ],
+  "dayStats": {
+    "totalGoals": 18,
+    "totalPoints": 1009.0,
+    "avgPerPlayer": 4.63
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "currentMatchday": 25,
+  "season": "2025-2026",
+  "leagues": [
+    {
+      "id": "ligue-1",
+      "slug": "ligue-1",
+      "name": "Ligue 1 (Baudens League)",
+      "participantCount": 18,
+      "participants": [
+        { "id": "blek", "name": "Blek le Roc", "avatarInitials": "BR", "trophies": ["star", "star-gold"] },
+        { "id": "lst", "name": "LST", "avatarInitials": "LS", "trophies": [] },
+        { "id": "thib", "name": "Thib", "avatarInitials": "TH", "trophies": ["star-gold", "cup", "star"] },
+        { "id": "nene", "name": "Nenefin", "avatarInitials": "NE", "trophies": ["star-gold", "star", "star", "cup"] },
+        { "id": "jun", "name": "Jun", "avatarInitials": "JU", "trophies": ["star"] },
+        { "id": "duch", "name": "Duch", "avatarInitials": "DU", "trophies": [] },
+        { "id": "mathieu-l", "name": "Mathieu L.", "avatarInitials": "ML", "trophies": [] },
+        { "id": "shima", "name": "Shima / Jay", "avatarInitials": "SJ", "trophies": ["star", "star-gold"] },
+        { "id": "nums", "name": "Nums", "avatarInitials": "NU", "trophies": ["star-gold", "star", "cup"] },
+        { "id": "david-a", "name": "David A", "avatarInitials": "DA", "trophies": [] },
+        { "id": "capra", "name": "Capra", "avatarInitials": "CA", "trophies": ["cup"] },
+        { "id": "kazu", "name": "Kazu", "avatarInitials": "KA", "trophies": ["star-gold", "cup", "star"] },
+        { "id": "zenigata", "name": "Zenigata", "avatarInitials": "ZE", "trophies": ["star-gold", "star", "star-gold"] },
+        { "id": "thomas-p", "name": "Thomas P", "avatarInitials": "TP", "trophies": ["star", "star-gold"] },
+        { "id": "martial", "name": "Martial", "avatarInitials": "MA", "trophies": ["star-gold", "star", "cup"] },
+        { "id": "nico-c", "name": "Nico C", "avatarInitials": "NC", "trophies": ["skull"] },
+        { "id": "dimitri-s", "name": "Dimitri S", "avatarInitials": "DS", "trophies": ["star", "cup"] },
+        { "id": "nico-b", "name": "Nico B", "avatarInitials": "NB", "trophies": [] }
+      ]
+    },
+    {
+      "id": "ligue-2",
+      "slug": "ligue-2",
+      "name": "Ligue 2",
+      "participantCount": 18,
+      "participants": [
+        { "id": "francis", "name": "Francis Llacer", "avatarInitials": "FL", "trophies": ["cup"] },
+        { "id": "le-general", "name": "Le General", "avatarInitials": "LG", "trophies": [] },
+        { "id": "gonz", "name": "Gonz", "avatarInitials": "GO", "trophies": [] },
+        { "id": "troy", "name": "Troy", "avatarInitials": "TR", "trophies": [] },
+        { "id": "rom-aulas", "name": "Rom Aulas", "avatarInitials": "RA", "trophies": ["star-gold"] },
+        { "id": "laurent", "name": "Laurent", "avatarInitials": "LA", "trophies": ["star"] },
+        { "id": "tom-p", "name": "Tom P", "avatarInitials": "TP", "trophies": [] },
+        { "id": "romain-d", "name": "Romain D.", "avatarInitials": "RD", "trophies": [] },
+        { "id": "alex-m", "name": "Alex M.", "avatarInitials": "AM", "trophies": ["star-gold", "star"] },
+        { "id": "julien-b", "name": "Julien B.", "avatarInitials": "JB", "trophies": [] },
+        { "id": "pierrot", "name": "Pierrot", "avatarInitials": "PI", "trophies": ["cup"] },
+        { "id": "yann-k", "name": "Yann K.", "avatarInitials": "YK", "trophies": [] },
+        { "id": "sam-l", "name": "Sam L.", "avatarInitials": "SL", "trophies": ["star"] },
+        { "id": "max-b", "name": "Max B.", "avatarInitials": "MB", "trophies": [] },
+        { "id": "enzo", "name": "Enzo", "avatarInitials": "EN", "trophies": [] },
+        { "id": "cedric-r", "name": "Cedric R.", "avatarInitials": "CR", "trophies": ["star-gold"] },
+        { "id": "raph-g", "name": "Raph G.", "avatarInitials": "RG", "trophies": [] },
+        { "id": "momo", "name": "Momo", "avatarInitials": "MO", "trophies": [] }
+      ]
+    },
+    {
+      "id": "national-1",
+      "slug": "national-1",
+      "name": "National 1",
+      "participantCount": 18,
+      "participants": [
+        { "id": "troyan", "name": "Troyan", "avatarInitials": "TY", "trophies": ["star-gold", "star", "cup"] },
+        { "id": "fc-terrich", "name": "FC Terrich", "avatarInitials": "FT", "trophies": [] },
+        { "id": "gelo59", "name": "GeLo 59", "avatarInitials": "GL", "trophies": ["star", "star-gold"] },
+        { "id": "damoki", "name": "Damoki Sakai", "avatarInitials": "DK", "trophies": ["star"] },
+        { "id": "benhijk", "name": "Benhijk", "avatarInitials": "BH", "trophies": ["star-gold", "star", "cup"] },
+        { "id": "vince77", "name": "Vince77", "avatarInitials": "V7", "trophies": ["star", "star-gold"] },
+        { "id": "batistuta", "name": "Batistuta", "avatarInitials": "BA", "trophies": [] },
+        { "id": "paul-r", "name": "Paul R.", "avatarInitials": "PR", "trophies": [] },
+        { "id": "mehdi-k", "name": "Mehdi K.", "avatarInitials": "MK", "trophies": ["star"] },
+        { "id": "seb-f", "name": "Seb F.", "avatarInitials": "SF", "trophies": [] },
+        { "id": "antoine-v", "name": "Antoine V.", "avatarInitials": "AV", "trophies": ["cup"] },
+        { "id": "greg-m", "name": "Greg M.", "avatarInitials": "GM", "trophies": [] },
+        { "id": "ludo-p", "name": "Ludo P.", "avatarInitials": "LP", "trophies": [] },
+        { "id": "fredo", "name": "Fredo", "avatarInitials": "FR", "trophies": ["star-gold"] },
+        { "id": "mat-h", "name": "Mat H.", "avatarInitials": "MH", "trophies": [] },
+        { "id": "nico-g", "name": "Nico G.", "avatarInitials": "NG", "trophies": [] },
+        { "id": "dario", "name": "Dario", "avatarInitials": "DR", "trophies": ["star"] },
+        { "id": "chris-b", "name": "Chris B.", "avatarInitials": "CB", "trophies": [] }
+      ]
+    }
+  ],
+  "bestPerformances": [
+    { "playerName": "Folarin Balogun", "club": "ASM", "points": 10.0, "detail": "1 but, 1 passe, 7.0 pts" },
+    { "playerName": "Maghnes Akliouche", "club": "ASM", "points": 10.0, "detail": "1 but, 1 passe, 7.0 pts" },
+    { "playerName": "Florian Thauvin", "club": "RCL", "points": 10.0, "detail": "1 but, 8.0 pts" },
+    { "playerName": "Amadou Haidara", "club": "RCL", "points": 9.0, "detail": "1 but, 7.0 pts" },
+    { "playerName": "Mohamed Amine Sbai", "club": "SCO", "points": 9.0, "detail": "1 but, 7.0 pts" }
+  ],
+  "dayStats": {
+    "totalGoals": 18,
+    "totalPoints": 1009.0,
+    "avgPerPlayer": 4.63
+  }
+}

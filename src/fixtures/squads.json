@@ -1,0 +1,344 @@
+[
+  {
+    "participantId": "blek",
+    "budgetSpent": 129, "budgetTotal": 130,
+    "players": [
+      { "playerId": "samba", "isStarter": true },
+      { "playerId": "hakimi", "isStarter": true },
+      { "playerId": "danso", "isStarter": true },
+      { "playerId": "mendes", "isStarter": true },
+      { "playerId": "lloris-th", "isStarter": true },
+      { "playerId": "zaire-emery", "isStarter": true },
+      { "playerId": "cherki", "isStarter": true },
+      { "playerId": "tolisso", "isStarter": true },
+      { "playerId": "mbappe", "isStarter": true },
+      { "playerId": "david", "isStarter": true },
+      { "playerId": "barcola", "isStarter": true },
+      { "playerId": "beraldo", "isStarter": false },
+      { "playerId": "neyou", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "lst",
+    "budgetSpent": 130, "budgetTotal": 130,
+    "players": [
+      { "playerId": "chevalier", "isStarter": true },
+      { "playerId": "clauss", "isStarter": true },
+      { "playerId": "saliba-w", "isStarter": true },
+      { "playerId": "lacroix", "isStarter": true },
+      { "playerId": "medina", "isStarter": true },
+      { "playerId": "vitinha", "isStarter": true },
+      { "playerId": "bouaddi", "isStarter": true },
+      { "playerId": "paqueta", "isStarter": true },
+      { "playerId": "lacazette", "isStarter": true },
+      { "playerId": "greenwood", "isStarter": true },
+      { "playerId": "aubameyang", "isStarter": true },
+      { "playerId": "thomasson", "isStarter": false },
+      { "playerId": "laborde", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "thib",
+    "budgetSpent": 128, "budgetTotal": 130,
+    "players": [
+      { "playerId": "donnarumma", "isStarter": true },
+      { "playerId": "meunier", "isStarter": true },
+      { "playerId": "todibo", "isStarter": true },
+      { "playerId": "badiashile", "isStarter": true },
+      { "playerId": "koscielny", "isStarter": true },
+      { "playerId": "fofana", "isStarter": true },
+      { "playerId": "lee", "isStarter": true },
+      { "playerId": "savanier", "isStarter": true },
+      { "playerId": "kolo-muani", "isStarter": true },
+      { "playerId": "wahi", "isStarter": true },
+      { "playerId": "dembele", "isStarter": true },
+      { "playerId": "abdelhamid", "isStarter": false },
+      { "playerId": "emegha", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "nene",
+    "budgetSpent": 129, "budgetTotal": 130,
+    "players": [
+      { "playerId": "mandanda", "isStarter": true },
+      { "playerId": "lala", "isStarter": true },
+      { "playerId": "beraldo", "isStarter": true },
+      { "playerId": "danso", "isStarter": true },
+      { "playerId": "lacroix", "isStarter": true },
+      { "playerId": "caqueret", "isStarter": true },
+      { "playerId": "camavinga", "isStarter": true },
+      { "playerId": "ounahi", "isStarter": true },
+      { "playerId": "openda", "isStarter": true },
+      { "playerId": "mikautadze", "isStarter": true },
+      { "playerId": "terrier", "isStarter": true },
+      { "playerId": "del-castillo", "isStarter": false },
+      { "playerId": "said", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "jun",
+    "budgetSpent": 128, "budgetTotal": 130,
+    "players": [
+      { "playerId": "chevalier", "isStarter": true },
+      { "playerId": "hakimi", "isStarter": true },
+      { "playerId": "saliba-w", "isStarter": true },
+      { "playerId": "meunier", "isStarter": true },
+      { "playerId": "medina", "isStarter": true },
+      { "playerId": "vitinha", "isStarter": true },
+      { "playerId": "tolisso", "isStarter": true },
+      { "playerId": "bouaddi", "isStarter": true },
+      { "playerId": "mbappe", "isStarter": true },
+      { "playerId": "lacazette", "isStarter": true },
+      { "playerId": "zhegrova", "isStarter": true },
+      { "playerId": "neyou", "isStarter": false },
+      { "playerId": "kalimuendo", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "duch",
+    "budgetSpent": 130, "budgetTotal": 130,
+    "players": [
+      { "playerId": "samba", "isStarter": true },
+      { "playerId": "clauss", "isStarter": true },
+      { "playerId": "mendes", "isStarter": true },
+      { "playerId": "todibo", "isStarter": true },
+      { "playerId": "lloris-th", "isStarter": true },
+      { "playerId": "zaire-emery", "isStarter": true },
+      { "playerId": "cherki", "isStarter": true },
+      { "playerId": "paqueta", "isStarter": true },
+      { "playerId": "david", "isStarter": true },
+      { "playerId": "barcola", "isStarter": true },
+      { "playerId": "guirassy", "isStarter": true },
+      { "playerId": "abdelhamid", "isStarter": false },
+      { "playerId": "ben-yedder", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "mathieu-l",
+    "budgetSpent": 127, "budgetTotal": 130,
+    "players": [
+      { "playerId": "mvogo", "isStarter": true },
+      { "playerId": "danso", "isStarter": true },
+      { "playerId": "badiashile", "isStarter": true },
+      { "playerId": "lala", "isStarter": true },
+      { "playerId": "koscielny", "isStarter": true },
+      { "playerId": "fofana", "isStarter": true },
+      { "playerId": "savanier", "isStarter": true },
+      { "playerId": "del-castillo", "isStarter": true },
+      { "playerId": "aubameyang", "isStarter": true },
+      { "playerId": "balogun", "isStarter": true },
+      { "playerId": "greenwood", "isStarter": true },
+      { "playerId": "camavinga", "isStarter": false },
+      { "playerId": "emegha", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "shima",
+    "budgetSpent": 126, "budgetTotal": 130,
+    "players": [
+      { "playerId": "donnarumma", "isStarter": true },
+      { "playerId": "clauss", "isStarter": true },
+      { "playerId": "beraldo", "isStarter": true },
+      { "playerId": "abdelhamid", "isStarter": true },
+      { "playerId": "lloris-th", "isStarter": true },
+      { "playerId": "lee", "isStarter": true },
+      { "playerId": "thomasson", "isStarter": true },
+      { "playerId": "caqueret", "isStarter": true },
+      { "playerId": "wahi", "isStarter": true },
+      { "playerId": "kolo-muani", "isStarter": true },
+      { "playerId": "laborde", "isStarter": true },
+      { "playerId": "said", "isStarter": false },
+      { "playerId": "neyou", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "nums",
+    "budgetSpent": 128, "budgetTotal": 130,
+    "players": [
+      { "playerId": "samba", "isStarter": true },
+      { "playerId": "hakimi", "isStarter": true },
+      { "playerId": "lacroix", "isStarter": true },
+      { "playerId": "medina", "isStarter": true },
+      { "playerId": "todibo", "isStarter": true },
+      { "playerId": "vitinha", "isStarter": true },
+      { "playerId": "cherki", "isStarter": true },
+      { "playerId": "ounahi", "isStarter": true },
+      { "playerId": "mbappe", "isStarter": true },
+      { "playerId": "openda", "isStarter": true },
+      { "playerId": "dembele", "isStarter": true },
+      { "playerId": "thomasson", "isStarter": false },
+      { "playerId": "kalimuendo", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "david-a",
+    "budgetSpent": 127, "budgetTotal": 130,
+    "players": [
+      { "playerId": "chevalier", "isStarter": true },
+      { "playerId": "mendes", "isStarter": true },
+      { "playerId": "saliba-w", "isStarter": true },
+      { "playerId": "badiashile", "isStarter": true },
+      { "playerId": "meunier", "isStarter": true },
+      { "playerId": "zaire-emery", "isStarter": true },
+      { "playerId": "tolisso", "isStarter": true },
+      { "playerId": "paqueta", "isStarter": true },
+      { "playerId": "lacazette", "isStarter": true },
+      { "playerId": "david", "isStarter": true },
+      { "playerId": "barcola", "isStarter": true },
+      { "playerId": "lala", "isStarter": false },
+      { "playerId": "laborde", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "capra",
+    "budgetSpent": 126, "budgetTotal": 130,
+    "players": [
+      { "playerId": "mandanda", "isStarter": true },
+      { "playerId": "danso", "isStarter": true },
+      { "playerId": "lloris-th", "isStarter": true },
+      { "playerId": "koscielny", "isStarter": true },
+      { "playerId": "lala", "isStarter": true },
+      { "playerId": "bouaddi", "isStarter": true },
+      { "playerId": "camavinga", "isStarter": true },
+      { "playerId": "lee", "isStarter": true },
+      { "playerId": "guirassy", "isStarter": true },
+      { "playerId": "terrier", "isStarter": true },
+      { "playerId": "aubameyang", "isStarter": true },
+      { "playerId": "neyou", "isStarter": false },
+      { "playerId": "emegha", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "kazu",
+    "budgetSpent": 129, "budgetTotal": 130,
+    "players": [
+      { "playerId": "mvogo", "isStarter": true },
+      { "playerId": "clauss", "isStarter": true },
+      { "playerId": "beraldo", "isStarter": true },
+      { "playerId": "lacroix", "isStarter": true },
+      { "playerId": "mendes", "isStarter": true },
+      { "playerId": "fofana", "isStarter": true },
+      { "playerId": "caqueret", "isStarter": true },
+      { "playerId": "savanier", "isStarter": true },
+      { "playerId": "greenwood", "isStarter": true },
+      { "playerId": "mikautadze", "isStarter": true },
+      { "playerId": "zhegrova", "isStarter": true },
+      { "playerId": "del-castillo", "isStarter": false },
+      { "playerId": "ben-yedder", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "zenigata",
+    "budgetSpent": 128, "budgetTotal": 130,
+    "players": [
+      { "playerId": "donnarumma", "isStarter": true },
+      { "playerId": "hakimi", "isStarter": true },
+      { "playerId": "saliba-w", "isStarter": true },
+      { "playerId": "todibo", "isStarter": true },
+      { "playerId": "medina", "isStarter": true },
+      { "playerId": "vitinha", "isStarter": true },
+      { "playerId": "cherki", "isStarter": true },
+      { "playerId": "tolisso", "isStarter": true },
+      { "playerId": "kolo-muani", "isStarter": true },
+      { "playerId": "wahi", "isStarter": true },
+      { "playerId": "balogun", "isStarter": true },
+      { "playerId": "abdelhamid", "isStarter": false },
+      { "playerId": "said", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "thomas-p",
+    "budgetSpent": 127, "budgetTotal": 130,
+    "players": [
+      { "playerId": "samba", "isStarter": true },
+      { "playerId": "meunier", "isStarter": true },
+      { "playerId": "danso", "isStarter": true },
+      { "playerId": "badiashile", "isStarter": true },
+      { "playerId": "koscielny", "isStarter": true },
+      { "playerId": "zaire-emery", "isStarter": true },
+      { "playerId": "bouaddi", "isStarter": true },
+      { "playerId": "ounahi", "isStarter": true },
+      { "playerId": "mbappe", "isStarter": true },
+      { "playerId": "david", "isStarter": true },
+      { "playerId": "dembele", "isStarter": true },
+      { "playerId": "thomasson", "isStarter": false },
+      { "playerId": "laborde", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "martial",
+    "budgetSpent": 126, "budgetTotal": 130,
+    "players": [
+      { "playerId": "chevalier", "isStarter": true },
+      { "playerId": "clauss", "isStarter": true },
+      { "playerId": "lloris-th", "isStarter": true },
+      { "playerId": "beraldo", "isStarter": true },
+      { "playerId": "lala", "isStarter": true },
+      { "playerId": "paqueta", "isStarter": true },
+      { "playerId": "lee", "isStarter": true },
+      { "playerId": "camavinga", "isStarter": true },
+      { "playerId": "lacazette", "isStarter": true },
+      { "playerId": "barcola", "isStarter": true },
+      { "playerId": "openda", "isStarter": true },
+      { "playerId": "neyou", "isStarter": false },
+      { "playerId": "kalimuendo", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "nico-c",
+    "budgetSpent": 125, "budgetTotal": 130,
+    "players": [
+      { "playerId": "mandanda", "isStarter": true },
+      { "playerId": "mendes", "isStarter": true },
+      { "playerId": "lacroix", "isStarter": true },
+      { "playerId": "abdelhamid", "isStarter": true },
+      { "playerId": "todibo", "isStarter": true },
+      { "playerId": "fofana", "isStarter": true },
+      { "playerId": "caqueret", "isStarter": true },
+      { "playerId": "savanier", "isStarter": true },
+      { "playerId": "terrier", "isStarter": true },
+      { "playerId": "guirassy", "isStarter": true },
+      { "playerId": "aubameyang", "isStarter": true },
+      { "playerId": "del-castillo", "isStarter": false },
+      { "playerId": "emegha", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "dimitri-s",
+    "budgetSpent": 124, "budgetTotal": 130,
+    "players": [
+      { "playerId": "mvogo", "isStarter": true },
+      { "playerId": "hakimi", "isStarter": true },
+      { "playerId": "saliba-w", "isStarter": true },
+      { "playerId": "meunier", "isStarter": true },
+      { "playerId": "medina", "isStarter": true },
+      { "playerId": "vitinha", "isStarter": true },
+      { "playerId": "tolisso", "isStarter": true },
+      { "playerId": "del-castillo", "isStarter": true },
+      { "playerId": "greenwood", "isStarter": true },
+      { "playerId": "mikautadze", "isStarter": true },
+      { "playerId": "wahi", "isStarter": true },
+      { "playerId": "ben-yedder", "isStarter": false },
+      { "playerId": "said", "isStarter": false }
+    ]
+  },
+  {
+    "participantId": "nico-b",
+    "budgetSpent": 123, "budgetTotal": 130,
+    "players": [
+      { "playerId": "donnarumma", "isStarter": true },
+      { "playerId": "danso", "isStarter": true },
+      { "playerId": "badiashile", "isStarter": true },
+      { "playerId": "koscielny", "isStarter": true },
+      { "playerId": "lala", "isStarter": true },
+      { "playerId": "zaire-emery", "isStarter": true },
+      { "playerId": "ounahi", "isStarter": true },
+      { "playerId": "thomasson", "isStarter": true },
+      { "playerId": "kolo-muani", "isStarter": true },
+      { "playerId": "balogun", "isStarter": true },
+      { "playerId": "laborde", "isStarter": true },
+      { "playerId": "neyou", "isStarter": false },
+      { "playerId": "kalimuendo", "isStarter": false }
+    ]
+  }
+]

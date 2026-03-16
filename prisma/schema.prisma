@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participations LeagueParticipant[]
+  forumTopics    ForumTopic[]
+  forumComments  ForumComment[]
+  bids           Bid[]
+  claims         Claim[]
+}
+
+model League {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  season    String
+  createdAt DateTime @default(now())
+
+  participants LeagueParticipant[]
+  matchdays    Matchday[]
+  cupMatches   CupMatch[]
+  forumTopics  ForumTopic[]
+}
+
+model LeagueParticipant {
+  id             String  @id @default(cuid())
+  userId         String
+  leagueId       String
+  budgetTotal    Int     @default(130)
+  budgetSpent    Int     @default(0)
+  paid           Boolean @default(false)
+  jokersRemaining Int    @default(4)
+
+  user   User   @relation(fields: [userId], references: [id])
+  league League @relation(fields: [leagueId], references: [id])
+
+  squad     SquadPlayer[]
+  lineups   Lineup[]
+  bids      Bid[]
+  standings Standing[]
+
+  @@unique([userId, leagueId])
+}
+
+model Club {
+  id        String @id @default(cuid())
+  name      String
+  shortName String
+  logoUrl   String
+
+  players Player[]
+}
+
+model Player {
+  id       String   @id @default(cuid())
+  name     String
+  position Position
+  clubId   String
+
+  club         Club          @relation(fields: [clubId], references: [id])
+  squadPlayers SquadPlayer[]
+  performances Performance[]
+}
+
+model SquadPlayer {
+  id            String @id @default(cuid())
+  participantId String
+  playerId      String
+  acquiredAt    DateTime @default(now())
+  acquiredPrice Int
+
+  participant LeagueParticipant @relation(fields: [participantId], references: [id])
+  player      Player            @relation(fields: [playerId], references: [id])
+
+  @@unique([participantId, playerId])
+}
+
+model Matchday {
+  id          String         @id @default(cuid())
+  leagueId    String
+  number      Int
+  status      MatchdayStatus @default(UPCOMING)
+  lockAt      DateTime
+  publishedAt DateTime?
+
+  league       League        @relation(fields: [leagueId], references: [id])
+  performances Performance[]
+  lineups      Lineup[]
+  standings    Standing[]
+
+  @@unique([leagueId, number])
+}
+
+model Performance {
+  id            String  @id @default(cuid())
+  matchdayId    String
+  playerId      String
+  minutesPlayed Int?
+  rating        Float?
+  goals         Int     @default(0)
+  assists       Int     @default(0)
+  ownGoals      Int     @default(0)
+  redCard       Boolean @default(false)
+  penaltySaved  Int     @default(0)
+  penaltyMissed Int     @default(0)
+
+  matchday Matchday @relation(fields: [matchdayId], references: [id])
+  player   Player   @relation(fields: [playerId], references: [id])
+
+  @@unique([matchdayId, playerId])
+}
+
+model Lineup {
+  id            String @id @default(cuid())
+  participantId String
+  matchdayId    String
+  starterIds    String[] // array of player IDs
+  submittedAt   DateTime @default(now())
+
+  participant LeagueParticipant @relation(fields: [participantId], references: [id])
+  matchday    Matchday          @relation(fields: [matchdayId], references: [id])
+
+  @@unique([participantId, matchdayId])
+}
+
+model Standing {
+  id                 String @id @default(cuid())
+  participantId      String
+  matchdayId         String
+  rank               Int
+  totalPoints        Float
+  matchdayPoints     Float
+  previousRank       Int?
+
+  participant LeagueParticipant @relation(fields: [participantId], references: [id])
+  matchday    Matchday          @relation(fields: [matchdayId], references: [id])
+
+  @@unique([participantId, matchdayId])
+}
+
+model Bid {
+  id            String    @id @default(cuid())
+  participantId String
+  userId        String
+  playerId      String
+  amount        Int
+  status        BidStatus @default(PENDING)
+  createdAt     DateTime  @default(now())
+
+  participant LeagueParticipant @relation(fields: [participantId], references: [id])
+  user        User              @relation(fields: [userId], references: [id])
+}
+
+model CupMatch {
+  id             String @id @default(cuid())
+  leagueId       String
+  round          String
+  participant1Id String
+  participant2Id String
+  score1         Float?
+  score2         Float?
+  matchdayNumber Int
+
+  league League @relation(fields: [leagueId], references: [id])
+}
+
+model ForumTopic {
+  id        String   @id @default(cuid())
+  leagueId  String
+  authorId  String
+  title     String
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  league   League         @relation(fields: [leagueId], references: [id])
+  author   User           @relation(fields: [authorId], references: [id])
+  comments ForumComment[]
+}
+
+model ForumComment {
+  id        String   @id @default(cuid())
+  topicId   String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  topic  ForumTopic @relation(fields: [topicId], references: [id])
+  author User       @relation(fields: [authorId], references: [id])
+}
+
+model Claim {
+  id          String      @id @default(cuid())
+  userId      String
+  matchdayNum Int
+  playerId    String
+  reason      String
+  status      ClaimStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Joker {
+  id            String   @id @default(cuid())
+  participantId String
+  playerOutId   String
+  playerInId    String
+  status        JokerStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+}
+
+enum Position {
+  GK
+  DEF
+  MID
+  ATT
+}
+
+enum MatchdayStatus {
+  UPCOMING
+  LOCKED
+  PUBLISHED
+}
+
+enum BidStatus {
+  PENDING
+  WON
+  LOST
+  CANCELLED
+}
+
+enum ClaimStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum JokerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
