@@ -54,17 +54,25 @@ export async function POST(request: Request) {
       // If no lineups for this day, use TEAM table to get default squad
       for (const lu of leagueUsers) {
         if (!userLineups.has(lu.userId)) {
-          const teamMembers = await prisma.team.findMany({
-            where: {
-              leagueId: league.id,
-              userId: lu.userId,
-              dayFirst: { lte: day },
-              dayLast: { gte: day },
-              isSubs: 0,
-            },
+          // Try previous day's lineup first
+          const prevLineup = await prisma.teamDay.findMany({
+            where: { leagueId: league.id, userId: lu.userId, day: day - 1 },
           });
-          // Take first 11 non-subs
-          userLineups.set(lu.userId, teamMembers.slice(0, 11).map((t) => t.playerId));
+          if (prevLineup.length > 0) {
+            userLineups.set(lu.userId, prevLineup.map((t) => t.playerId));
+          } else {
+            // Fallback to TEAM table (default squad)
+            const teamMembers = await prisma.team.findMany({
+              where: {
+                leagueId: league.id,
+                userId: lu.userId,
+                dayFirst: { lte: day },
+                dayLast: { gte: day },
+                isSubs: 0,
+              },
+            });
+            userLineups.set(lu.userId, teamMembers.slice(0, 11).map((t) => t.playerId));
+          }
         }
       }
 
