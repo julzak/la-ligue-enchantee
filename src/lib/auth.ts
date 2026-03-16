@@ -28,9 +28,13 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) return null;
 
-        // Current auth: password stored in plain text in PASSWORD field
-        // Most users have PASSWORD = their display name
-        if (user.password.toLowerCase() !== credentials.password.toLowerCase()) {
+        // Password stored in plain text. Some users have it as their name,
+        // others as name without spaces, others as something custom.
+        const inputPwd = credentials.password.toLowerCase();
+        const storedPwd = user.password.toLowerCase();
+        const inputNoSpaces = inputPwd.replace(/\s+/g, "");
+
+        if (storedPwd !== inputPwd && storedPwd !== inputNoSpaces) {
           return null;
         }
 
