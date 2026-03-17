@@ -1,0 +1,11 @@
+[
+  { "matchday": 26, "homeClubId": 212, "awayClubId": 201, "homeScore": 4, "awayScore": 0, "date": "2025-03-15T21:00:00Z" },
+  { "matchday": 26, "homeClubId": 214, "awayClubId": 203, "homeScore": 2, "awayScore": 1, "date": "2025-03-16T15:00:00Z" },
+  { "matchday": 26, "homeClubId": 242, "awayClubId": 205, "homeScore": 0, "awayScore": 2, "date": "2025-03-16T15:00:00Z" },
+  { "matchday": 26, "homeClubId": 244, "awayClubId": 199, "homeScore": 3, "awayScore": 4, "date": "2025-03-16T15:00:00Z" },
+  { "matchday": 26, "homeClubId": 230, "awayClubId": 246, "homeScore": 1, "awayScore": 0, "date": "2025-03-16T15:00:00Z" },
+  { "matchday": 26, "homeClubId": 206, "awayClubId": 232, "homeScore": 1, "awayScore": 1, "date": "2025-03-16T17:00:00Z" },
+  { "matchday": 26, "homeClubId": 208, "awayClubId": 211, "homeScore": 0, "awayScore": 1, "date": "2025-03-16T17:00:00Z" },
+  { "matchday": 26, "homeClubId": 210, "awayClubId": 243, "homeScore": 0, "awayScore": 0, "date": "2025-03-16T15:00:00Z" },
+  { "matchday": 26, "homeClubId": 241, "awayClubId": 245, "homeScore": 1, "awayScore": 2, "date": "2025-03-15T19:00:00Z" }
+]
