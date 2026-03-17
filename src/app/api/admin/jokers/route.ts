@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET: get squad + joker usage for a participant
 export async function GET(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
   const { searchParams } = new URL(request.url);
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
   const userId = Number(searchParams.get("userId") ?? 0);
@@ -60,6 +63,9 @@ export async function GET(request: Request) {
 
 // POST: execute joker swap
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   try {
     const { leagueId, userId, playerOutId, playerInId } = await request.json() as {
       leagueId: number;
@@ -74,6 +80,15 @@ export async function POST(request: Request) {
 
     const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
     const nextDay = currentDay + 1;
+
+    // Check joker limit (max 2 per season)
+    const jokerCount = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+      "SELECT COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? AND user_id = ?",
+      leagueId, userId
+    );
+    if (Number(jokerCount[0]?.cnt ?? 0) >= 2) {
+      return NextResponse.json({ error: "Plus de jokers disponibles (2/2 utilisés)" }, { status: 400 });
+    }
 
     // Validate: playerOut is in this user's squad
     const outEntry = await prisma.team.findFirst({

@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET: fetch scores for a matchday
 export async function GET(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { searchParams } = new URL(request.url);
   const day = Number(searchParams.get("day") ?? 0);
   if (!day) return NextResponse.json({ error: "day required" }, { status: 400 });
 
-  // Get all scores for this day
   const scores = await prisma.score.findMany({ where: { day } });
-
-  // Get all players with their clubs
   const players = await prisma.player.findMany();
   const clubs = await prisma.club.findMany();
   const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
-
-  // Build player list with scores
   const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
 
   const data = players.map((p) => {
@@ -34,10 +33,7 @@ export async function GET(request: Request) {
     };
   });
 
-  // Only return players that have a score OR belong to active clubs
   let activeClubs = await prisma.clubValid.findMany({ where: { day, isValid: 1 } });
-
-  // If no CLUB_VALID for this day, fallback to the latest day that has entries
   if (activeClubs.length === 0) {
     const latest = await prisma.clubValid.findFirst({
       where: { isValid: 1 },
@@ -49,10 +45,8 @@ export async function GET(request: Request) {
   }
 
   const activeClubIds = new Set(activeClubs.map((c) => c.clubId));
-
   const filtered = data.filter((p) => scoreMap.has(p.playerId) || activeClubIds.has(p.clubId));
 
-  // Sort by club then position
   filtered.sort((a, b) => {
     if (a.clubName !== b.clubName) return a.clubName.localeCompare(b.clubName);
     return a.position.localeCompare(b.position);
@@ -61,8 +55,11 @@ export async function GET(request: Request) {
   return NextResponse.json({ scores: filtered, day });
 }
 
-// POST: save scores for a matchday
+// POST: save scores for a matchday (parameterized SQL)
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   try {
     const { day, scores } = await request.json() as {
       day: number;
@@ -73,19 +70,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "day and scores required" }, { status: 400 });
     }
 
-    // Batch upsert via raw SQL for performance
     const toSave = scores.filter(
       (s) => !(s.points === null && s.goals === 0 && s.passes === 0 && s.used === 0)
     );
 
-    if (toSave.length > 0) {
-      const values = toSave.map(
-        (s) => `(${s.playerId}, ${day}, ${s.used}, ${s.points ?? 0}, ${s.goals}, ${s.passes})`
-      ).join(",");
+    // Parameterized upserts to prevent SQL injection
+    for (const s of toSave) {
+      const playerId = Math.round(Number(s.playerId));
+      const used = Math.round(Number(s.used));
+      const points = Number(s.points ?? 0);
+      const goals = Math.round(Number(s.goals));
+      const passes = Math.round(Number(s.passes));
+
+      if (isNaN(playerId) || isNaN(points)) continue;
 
       await prisma.$executeRawUnsafe(
-        `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES) VALUES ${values}
-         ON DUPLICATE KEY UPDATE USED=VALUES(USED), POINTS=VALUES(POINTS), GOALS=VALUES(GOALS), PASSES=VALUES(PASSES)`
+        `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE USED=VALUES(USED), POINTS=VALUES(POINTS), GOALS=VALUES(GOALS), PASSES=VALUES(PASSES)`,
+        playerId, day, used, points, goals, passes
       );
     }
 
