@@ -150,8 +150,8 @@ export default async function HomePage() {
           {dbMatches.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="font-serif text-lg text-white">Football</h2>
-                <span className="text-xs text-muted">Ligue 1 — {currentMatchday}e journée</span>
+                <h2 className="font-serif text-lg text-white">Résultats</h2>
+                <span className="text-xs text-muted">Football Ligue 1 — {currentMatchday}e journée</span>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {dbMatches.map((m) => {
