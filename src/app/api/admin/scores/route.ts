@@ -73,33 +73,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "day and scores required" }, { status: 400 });
     }
 
-    // Upsert each score
-    for (const s of scores) {
-      if (s.points === null && s.goals === 0 && s.passes === 0 && s.used === 0) {
-        // Skip empty entries
-        continue;
-      }
+    // Batch upsert via raw SQL for performance
+    const toSave = scores.filter(
+      (s) => !(s.points === null && s.goals === 0 && s.passes === 0 && s.used === 0)
+    );
 
-      await prisma.score.upsert({
-        where: { playerId_day: { playerId: s.playerId, day } },
-        update: {
-          used: s.used,
-          points: s.points ?? 0,
-          goals: s.goals,
-          passes: s.passes,
-        },
-        create: {
-          playerId: s.playerId,
-          day,
-          used: s.used,
-          points: s.points ?? 0,
-          goals: s.goals,
-          passes: s.passes,
-        },
-      });
+    if (toSave.length > 0) {
+      const values = toSave.map(
+        (s) => `(${s.playerId}, ${day}, ${s.used}, ${s.points ?? 0}, ${s.goals}, ${s.passes})`
+      ).join(",");
+
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES) VALUES ${values}
+         ON DUPLICATE KEY UPDATE USED=VALUES(USED), POINTS=VALUES(POINTS), GOALS=VALUES(GOALS), PASSES=VALUES(PASSES)`
+      );
     }
 
-    return NextResponse.json({ ok: true, saved: scores.length });
+    return NextResponse.json({ ok: true, saved: toSave.length });
   } catch (error) {
     console.error("Save scores error:", error);
     return NextResponse.json({ error: "Erreur sauvegarde" }, { status: 500 });
