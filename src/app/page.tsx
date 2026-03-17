@@ -86,6 +86,18 @@ export default async function HomePage() {
             </div>
             <h1 className="font-serif text-3xl text-gold mb-2">Journée {currentMatchday}</h1>
             <p className="text-xs text-white/30 italic tracking-wide">La fantasy league est une affaire sérieuse</p>
+            {/* Quick links to leagues */}
+            <div className="flex justify-center gap-3 mt-4">
+              {leagues.map((league) => (
+                <Link
+                  key={league.id}
+                  href={`/ligue/${league.slug}/resultats`}
+                  className="text-xs bg-surface-2 border border-white/[0.07] hover:border-gold/30 text-white/70 hover:text-gold px-3 py-1.5 rounded transition-colors"
+                >
+                  {league.name.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")} →
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Day results */}
@@ -146,14 +158,18 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* L1 Match results */}
+          {/* L1 Match results — collapsible */}
           {dbMatches.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-4">
+            <details className="group">
+              <summary className="flex items-center gap-2 cursor-pointer list-none py-2 hover:opacity-80 transition-opacity">
+                <svg className="w-4 h-4 text-muted transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
                 <h2 className="font-serif text-lg text-white">Résultats</h2>
                 <span className="text-xs text-muted">Football Ligue 1 — {currentMatchday}e journée</span>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+                <span className="text-[10px] text-white/20 ml-auto">{dbMatches.length} matchs</span>
+              </summary>
+              <div className="grid gap-4 sm:grid-cols-2 mt-4">
                 {dbMatches.map((m) => {
                   const homeId = getClubIdByTeamName(m.home_team);
                   const awayId = getClubIdByTeamName(m.away_team);
@@ -172,7 +188,7 @@ export default async function HomePage() {
                   );
                 })}
               </div>
-            </div>
+            </details>
           )}
 
           {/* League summaries */}
