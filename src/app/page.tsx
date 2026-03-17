@@ -88,7 +88,10 @@ export default async function HomePage() {
             <p className="text-xs text-white/30 italic tracking-wide">La fantasy league est une affaire sérieuse</p>
             {/* Quick links to leagues */}
             <div className="flex justify-center gap-3 mt-4">
-              {leagues.map((league) => (
+              {[...leagues].sort((a, b) => {
+                const order: Record<string, number> = { "ligue-1": 0, "ligue-2": 1, "national-1": 2 };
+                return (order[a.slug] ?? 9) - (order[b.slug] ?? 9);
+              }).map((league) => (
                 <Link
                   key={league.id}
                   href={`/ligue/${league.slug}/resultats`}
@@ -191,11 +194,14 @@ export default async function HomePage() {
             </details>
           )}
 
-          {/* League summaries */}
+          {/* League summaries — ordered: L1, L2, National */}
           <div>
             <h2 className="font-serif text-lg text-white mb-4">Les ligues</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {leagues.map((league) => {
+              {[...leagues].sort((a, b) => {
+                const order: Record<string, number> = { "ligue-1": 0, "ligue-2": 1, "national-1": 2 };
+                return (order[a.slug] ?? 9) - (order[b.slug] ?? 9);
+              }).map((league) => {
                 const stats = leagueStandingsMap.get(league.slug);
                 if (!stats) return null;
                 const leaderName = stats.standings[0]?.userName ?? "";
