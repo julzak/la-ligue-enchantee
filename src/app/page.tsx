@@ -168,8 +168,7 @@ export default async function HomePage() {
                 <svg className="w-4 h-4 text-muted transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                <h2 className="font-serif text-lg text-white">Résultats</h2>
-                <span className="text-xs text-muted">Football Ligue 1 — {currentMatchday}e journée</span>
+                <h2 className="font-serif text-base text-white">Résultats de la journée</h2>
                 <span className="text-[10px] text-white/20 ml-auto">{dbMatches.length} matchs</span>
               </summary>
               <div className="grid gap-4 sm:grid-cols-2 mt-4">
