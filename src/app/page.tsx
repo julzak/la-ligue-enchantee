@@ -10,12 +10,11 @@ import {
   getLeagueStandings,
   getMatchPlayerRatings,
 } from "@/lib/db";
-import { getClubLogoUrl, getClubShortName } from "@/lib/assets";
+import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "@/lib/assets";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
 import { ChevronRight, Flame, ThumbsDown } from "lucide-react";
-import type { L1Match } from "@/lib/types";
-import matchesData from "@/fixtures/matches.json";
+import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
   const [leagues, interleagueStandings, dayStats, bestPerformances, worstPerformances, currentMatchday] =
@@ -28,9 +27,14 @@ export default async function HomePage() {
       getCurrentMatchday(),
     ]);
 
-  // L1 match results + player ratings for current matchday
+  // L1 match results from MATCH_SCHEDULE table + player ratings
   const matchRatings = await getMatchPlayerRatings(currentMatchday);
-  const matches = (matchesData as L1Match[]).filter((m) => m.matchday === currentMatchday);
+  const dbMatches = await prisma.$queryRawUnsafe<{
+    home_team: string; away_team: string; home_score: number | null; away_score: number | null;
+  }[]>(
+    "SELECT home_team, away_team, home_score, away_score FROM MATCH_SCHEDULE WHERE matchday = ? AND home_score IS NOT NULL ORDER BY match_date",
+    currentMatchday
+  );
 
   // Fetch league standings for each league in parallel
   const leagueStandingsMap = new Map<string, Awaited<ReturnType<typeof getLeagueStandings>>>();
@@ -143,26 +147,30 @@ export default async function HomePage() {
           </div>
 
           {/* L1 Match results */}
-          {matches.length > 0 && (
+          {dbMatches.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <h2 className="font-serif text-lg text-white">Football</h2>
                 <span className="text-xs text-muted">Ligue 1 — {currentMatchday}e journée</span>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                {matches.map((m) => (
-                  <MatchCard
-                    key={`${m.homeClubId}-${m.awayClubId}`}
-                    homeClub={getClubShortName(m.homeClubId)}
-                    awayClub={getClubShortName(m.awayClubId)}
-                    homeLogo={getClubLogoUrl(m.homeClubId)}
-                    awayLogo={getClubLogoUrl(m.awayClubId)}
-                    homeScore={m.homeScore}
-                    awayScore={m.awayScore}
-                    homeRatings={matchRatings.get(m.homeClubId) ?? []}
-                    awayRatings={matchRatings.get(m.awayClubId) ?? []}
-                  />
-                ))}
+                {dbMatches.map((m) => {
+                  const homeId = getClubIdByTeamName(m.home_team);
+                  const awayId = getClubIdByTeamName(m.away_team);
+                  return (
+                    <MatchCard
+                      key={`${m.home_team}-${m.away_team}`}
+                      homeClub={homeId ? getClubShortName(homeId) : m.home_team}
+                      awayClub={awayId ? getClubShortName(awayId) : m.away_team}
+                      homeLogo={homeId ? getClubLogoUrl(homeId) : null}
+                      awayLogo={awayId ? getClubLogoUrl(awayId) : null}
+                      homeScore={m.home_score ?? 0}
+                      awayScore={m.away_score ?? 0}
+                      homeRatings={homeId ? (matchRatings.get(homeId) ?? []) : []}
+                      awayRatings={awayId ? (matchRatings.get(awayId) ?? []) : []}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}

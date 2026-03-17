@@ -1,93 +1,105 @@
-"use client";
-
-import { useParams } from "next/navigation";
-import { JourneeScore } from "@/components/scoring/JourneeScore";
+import { notFound } from "next/navigation";
 import {
-  squads,
-  getPerformances,
-  getPlayer,
-  getClub,
-  getLeague,
+  getLeagueBySlug,
   getLeagueStandings,
-} from "@/lib/fixtures";
-import { calculatePlayerPoints } from "@/lib/scoring";
-import type { Player, Performance, PlayerPointsBreakdown } from "@/lib/types";
+  getParticipantDayScores,
+  getCurrentMatchday,
+} from "@/lib/db";
+import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { PositionBadge } from "@/components/ui/PositionBadge";
 
-export default function JourneePage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const league = getLeague(slug);
-  const leagueStandings = getLeagueStandings(slug);
-  const matchday = 25; // last published
+export default async function JourneePage({ params }: { params: Promise<{ slug: string; number: string }> }) {
+  const { slug, number: numStr } = await params;
+  const league = await getLeagueBySlug(slug);
+  if (!league) notFound();
 
-  const perfs = getPerformances(matchday);
+  const currentDay = await getCurrentMatchday();
+  const matchday = numStr === "latest" ? currentDay : parseInt(numStr);
+  if (!matchday || matchday < 1) notFound();
 
-  if (!league || !leagueStandings) {
-    return <div className="text-muted p-8">Ligue non trouvée</div>;
-  }
+  const standings = await getLeagueStandings(league.dbId, matchday);
 
-  // Only show participants from this league
-  const leagueParticipantIds = new Set(league.participants.map((p) => p.id));
-  const leagueSquads = squads.filter((s) => leagueParticipantIds.has(s.participantId));
-
-  const participantScores = leagueSquads.map((squad) => {
-    const participant = league.participants.find((p) => p.id === squad.participantId);
-    const standing = leagueStandings.standings.find((s) => s.participantId === squad.participantId);
-
-    const starters = squad.players.filter((sp) => sp.isStarter);
-    let total = 0;
-
-    const playerScores = starters.map((sp) => {
-      const player = getPlayer(sp.playerId);
-      if (!player) return null;
-      const perf = perfs.find((p) => p.playerId === sp.playerId);
-      const breakdown = perf
-        ? calculatePlayerPoints(perf, player.position)
-        : ({
-            base: 2, goalBonus: 0, assistBonus: 0,
-            penaltySavedBonus: 0, ownGoalMalus: 0,
-            redCardApplied: false, total: 2,
-          } as PlayerPointsBreakdown);
-
-      total += breakdown.total;
-      const club = getClub(player.clubId);
+  // Get scores for each participant
+  const participantScores = await Promise.all(
+    standings.standings.map(async (s) => {
+      const dayScores = await getParticipantDayScores(league.dbId, s.userId, matchday);
       return {
-        player,
-        clubShortName: club?.shortName ?? "",
-        performance: perf as Performance | undefined,
-        breakdown,
+        userId: s.userId,
+        userName: s.userName,
+        trophies: s.trophies,
+        initials: s.initials,
+        rank: s.rank,
+        dayTotal: s.lastMatchdayPoints,
+        players: dayScores,
       };
-    }).filter((ps): ps is { player: Player; clubShortName: string; performance: Performance | undefined; breakdown: PlayerPointsBreakdown } => ps !== null);
+    })
+  );
 
-    return {
-      participantId: squad.participantId,
-      participantName: participant?.name ?? squad.participantId,
-      avatarInitials: participant?.avatarInitials ?? "??",
-      totalScore: total,
-      seasonRank: standing?.rank ?? 0,
-      playerScores,
-    };
-  });
-
-  const sorted = [...participantScores].sort((a, b) => b.totalScore - a.totalScore);
+  // Sort by day score descending
+  const sorted = [...participantScores].sort((a, b) => b.dayTotal - a.dayTotal);
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h2 className="font-serif text-xl text-white mb-1">Journée {matchday}</h2>
-        <p className="text-sm text-muted">Publiée le lundi 3 mars 2025</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <h2 className="font-serif text-xl text-white">Journée {matchday}</h2>
+        <div className="flex gap-2">
+          {matchday > 1 && (
+            <a href={`/ligue/${slug}/journee/${matchday - 1}`} className="text-xs text-muted hover:text-gold px-2 py-1 rounded bg-surface-2">
+              ← J{matchday - 1}
+            </a>
+          )}
+          {matchday < currentDay && (
+            <a href={`/ligue/${slug}/journee/${matchday + 1}`} className="text-xs text-muted hover:text-gold px-2 py-1 rounded bg-surface-2">
+              J{matchday + 1} →
+            </a>
+          )}
+        </div>
       </div>
+
       <div className="space-y-3">
         {sorted.map((ps, i) => (
-          <JourneeScore
-            key={ps.participantId}
-            participantName={ps.participantName}
-            avatarInitials={ps.avatarInitials}
-            totalScore={ps.totalScore}
-            seasonRank={ps.seasonRank}
-            playerScores={ps.playerScores}
-            defaultOpen={i === 0}
-          />
+          <details
+            key={ps.userId}
+            className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden group"
+            open={i === 0}
+          >
+            <summary className="flex items-center gap-4 px-4 py-3.5 hover:bg-white/[0.02] transition-colors cursor-pointer list-none">
+              <div className="w-9 h-9 rounded-full bg-surface-2 border border-white/[0.07] flex items-center justify-center text-[10px] font-medium text-white/50 shrink-0">
+                {ps.initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-white block truncate">{ps.userName}</span>
+                <span className="text-xs text-muted">{ps.rank}e au classement</span>
+              </div>
+              <span className="text-xl font-serif font-bold text-gold tabular-nums">
+                {ps.dayTotal.toFixed(1)}
+              </span>
+              <svg className="w-5 h-5 text-muted transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+
+            <div className="border-t border-white/[0.07] px-2 py-1">
+              {ps.players.map((p) => (
+                <div
+                  key={p.playerId}
+                  className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-white/[0.02] rounded"
+                >
+                  <PlayerAvatar playerId={p.playerId} name={p.playerName} size={24} clubLogoUrl={p.clubLogo} />
+                  <PositionBadge position={p.position} />
+                  <span className="text-white/80 flex-1 truncate text-xs">{p.playerName}</span>
+                  <span className="text-[10px] text-muted">{p.clubShort}</span>
+                  {p.goals > 0 && <span className="text-[10px] text-gold">{p.goals}g</span>}
+                  {p.passes > 0 && <span className="text-[10px] text-vert">{p.passes}a</span>}
+                  <span className={`text-sm font-bold tabular-nums w-8 text-right ${
+                    p.total >= 8 ? "text-gold" : p.total >= 6 ? "text-vert" : p.total < 4 ? "text-rouge" : "text-white/60"
+                  }`}>
+                    {p.total.toFixed(1)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </details>
         ))}
       </div>
     </div>

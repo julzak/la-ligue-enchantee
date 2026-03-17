@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Save, Send, Loader2, ChevronDown, Info } from "lucide-react";
+import { Save, Send, Loader2, ChevronDown, Info, Image as ImageIcon } from "lucide-react";
 
 interface PlayerScore {
   playerId: number;
@@ -126,6 +126,16 @@ export default function AdminNotesPage() {
   const filledCount = scores.filter((s) => s.points !== null).length;
   const totalWithGoals = scores.filter((s) => s.goals > 0).reduce((sum, s) => sum + s.goals, 0);
 
+  // Infographics for this matchday
+  const [infographics, setInfographics] = useState<{ home_team: string; away_team: string; home_score: number | null; away_score: number | null; infographic_url: string | null }[]>([]);
+  useEffect(() => {
+    fetch(`/api/admin/match-schedule?day=${day}`)
+      .then((r) => r.json())
+      .then((d) => setInfographics(d.matches ?? []))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [day]);
+
   return (
     <div className="space-y-6 max-w-7xl">
       {/* Header */}
@@ -149,6 +159,25 @@ export default function AdminNotesPage() {
               ))}
             </select>
           </div>
+
+          {/* Infographics button */}
+          {infographics.some((m) => m.infographic_url) && (
+            <div className="flex gap-1">
+              {infographics.filter((m) => m.infographic_url).map((m) => (
+                <a
+                  key={`${m.home_team}-${m.away_team}`}
+                  href={m.infographic_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-9 px-2 bg-surface-2 border border-white/[0.07] rounded text-[10px] text-muted hover:text-gold hover:border-gold/30 flex items-center gap-1 transition-colors"
+                  title={`Notes ${m.home_team} ${m.home_score}-${m.away_score} ${m.away_team}`}
+                >
+                  <ImageIcon className="w-3 h-3" />
+                  {m.home_team.split(" ").pop()}-{m.away_team.split(" ").pop()}
+                </a>
+              ))}
+            </div>
+          )}
 
           {/* Pre-fill button (disabled) */}
           <button

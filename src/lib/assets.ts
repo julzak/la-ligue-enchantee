@@ -59,3 +59,30 @@ export function getClubLogoUrl(clubId: number): string | null {
 export function getClubShortName(clubId: number, fallbackName?: string): string {
   return clubShortNames[clubId] ?? fallbackName ?? "";
 }
+
+// TheSportsDB / MATCH_SCHEDULE team name → DB club ID
+const teamNameToClubId: Record<string, number> = {
+  "Marseille": 206, "Olympique Marseille": 206,
+  "Lyon": 205, "Olympique Lyonnais": 205,
+  "Monaco": 208,
+  "Lille": 203, "LOSC Lille": 203,
+  "Rennes": 214,
+  "Le Havre": 242,
+  "Metz": 244,
+  "Toulouse": 199,
+  "Strasbourg": 230,
+  "Paris FC": 246, "Paris": 246,
+  "Lens": 232,
+  "Lorient": 245,
+  "Brest": 201,
+  "Angers": 241, "Angers SCO": 241,
+  "Nice": 211,
+  "Auxerre": 243,
+  "Nantes": 210,
+  "Paris SG": 212, "Paris Saint Germain": 212, "PSG": 212,
+};
+
+export function getClubIdByTeamName(teamName: string): number | null {
+  return teamNameToClubId[teamName] ?? null;
+}
+
