@@ -5,8 +5,24 @@
 // Pour ajouter un logo manquant: télécharger le PNG manuellement depuis Google Images
 // et le placer dans public/clubs/[nom].png puis ajouter l'entrée ici
 export const clubLogos: Record<number, string> = {
+  241: "/clubs/angers.png",       // ANGERS
+  243: "/clubs/auxerre.png",      // AUXERRE
+  201: "/clubs/brest.png",        // BREST
+  242: "/clubs/le-havre.png",     // LE HAVRE
+  232: "/clubs/lens.png",         // LENS
+  203: "/clubs/lille.png",        // LILLE
+  245: "/clubs/lorient.png",      // LORIENT
+  205: "/clubs/lyon.png",         // LYON
   206: "/clubs/marseille.png",    // MARSEILLE
+  244: "/clubs/metz.png",         // METZ
+  208: "/clubs/monaco.png",       // MONACO
+  210: "/clubs/nantes.png",       // NANTES
+  211: "/clubs/nice.png",         // NICE
+  246: "/clubs/parisfc.png",      // PARIS FC
   212: "/clubs/psg.png",          // PSG
+  214: "/clubs/rennes.png",       // RENNES
+  230: "/clubs/strasbourg.png",   // STRASBOURG
+  199: "/clubs/toulouse.png",     // TOULOUSE
 };
 
 // Shortnames for display
