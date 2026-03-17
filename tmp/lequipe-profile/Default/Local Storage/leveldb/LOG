@@ -1,6 +1,0 @@
-2026/03/17-19:45:22.997 b1d170 Reusing MANIFEST /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/lequipe-profile/Default/Local Storage/leveldb/MANIFEST-000001
-2026/03/17-19:45:23.016 b1d170 Recovering log #57
-2026/03/17-19:45:23.017 b1d170 Reusing old log /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/lequipe-profile/Default/Local Storage/leveldb/000057.log 
-2026/03/17-19:45:36.978 b1d177 Level-0 table #62: started
-2026/03/17-19:45:36.981 b1d177 Level-0 table #62: 23326 bytes OK
-2026/03/17-19:45:36.983 b1d177 Delete type=0 #57
