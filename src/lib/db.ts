@@ -413,6 +413,41 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
   }).sort((a, b) => a.indx - b.indx);
 }
 
+// ── Former players (joker exits) ─────────────────────────
+export async function getFormerPlayers(leagueDbId: number, userId: number, day?: number) {
+  const currentDay = day ?? await getCurrentMatchday();
+
+  const former = await prisma.team.findMany({
+    where: {
+      leagueId: leagueDbId,
+      userId,
+      dayLast: { lt: currentDay },
+    },
+  });
+
+  if (former.length === 0) return [];
+
+  const playerIds = former.map((t) => t.playerId);
+  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
+  const playerMap = new Map(players.map((p) => [p.id, p]));
+  const clubs = await prisma.club.findMany();
+  const clubMap = new Map(clubs.map((c) => [c.id, c]));
+
+  return former.map((t) => {
+    const player = playerMap.get(t.playerId);
+    const club = player ? clubMap.get(player.clubId) : null;
+    return {
+      playerId: t.playerId,
+      playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${t.playerId}`,
+      position: player ? mapPosition(player.position) : "MID" as Position,
+      clubShort: getClubShortName(player?.clubId ?? 0, club?.name),
+      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
+      dayFirst: t.dayFirst,
+      dayLast: t.dayLast,
+    };
+  });
+}
+
 // ── Player scores for a participant on a specific day ─────
 export async function getParticipantDayScores(leagueDbId: number, userId: number, day: number) {
   const lineup = await prisma.teamDay.findMany({

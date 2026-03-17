@@ -57,6 +57,7 @@ interface EquipeContentProps {
   participantName: string;
   participantTrophies: TrophyType[];
   team: TeamPlayer[];
+  formerPlayers: { playerId: number; playerName: string; position: Position; clubShort: string; clubLogo: string | null; dayFirst: number; dayLast: number }[];
   dayScores: DayScore[] | null;
   cumulativeStats: CumulativeStat[] | null;
   selectedJournee: number | null;
@@ -79,6 +80,7 @@ export function EquipeContent({
   participantName,
   participantTrophies,
   team,
+  formerPlayers,
   dayScores,
   cumulativeStats,
   selectedJournee,
@@ -389,6 +391,31 @@ export function EquipeContent({
           </div>
         </div>
       </div>
+
+      {/* Former players (joker exits) */}
+      {formerPlayers.length > 0 && (
+        <div className="w-full">
+          <details className="group">
+            <summary className="text-xs text-muted cursor-pointer hover:text-white/50 list-none flex items-center gap-2 py-2">
+              <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Anciens joueurs ({formerPlayers.length})
+            </summary>
+            <div className="mt-2 space-y-1">
+              {formerPlayers.map((p) => (
+                <div key={`${p.playerId}-${p.dayFirst}`} className="flex items-center gap-2 px-3 py-1.5 opacity-40">
+                  <PlayerAvatar playerId={p.playerId} name={p.playerName} size={24} clubLogoUrl={p.clubLogo} />
+                  <PositionBadge position={p.position} />
+                  <span className="text-xs text-white/50 flex-1 truncate line-through">{p.playerName}</span>
+                  <span className="text-[10px] text-muted">{p.clubShort}</span>
+                  <span className="text-[9px] text-muted">J{p.dayFirst}-J{p.dayLast}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
 
       {/* Sidebar - Fiche technique */}
       <aside className="w-full xl:w-64 xl:shrink-0 space-y-4">

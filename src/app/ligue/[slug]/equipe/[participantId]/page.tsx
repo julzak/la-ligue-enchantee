@@ -3,6 +3,7 @@ import {
   getLeagueBySlug,
   getUserById,
   getParticipantTeam,
+  getFormerPlayers,
   getLeagueStandings,
   getInterleagueStandings,
   getCurrentMatchday,
@@ -28,8 +29,9 @@ export default async function EquipeParticipantPage({
   const participant = await getUserById(participantId);
   if (!participant) notFound();
 
-  const [team, standingsData, interleagueData, currentDay] = await Promise.all([
+  const [team, formerPlayers, standingsData, interleagueData, currentDay] = await Promise.all([
     getParticipantTeam(league.dbId, participantId),
+    getFormerPlayers(league.dbId, participantId),
     getLeagueStandings(league.dbId),
     getInterleagueStandings(),
     getCurrentMatchday(),
@@ -61,6 +63,7 @@ export default async function EquipeParticipantPage({
       participantName={participant.cleanName}
       participantTrophies={participant.trophies}
       team={team}
+      formerPlayers={formerPlayers}
       dayScores={dayScores}
       cumulativeStats={cumulativeStats}
       selectedJournee={selectedJournee}

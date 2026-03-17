@@ -43,8 +43,12 @@ export async function GET(request: Request) {
   // Count jokers used: players added mid-season (dayFirst > 1) that aren't from mercato
   // Simple heuristic: count TEAM entries with dayFirst > 1 and dayFirst != mercato day
   // For now, count all mid-season additions as joker uses
-  // TODO: track joker usage in a dedicated table. For now, return 0.
-  const jokerUsed = 0;
+  // Count jokers from JOKER_LOG
+  const jokerLogs = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+    "SELECT COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? AND user_id = ?",
+    leagueId, userId
+  );
+  const jokerUsed = Number(jokerLogs[0]?.cnt ?? 0);
 
   return NextResponse.json({
     squad: squadData,
@@ -107,6 +111,12 @@ export async function POST(request: Request) {
     await prisma.$executeRawUnsafe(
       "INSERT INTO TEAM (ID_LEAGUE, ID_USER, ID_PLAYER, DAY_FIRST, DAY_LAST, IS_SUBS) VALUES (?, ?, ?, ?, 38, ?)",
       leagueId, userId, playerInId, nextDay, outEntry.isSubs
+    );
+
+    // 3. Log the joker
+    await prisma.$executeRawUnsafe(
+      "INSERT INTO JOKER_LOG (league_id, user_id, player_out_id, player_in_id, day) VALUES (?, ?, ?, ?, ?)",
+      leagueId, userId, playerOutId, playerInId, currentDay
     );
 
     // Get player names for confirmation
