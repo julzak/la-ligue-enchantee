@@ -1,0 +1,9 @@
+2026/03/17-19:45:23.769 b1d170 Reusing MANIFEST /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/lequipe-profile/Default/IndexedDB/https_www.lequipe.fr_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/17-19:45:23.769 b1d170 Recovering log #110
+2026/03/17-19:45:23.771 b1d170 Reusing old log /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/lequipe-profile/Default/IndexedDB/https_www.lequipe.fr_0.indexeddb.leveldb/000110.log 
+2026/03/17-19:45:44.035 b1d170 Compacting 1@1 + 1@2 files
+2026/03/17-19:45:44.046 b1d170 Generated table #113@1: 66 keys, 89365 bytes
+2026/03/17-19:45:44.046 b1d170 Compacted 1@1 + 1@2 files => 89365 bytes
+2026/03/17-19:45:44.049 b1d170 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/03/17-19:45:44.049 b1d170 Delete type=2 #111
+2026/03/17-19:45:44.049 b1d170 Delete type=2 #108

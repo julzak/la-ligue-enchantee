@@ -1,0 +1,815 @@
+[dotenv@17.3.1] injecting env (8) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+L'Équipe Kiosque Scraper
+Editions to scrape: 2026-03-16
+---
+Checking session...
+Session OK!
+
+
+============================================================
+EDITION: 2026-03-16
+============================================================
+
+Navigating to kiosque/le-journal...
+  Screenshot saved: 01-kiosque-journal.png
+  Scrolling to load previous editions...
+  Screenshot saved: 02-kiosque-scrolled.png
+
+  Page text (editions section, first 3000 chars):
+ 
+voir les directs 
+L'ÉQUIPE
+U
+parcourir
+accueil
+chrono
+directs
+1
+TV
+le journal
+jeux
+réglages
+accueille kiosque
+tous
+le journal
+le magazine
+France Football
+Vélo Magazine
+Cahier éco
+hors-série
+Spécial L'Équipe
+Journal du Golf
+Journal du Nautisme
+Journal du Runner
+le journal L’Équipe à la Une
+
+Découvrez la Une de l’Equipe et le journal du jour à travers le kiosque. Toutes les dernières éditions sont disponibles afin de ne rien manquer des dernières actualités sportives et des évènements majeurs. Vous pourrez y retrouver les analyses de nos spécialistes, des interviews exclusifs, des reportages et des statistiques détaillées.  Que vous soyez fan de football, de tennis, de rugby ou de tout sport, le Journal l’Equipe est votre guide incontournable pour rester informé de l’actualité sportif en temps réel.
+
+17 mars 2026
+lire l'édition
+16 mars 2026
+lire l'édition
+15 mars 2026
+lire l'édition
+14 mars 2026
+lire l'édition
+13 mars 2026
+lire l'édition
+12 mars 2026
+lire l'édition
+11 mars 2026
+lire l'édition
+10 mars 2026
+lire l'édition
+9 mars 2026
+lire l'édition
+8 mars 2026
+lire l'édition
+chrono
+filtrer : tous les sports
+17:49
+Golf,Podcast
+Un Players Championship grand cru
+17:34
+Foot,Ligue des champions,Bayern Munich
+Un gardien de 16 ans contre l'Atalanta ?
+17:34
+Foot,Ligue des champions
+«Stamford Bridge peut s'enflammer» : deux légendes de Chelsea croient à la qualif'
+17:33
+Foot,Ligue 1,Angers
+Dujeux parti pour rester un an de plus
+17:26
+Foot,Ligue des champions,Bayern Munich
+Repos forcé pour Musiala, à nouveau touché à la cheville gauche
+17:25
+Basket,NBA
+Gagner moche, les Spurs savent faire aussi
+17:24
+Rugby,Tournoi des 6 Nations U20,Bleuets
+Marzullo : «Faire un sans-faute, c'est jouissif»
+17:13
+Basket,Betclic Élite
+Sous la menace d'une sanction, Monaco devrait bien pouvoir s'engager en play-offs
+17:11
+Basket,Qualifications CM (F)
+La méthode Toupane fait ses preuves
+17:00
+Guide d'achat
+Tapis de course CITYSPORTS : 500 € de réduction chez Décathlon
+17:00
+Tennis,Miami
+Comment suivre les tournois hommes et femmes ?
+16:58
+Guerre en Ukraine
+Après l'horreur, Boutcha panse ses plaies grâce au sport
+16:47
+Tournoi des 6 Nations
+Jalibert et Gros, les deux Bleus du Tournoi pour Elissalde
+16:46
+Foot
+Ahamada rejoint la Kings League France
+16:31
+Foot,Youth League
+Passer pro au PSG ou partir : le dilemme des titis
+16:29
+Tournoi des 6 Nations
+Elissalde explique ce qui a permis aux Bleus d'être meilleurs dans les airs
+16:23
+Athlé
+Un officiel du marathon de Chongqing suspendu pour avoir bloqué le futur vainqueur
+16:17
+Foot,Ligue des champions,Arsenal
+Dowman, phénomène de précocité et «un régal» pour ses formateurs
+16:10
+Foot,Business
+Wasserman-Epstein : l'affaire qui secoue la grande agence sportive
+15:46
+Foot,Ligue des champions
+Ici, c'est Chelsea : plongée au coeur du quartier des Blues
+15:15
+Foot,FC Barcelone
+Flick assure que le Barça sera son «dernier club»
+15:13
+Tournoi des 6 nations
+Notre équipe type du Tournoi avec cinq Français
+15:12
+L'Equipe explore,Documentaire
+Kouamé
+
+  Looking for: 16 mars 2026
+  Clicked edition: 16 mars 2026lire l'édition
+
+  Current URL after click: https://kiosque.lequipe.fr/data/1624/reader/reader.html#!1624
+  Screenshot saved: 03-after-click.png
+  Page has 2 frames
+  Found reader iframe: https://kiosque.lequipe.fr/data/1624/reader/reader.html#!1624
+
+Capturing football pages from liseuse...
+  Reader URL: https://kiosque.lequipe.fr/data/1624/reader/reader.html#!1624
+  Looking for 'football' section link...
+  Clicked 'football' text
+  Screenshot saved: 04-football-section.png
+  Current hash: #!preferred/0/package/1624/pub/1624/page/4
+  Publication: 1624, starting at page 4
+  Captured spread 1/8 (p4)
+  Captured spread 2/8 (p5)
+  Captured spread 3/8 (p6)
+  Captured spread 4/8 (p7)
+  Captured spread 5/8 (p8)
+  Captured spread 6/8 (p9)
+  Captured spread 7/8 (p10)
+  Captured spread 8/8 (p11)
+  Total: 16 screenshots captured
+
+Processing screenshot 1/16 with Gemini Flash...
+  Extracted 0 ratings
+
+Processing screenshot 2/16 with Gemini Flash...
+  Extracted 22 ratings
+    Samba (SRFC): 4 — Rennes 1-2 Lille
+    Merlin (SRFC): 4 — Rennes 1-2 Lille
+    Nagida (SRFC): 4 — Rennes 1-2 Lille
+    Theate (SRFC): 4 — Rennes 1-2 Lille
+    Omari (SRFC): 4 — Rennes 1-2 Lille
+    M. Camara (SRFC): 4 — Rennes 1-2 Lille
+    Bourigeaud (SRFC): 5 [1g] — Rennes 1-2 Lille
+    Brassier (SRFC): 4 — Rennes 1-2 Lille
+    R. Le Fée (SRFC): 4 — Rennes 1-2 Lille
+    D. Doué (SRFC): 4 — Rennes 1-2 Lille
+    Santana (SRFC): 4 — Rennes 1-2 Lille
+    Chevalier (LOSC): 6 — Rennes 1-2 Lille
+    Meunier (LOSC): 6 — Rennes 1-2 Lille
+    Yoro (LOSC): 6 — Rennes 1-2 Lille
+    Alexsandro (LOSC): 6 — Rennes 1-2 Lille
+    Ismaily (LOSC): 6 — Rennes 1-2 Lille
+    Bentaleb (LOSC): 6 — Rennes 1-2 Lille
+    André (LOSC): 7 — Rennes 1-2 Lille
+    Gudmundsson (LOSC): 7 — Rennes 1-2 Lille
+    Haraldsson (LOSC): 7 [2g] — Rennes 1-2 Lille
+    Zhegrova (LOSC): 6 — Rennes 1-2 Lille
+    N'Gouan (LOSC): 6 — Rennes 1-2 Lille
+
+Processing screenshot 3/16 with Gemini Flash...
+  Extracted 0 ratings
+
+Processing screenshot 4/16 with Gemini Flash...
+  Extracted 22 ratings
+    Mandanda (SRFC): 6 — Rennes 1-2 Lille
+    Seidu (SRFC): 5 — Rennes 1-2 Lille
+    Omari (SRFC): 4 — Rennes 1-2 Lille
+    Theate (SRFC): 5 — Rennes 1-2 Lille
+    Truffert (SRFC): 5 — Rennes 1-2 Lille
+    Santamaria (SRFC): 5 [1g] — Rennes 1-2 Lille
+    Bourigeaud (SRFC): 5 — Rennes 1-2 Lille
+    D. Doué (SRFC): 5 — Rennes 1-2 Lille
+    Gouiri (SRFC): 5 — Rennes 1-2 Lille
+    Kalimuendo (SRFC): 5 — Rennes 1-2 Lille
+    Chevalier (LOSC): 6 — Rennes 1-2 Lille
+    Diakite (LOSC): 6 — Rennes 1-2 Lille
+    Yoro (LOSC): 7 — Rennes 1-2 Lille
+    Alexsandro (LOSC): 7 — Rennes 1-2 Lille
+    Ismaily (LOSC): 6 — Rennes 1-2 Lille
+    André (LOSC): 7 — Rennes 1-2 Lille
+    Bentaleb (LOSC): 6 — Rennes 1-2 Lille
+    Zhegrova (LOSC): 7 — Rennes 1-2 Lille
+    Haraldsson (LOSC): 7 [2g] — Rennes 1-2 Lille
+    Gudmundsson (LOSC): 6 — Rennes 1-2 Lille
+    David (LOSC): 7 — Rennes 1-2 Lille
+    Matias Fernandez-Pardo (LOSC): 0 [2a] — Rennes 1-2 Lille
+
+Processing screenshot 5/16 with Gemini Flash...
+  Extracted 11 ratings
+    Mvogo (Lorient): 7 — Lorient 2-1 Lens
+    Coppola (RCSA): 7 — Strasbourg 0-0 PSG
+    Taibi (RCL): 7 — Lorient 2-1 Lens
+    Mbow (FCM): 7 — Strasbourg X-Y Metz
+    Dønnun (TFC): 7 [1g,1a] — Metz 0-0 Toulouse (inconsistent with goals/assists)
+    Bouaddi (LOSC): 7 — Rennes 1-2 Lille
+    Sangaré (RCL): 7 [1a] — Lorient 2-1 Lens
+    A. Kouassi (Lorient): 7 [1a] — Lorient 2-1 Lens
+    Haraldsson (LOSC): 7 [1g] — Rennes 1-2 Lille
+    Fernandez-Pardo (AJA): 8 [1g,1a] — Rennes X-Y Auxerre
+    Gboho (TFC): 7 [2g] — Metz 0-0 Toulouse (inconsistent with goals)
+
+Processing screenshot 6/16 with Gemini Flash...
+  Extracted 22 ratings
+    Desmas (HAC): 4.5 — Le Havre 0-0 Lyon
+    K. Opéri (HAC): 4.5 — Le Havre 0-0 Lyon
+    Lloris (HAC): 4.5 — Le Havre 0-0 Lyon
+    Sangante (HAC): 4.5 — Le Havre 0-0 Lyon
+    Nego (HAC): 4.5 — Le Havre 0-0 Lyon
+    Kechta (HAC): 4 — Le Havre 0-0 Lyon
+    Targhalline (HAC): 4 — Le Havre 0-0 Lyon
+    Touré (HAC): 4 — Le Havre 0-0 Lyon
+    Ayew (HAC): 4.5 — Le Havre 0-0 Lyon
+    J. Casimir (HAC): 4 — Le Havre 0-0 Lyon
+    Sabbi (HAC): 4 — Le Havre 0-0 Lyon
+    A. Lopes (OL): 5.5 — Le Havre 0-0 Lyon
+    Tagliafico (OL): 4.5 — Le Havre 0-0 Lyon
+    Caleta-Car (OL): 4 — Le Havre 0-0 Lyon
+    O'Brien (OL): 4 [rouge] — Le Havre 0-0 Lyon
+    Mata (OL): 4 — Le Havre 0-0 Lyon
+    Caqueret (OL): 5 — Le Havre 0-0 Lyon
+    Matic (OL): 5 — Le Havre 0-0 Lyon
+    Mangala (OL): 4 — Le Havre 0-0 Lyon
+    Benrahma (OL): 4.5 — Le Havre 0-0 Lyon
+    Lacazette (OL): 4.5 — Le Havre 0-0 Lyon
+    Nuamah (OL): 4 — Le Havre 0-0 Lyon
+
+Processing screenshot 7/16 with Gemini Flash...
+  Extracted 12 ratings
+    Pantaloni (Lorient): 5.04 — Lorient 2-1 Lens
+    Mvogo (Lorient): 5.17 — Lorient 2-1 Lens
+    Coppola (RCSA): 7 — Strasbourg 0-0 Paris FC
+    Taibi (RCL): 5.2 — Lorient 2-1 Lens
+    Mbow (RCL): 5.5 — Lorient 2-1 Lens
+    Dönnum (TFC): 7 [1g,1a] — Metz 1-1 Toulouse
+    Bouaddi (LOSC): 5.33 — Rennes 1-2 Lille
+    Sangaré (RCL): 6.29 [1a] — Lorient 2-1 Lens
+    A. Kouassi (Lorient): 5.42 [1a] — Lorient 2-1 Lens
+    Haraldsson (LOSC): 4.62 [1g] — Rennes 1-2 Lille
+    Fernandez-Pardo (TFC): 5.15 [1g,1a] — Metz 1-1 Toulouse
+    Gboho (TFC): 5.4 [2g] — Metz 1-1 Toulouse
+
+Processing screenshot 8/16 with Gemini Flash...
+  Extracted 22 ratings
+    K. Coffl (HAC): 5.5 — Le Havre 0-0 Lyon
+    R. Ndlaye (HAC): 6 — Le Havre 0-0 Lyon
+    L. Soumaré Karabet (HAC): 6 — Le Havre 0-0 Lyon
+    M. Diaw (HAC): 6 — Le Havre 0-0 Lyon
+    G. Bella (HAC): 6 — Le Havre 0-0 Lyon
+    B. Boutaï (HAC): 7 — Le Havre 0-0 Lyon
+    Zagadou (HAC): 6 [rouge] — Le Havre 0-0 Lyon
+    Gourna-Douath (HAC): 6 — Le Havre 0-0 Lyon
+    Nego (HAC): 6 — Le Havre 0-0 Lyon
+    Entick (HAC): 6 — Le Havre 0-0 Lyon
+    Abner (HAC): 6 — Le Havre 0-0 Lyon
+    Lopes (OL): 6 — Le Havre 0-0 Lyon
+    Tagliafico (OL): 4.8 — Le Havre 0-0 Lyon
+    Mangala (OL): 6 — Le Havre 0-0 Lyon
+    Morton (OL): 6 — Le Havre 0-0 Lyon
+    Hateboer (OL): 3 — Le Havre 0-0 Lyon
+    Tolisso (OL): 6 — Le Havre 0-0 Lyon
+    Cherki (OL): 6 — Le Havre 0-0 Lyon
+    Caqueret (OL): 5.5 — Le Havre 0-0 Lyon
+    Fofana (OL): 6 — Le Havre 0-0 Lyon
+    Lacazette (OL): 6.5 — Le Havre 0-0 Lyon
+    Dembele (OL): 5 — Le Havre 0-0 Lyon
+
+Processing screenshot 9/16 with Gemini Flash...
+  Extracted 21 ratings
+    Donnum (TFC): 7 [2g] — Metz 3-4 Toulouse
+    D. Sissoko (TFC): 6 — Metz 3-4 Toulouse
+    Hidalgo (TFC): 6 [1a] — Metz 3-4 Toulouse
+    Vossah (TFC): 4 — Metz 3-4 Toulouse
+    McKenzie (TFC): 6 — Metz 3-4 Toulouse
+    D. Diop (TFC): 6 [1a] — Metz 3-4 Toulouse
+    Nicolaisen (TFC): 5 — Metz 3-4 Toulouse
+    Gbaho (TFC): 7 [1g] — Metz 3-4 Toulouse
+    Colin (FCM): 4.8 — Metz 3-4 Toulouse
+    Tsilaitshvili (FCM): 6 [1a] — Metz 3-4 Toulouse
+    Mbela Deninguet (FCM): 6 [1a] — Metz 3-4 Toulouse
+    Fischer (FCM): 4.8 — Metz 3-4 Toulouse
+    Hein (FCM): 5 [1g] — Metz 3-4 Toulouse
+    Mbala Russell-Rowe (FCM): 5 — Metz 3-4 Toulouse
+    S. Saïd (FCM): 5 — Metz 3-4 Toulouse
+    Gbamin (FCM): 5 — Metz 3-4 Toulouse
+    Kouao (FCM): 5 [1g] — Metz 3-4 Toulouse
+    B. Sarr (FCM): 5 — Metz 3-4 Toulouse
+    M'Bala (TFC): null [1g] — Metz 3-4 Toulouse
+    Kamanzi (TFC): null [1a] — Metz 3-4 Toulouse
+    Sauer (FCM): null [1g] — Metz 3-4 Toulouse
+
+Processing screenshot 10/16 with Gemini Flash...
+  Extracted 22 ratings
+    M. Escales (ANNECY): 7 — Annecy 4-2 Troyes
+    Jean-Jacques (ANNECY): 6 — Annecy 4-2 Troyes
+    B. Mendy (ANNECY): 6 — Annecy 4-2 Troyes
+    Soumaré (ANNECY): 5 — Annecy 4-2 Troyes
+    Pajot (ANNECY): 7 — Annecy 4-2 Troyes
+    Kashi (ANNECY): 7 — Annecy 4-2 Troyes
+    Adeline (ANNECY): 7 — Annecy 4-2 Troyes
+    Billemaz (ANNECY): 7 — Annecy 4-2 Troyes
+    Dj. Bengueddoudj (ANNECY): 7 [1g] — Annecy 4-2 Troyes
+    W. Caddy (ANNECY): 8 [1g] — Annecy 4-2 Troyes
+    A. Kandil (ANNECY): 8 [1g] — Annecy 4-2 Troyes
+    M. Rocchi (ANNECY): null [1g] — Annecy 4-2 Troyes
+    N. Lemaître (TROYES): 4 — Annecy 4-2 Troyes
+    B. N'Diaye (TROYES): 4 — Annecy 4-2 Troyes
+    Tanguy Zoukrou (TROYES): 4 — Annecy 4-2 Troyes
+    Conté (TROYES): 4 — Annecy 4-2 Troyes
+    N'Guessan (TROYES): 4 — Annecy 4-2 Troyes
+    Diop (TROYES): 5 — Annecy 4-2 Troyes
+    Kouao (TROYES): 4 — Annecy 4-2 Troyes
+    M. Baldé (TROYES): 5 [1g] — Annecy 4-2 Troyes
+    Renaud Ripart (TROYES): 5 [1g] — Annecy 4-2 Troyes
+    J. Odobert (TROYES): 4 — Annecy 4-2 Troyes
+
+Processing screenshot 11/16 with Gemini Flash...
+  Extracted 22 ratings
+    Oukidja (FCM): 4.8 — Metz 3-4 Toulouse
+    Colin (FCM): 4 — Metz 3-4 Toulouse
+    G. Traoré (FCM): 4 — Metz 3-4 Toulouse
+    Tchaochvilli (FCM): 4 — Metz 3-4 Toulouse
+    Kouao (FCM): 5 — Metz 3-4 Toulouse
+    Mbada (FCM): 4 — Metz 3-4 Toulouse
+    Jean Jacques (FCM): 4.8 — Metz 3-4 Toulouse
+    Serin (FCM): 4 — Metz 3-4 Toulouse
+    Danley (FCM): 5 — Metz 3-4 Toulouse
+    Mikautadze (FCM): 6 [3g] — Metz 3-4 Toulouse
+    Van den Kerkhof (FCM): 4 — Metz 3-4 Toulouse
+    Restes (TFC): 4.7 — Metz 3-4 Toulouse
+    Desler (TFC): 5 — Metz 3-4 Toulouse
+    Diarra (TFC): 5.2 — Metz 3-4 Toulouse
+    Nicolaisen (TFC): 5.2 — Metz 3-4 Toulouse
+    Kamanzi (TFC): 5.2 — Metz 3-4 Toulouse
+    Genreau (TFC): 5 — Metz 3-4 Toulouse
+    Sierro (TFC): 6 — Metz 3-4 Toulouse
+    Schmidt (TFC): 6 — Metz 3-4 Toulouse
+    Gboho (TFC): 6 [1g] — Metz 3-4 Toulouse
+    Dallinga (TFC): 6.5 [2g] — Metz 3-4 Toulouse
+    Donnum (TFC): 6.5 [1a] — Metz 3-4 Toulouse
+
+Processing screenshot 12/16 with Gemini Flash...
+  Extracted 89 ratings
+    Oukidja (FCM): 4 — Metz 3-4 Toulouse
+    Kouao (FCM): 3 [1g] — Metz 3-4 Toulouse
+    Candé (FCM): 5 — Metz 3-4 Toulouse
+    Udol (FCM): 6 [1g] — Metz 3-4 Toulouse
+    Traoré (FCM): 3 — Metz 3-4 Toulouse
+    Camara (FCM): 5 — Metz 3-4 Toulouse
+    N'Doram (FCM): 5 — Metz 3-4 Toulouse
+    Jean Jacques (FCM): 5 — Metz 3-4 Toulouse
+    Jallow (FCM): 3 [1g] — Metz 3-4 Toulouse
+    M. Balde (FCM): 4 [1a] — Metz 3-4 Toulouse
+    Estupinan (FCM): 3 — Metz 3-4 Toulouse
+    Asoro (FCM): 3 [1a] — Metz 3-4 Toulouse
+    Van Den Kerkhof (FCM): 4 — Metz 3-4 Toulouse
+    Nduquidi (FCM): 3 — Metz 3-4 Toulouse
+    Atta (FCM): 4 — Metz 3-4 Toulouse
+    Restes (TFC): 5 — Metz 3-4 Toulouse
+    Desler (TFC): 4 — Metz 3-4 Toulouse
+    Costa (TFC): 4 — Metz 3-4 Toulouse
+    Nicolaisen (TFC): 5 — Metz 3-4 Toulouse
+    Diarra (TFC): 5 — Metz 3-4 Toulouse
+    Sierro (TFC): 5 — Metz 3-4 Toulouse
+    Spierings (TFC): 4 — Metz 3-4 Toulouse
+    Chaibi (TFC): 6 [1g] — Metz 3-4 Toulouse
+    Dallinga (TFC): 5 [1g,1a] — Metz 3-4 Toulouse
+    Aboukhlal (TFC): 7 [2g] — Metz 3-4 Toulouse
+    Suazo (TFC): 5 — Metz 3-4 Toulouse
+    Casseres (TFC): 4 — Metz 3-4 Toulouse
+    Gelabert (TFC): 5 [1a] — Metz 3-4 Toulouse
+    Genreau (TFC): 5 — Metz 3-4 Toulouse
+    Schmidt (TFC): 5 — Metz 3-4 Toulouse
+    Kamanzi (TFC): 4 [1a] — Metz 3-4 Toulouse
+    Escales (Annecy): 7 — Annecy 2-0 Troyes
+    Lajugie (Annecy): 6 — Annecy 2-0 Troyes
+    Jean (Annecy): 6 — Annecy 2-0 Troyes
+    Mouanga (Annecy): 6 — Annecy 2-0 Troyes
+    Barry (Annecy): 6 — Annecy 2-0 Troyes
+    Demoncy (Annecy): 7 — Annecy 2-0 Troyes
+    Pajot (Annecy): 6 — Annecy 2-0 Troyes
+    Camara (Annecy): 7 — Annecy 2-0 Troyes
+    Kandil (Annecy): 7 [1a] — Annecy 2-0 Troyes
+    Bosetti (Annecy): 6 [1g] — Annecy 2-0 Troyes
+    Dj. Testud (Annecy): 6 [1g] — Annecy 2-0 Troyes
+    Delphis (Annecy): 6 — Annecy 2-0 Troyes
+    Mahop (Annecy): 6 — Annecy 2-0 Troyes
+    Adeline (Annecy): 6 — Annecy 2-0 Troyes
+    Lis (Troyes): 4 — Annecy 2-0 Troyes
+    Conté (Troyes): 4 — Annecy 2-0 Troyes
+    Palmer-Brown (Troyes): 4 — Annecy 2-0 Troyes
+    Porozo (Troyes): 4 — Annecy 2-0 Troyes
+    Salmier (Troyes): 3 — Annecy 2-0 Troyes
+    Tardieu (Troyes): 4 — Annecy 2-0 Troyes
+    Chavalerin (Troyes): 4 — Annecy 2-0 Troyes
+    Rony Lopes (Troyes): 4 — Annecy 2-0 Troyes
+    Baldé (Troyes): 3 — Annecy 2-0 Troyes
+    Mama Balde (Troyes): 3 — Annecy 2-0 Troyes
+    Ilic (Troyes): 3 — Annecy 2-0 Troyes
+    Bruus (Troyes): 4 — Annecy 2-0 Troyes
+    Kouamé (Troyes): 4 — Annecy 2-0 Troyes
+    N'Guessan (Troyes): 4 — Annecy 2-0 Troyes
+    Dong (Troyes): 3 — Annecy 2-0 Troyes
+    Gomis (Troyes): 3 — Annecy 2-0 Troyes
+    Basilio (Guingamp): 5 — Guingamp 1-1 Grenoble
+    Sivis (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Gomis (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Riou (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Manceau (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Louiserre (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Picard (Guingamp): 5 — Guingamp 1-1 Grenoble
+    Livolant (Guingamp): 4 [1a] — Guingamp 1-1 Grenoble
+    Tchimbembé (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Guillaume (Guingamp): 4 [1g] — Guingamp 1-1 Grenoble
+    Merghem (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Courcoul (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Quemper (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Phiri (Guingamp): 4 — Guingamp 1-1 Grenoble
+    Maubleu (Grenoble): 6 — Guingamp 1-1 Grenoble
+    Paquiez (Grenoble): 5 — Guingamp 1-1 Grenoble
+    Diarra (Grenoble): 5 — Guingamp 1-1 Grenoble
+    Nestor (Grenoble): 5 — Guingamp 1-1 Grenoble
+    Mendy (Grenoble): 4 — Guingamp 1-1 Grenoble
+    Touray (Grenoble): 5 [1a] — Guingamp 1-1 Grenoble
+    Isola (Grenoble): 5 — Guingamp 1-1 Grenoble
+    Tell (Grenoble): 5 — Guingamp 1-1 Grenoble
+    Sanyang (Grenoble): 4 — Guingamp 1-1 Grenoble
+    Meissa Ba (Grenoble): 4 [1g] — Guingamp 1-1 Grenoble
+    Caddy (Grenoble): 4 — Guingamp 1-1 Grenoble
+    Garcia (Grenoble): 5 — Guingamp 1-1 Grenoble
+    J. Gaspar (Grenoble): 5 — Guingamp 1-1 Grenoble
+    Thio (Grenoble): 5 — Guingamp 1-1 Grenoble
+
+Processing screenshot 13/16 with Gemini Flash...
+  Extracted 22 ratings
+    Sels (RCSA): 7 — Strasbourg 0-0 Paris FC
+    Guilbert (RCSA): 5.5 — Strasbourg 0-0 Paris FC
+    Perrin (RCSA): 5 — Strasbourg 0-0 Paris FC
+    Sylla (RCSA): 5.5 — Strasbourg 0-0 Paris FC
+    Delaine (RCSA): 6 — Strasbourg 0-0 Paris FC
+    Sissoko (RCSA): 5 — Strasbourg 0-0 Paris FC
+    Mwanga (RCSA): 6 — Strasbourg 0-0 Paris FC
+    D. Doukouré (RCSA): 4 — Strasbourg 0-0 Paris FC
+    Bakwa (RCSA): 5 — Strasbourg 0-0 Paris FC
+    Diarrassouba (RCSA): 4 — Strasbourg 0-0 Paris FC
+    Emegha (RCSA): 4.5 — Strasbourg 0-0 Paris FC
+    Filip (PFC): 7 — Strasbourg 0-0 Paris FC
+    Chergui (PFC): 4.9 — Strasbourg 0-0 Paris FC
+    Dabila (PFC): 5.5 — Strasbourg 0-0 Paris FC
+    K. Mbemba (PFC): 6 — Strasbourg 0-0 Paris FC
+    O. Maaga (PFC): 5.5 — Strasbourg 0-0 Paris FC
+    M. Iglesias (PFC): 5 — Strasbourg 0-0 Paris FC
+    Mandouki (PFC): 6 — Strasbourg 0-0 Paris FC
+    Luksembourg (PFC): 4.5 — Strasbourg 0-0 Paris FC
+    Gory (PFC): 6 — Strasbourg 0-0 Paris FC
+    K. Dembélé (PFC): 4.5 — Strasbourg 0-0 Paris FC
+    A. Dicko (PFC): 5 — Strasbourg 0-0 Paris FC
+
+Processing screenshot 14/16 with Gemini Flash...
+  Extracted 0 ratings
+
+Processing screenshot 15/16 with Gemini Flash...
+  Extracted 22 ratings
+    Sels (RCSA): 7 — Strasbourg 0-0 Paris FC
+    Guilbert (RCSA): 7 — Strasbourg 0-0 Paris FC
+    Perrin (RCSA): 7 — Strasbourg 0-0 Paris FC
+    Nyamsi (RCSA): 6 — Strasbourg 0-0 Paris FC
+    Dagba (RCSA): 7 — Strasbourg 0-0 Paris FC
+    Liénard (RCSA): 6 — Strasbourg 0-0 Paris FC
+    Aholou (RCSA): 5 — Strasbourg 0-0 Paris FC
+    Prcic (RCSA): 5 — Strasbourg 0-0 Paris FC
+    Sanson (RCSA): 6 — Strasbourg 0-0 Paris FC
+    Gameiro (RCSA): 6 — Strasbourg 0-0 Paris FC
+    Diallo (RCSA): 6 — Strasbourg 0-0 Paris FC
+    Lecomte (PFC): 4 — Strasbourg 0-0 Paris FC
+    Hanin (PFC): 4 — Strasbourg 0-0 Paris FC
+    Bernauer (PFC): 4 — Strasbourg 0-0 Paris FC
+    Chardonnet (PFC): 4 — Strasbourg 0-0 Paris FC
+    Gandon (PFC): 4 — Strasbourg 0-0 Paris FC
+    Dabila (PFC): 4 — Strasbourg 0-0 Paris FC
+    Noc (PFC): 4 — Strasbourg 0-0 Paris FC
+    Mandouki (PFC): 4 — Strasbourg 0-0 Paris FC
+    Lopez (PFC): 4 — Strasbourg 0-0 Paris FC
+    Caddy (PFC): 4 — Strasbourg 0-0 Paris FC
+    Gory (PFC): 4 — Strasbourg 0-0 Paris FC
+
+Processing screenshot 16/16 with Gemini Flash...
+  Extracted 0 ratings
+
+  Edition 2026-03-16: 260 ratings extracted
+
+============================================================
+COMBINED RESULTS: 260 unique ratings
+Saved to /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/kiosque-ratings-combined.json
+============================================================
+
+Rennes 1-2 Lille (32 players):
+  GK Samba (SRFC): 4
+  DEF Merlin (SRFC): 4
+  DEF Nagida (SRFC): 4
+  DEF Theate (SRFC): 4
+  DEF Omari (SRFC): 4
+  MID M. Camara (SRFC): 4
+  MID Bourigeaud (SRFC): 5 [1g]
+  MID Brassier (SRFC): 4
+  ATT R. Le Fée (SRFC): 4
+  ATT D. Doué (SRFC): 4
+  ATT Santana (SRFC): 4
+  GK Chevalier (LOSC): 6
+  DEF Meunier (LOSC): 6
+  DEF Yoro (LOSC): 6
+  DEF Alexsandro (LOSC): 6
+  DEF Ismaily (LOSC): 6
+  MID Bentaleb (LOSC): 6
+  MID André (LOSC): 7
+  ATT Gudmundsson (LOSC): 7
+  ATT Haraldsson (LOSC): 7 [2g]
+  ATT Zhegrova (LOSC): 6
+  MID N'Gouan (LOSC): 6
+  GK Mandanda (SRFC): 6
+  DEF Seidu (SRFC): 5
+  DEF Truffert (SRFC): 5
+  MID Santamaria (SRFC): 5 [1g]
+  ATT Gouiri (SRFC): 5
+  ATT Kalimuendo (SRFC): 5
+  DEF Diakite (LOSC): 6
+  ATT David (LOSC): 7
+  ATT Matias Fernandez-Pardo (LOSC): 0 [2a]
+  MID Bouaddi (LOSC): 7
+
+Lorient 2-1 Lens (6 players):
+  GK Mvogo (Lorient): 7
+  DEF Taibi (RCL): 7
+  MID Sangaré (RCL): 7 [1a]
+  MID A. Kouassi (Lorient): 7 [1a]
+  GK Pantaloni (Lorient): 5.04
+  DEF Mbow (RCL): 5.5
+
+Strasbourg 0-0 PSG (1 players):
+  DEF Coppola (RCSA): 7
+
+Strasbourg X-Y Metz (1 players):
+  DEF Mbow (FCM): 7
+
+Metz 0-0 Toulouse (inconsistent with goals/assists) (1 players):
+  MID Dønnun (TFC): 7 [1g,1a]
+
+Rennes X-Y Auxerre (1 players):
+  ATT Fernandez-Pardo (AJA): 8 [1g,1a]
+
+Metz 0-0 Toulouse (inconsistent with goals) (1 players):
+  ATT Gboho (TFC): 7 [2g]
+
+Le Havre 0-0 Lyon (39 players):
+  GK Desmas (HAC): 4.5
+  DEF K. Opéri (HAC): 4.5
+  DEF Lloris (HAC): 4.5
+  DEF Sangante (HAC): 4.5
+  DEF Nego (HAC): 4.5
+  MID Kechta (HAC): 4
+  MID Targhalline (HAC): 4
+  MID Touré (HAC): 4
+  ATT Ayew (HAC): 4.5
+  ATT J. Casimir (HAC): 4
+  ATT Sabbi (HAC): 4
+  GK A. Lopes (OL): 5.5
+  DEF Tagliafico (OL): 4.5
+  DEF Caleta-Car (OL): 4
+  DEF O'Brien (OL): 4 [rouge]
+  DEF Mata (OL): 4
+  MID Caqueret (OL): 5
+  MID Matic (OL): 5
+  MID Mangala (OL): 4
+  ATT Benrahma (OL): 4.5
+  ATT Lacazette (OL): 4.5
+  ATT Nuamah (OL): 4
+  GK K. Coffl (HAC): 5.5
+  DEF R. Ndlaye (HAC): 6
+  DEF L. Soumaré Karabet (HAC): 6
+  DEF M. Diaw (HAC): 6
+  DEF G. Bella (HAC): 6
+  MID B. Boutaï (HAC): 7
+  MID Zagadou (HAC): 6 [rouge]
+  MID Gourna-Douath (HAC): 6
+  ATT Entick (HAC): 6
+  ATT Abner (HAC): 6
+  GK Lopes (OL): 6
+  DEF Morton (OL): 6
+  DEF Hateboer (OL): 3
+  MID Tolisso (OL): 6
+  MID Cherki (OL): 6
+  ATT Fofana (OL): 6
+  ATT Dembele (OL): 5
+
+Strasbourg 0-0 Paris FC (39 players):
+  DEF Coppola (RCSA): 7
+  GK Sels (RCSA): 7
+  DEF Guilbert (RCSA): 5.5
+  DEF Perrin (RCSA): 5
+  DEF Sylla (RCSA): 5.5
+  DEF Delaine (RCSA): 6
+  MID Sissoko (RCSA): 5
+  MID Mwanga (RCSA): 6
+  MID D. Doukouré (RCSA): 4
+  ATT Bakwa (RCSA): 5
+  ATT Diarrassouba (RCSA): 4
+  ATT Emegha (RCSA): 4.5
+  GK Filip (PFC): 7
+  DEF Chergui (PFC): 4.9
+  DEF Dabila (PFC): 5.5
+  DEF K. Mbemba (PFC): 6
+  DEF O. Maaga (PFC): 5.5
+  MID M. Iglesias (PFC): 5
+  MID Mandouki (PFC): 6
+  MID Luksembourg (PFC): 4.5
+  ATT Gory (PFC): 6
+  ATT K. Dembélé (PFC): 4.5
+  ATT A. Dicko (PFC): 5
+  DEF Nyamsi (RCSA): 6
+  DEF Dagba (RCSA): 7
+  MID Liénard (RCSA): 6
+  MID Aholou (RCSA): 5
+  MID Prcic (RCSA): 5
+  MID Sanson (RCSA): 6
+  ATT Gameiro (RCSA): 6
+  ATT Diallo (RCSA): 6
+  GK Lecomte (PFC): 4
+  DEF Hanin (PFC): 4
+  DEF Bernauer (PFC): 4
+  DEF Chardonnet (PFC): 4
+  DEF Gandon (PFC): 4
+  MID Noc (PFC): 4
+  MID Lopez (PFC): 4
+  ATT Caddy (PFC): 4
+
+Metz 1-1 Toulouse (3 players):
+  MID Dönnum (TFC): 7 [1g,1a]
+  ATT Fernandez-Pardo (TFC): 5.15 [1g,1a]
+  ATT Gboho (TFC): 5.4 [2g]
+
+Metz 3-4 Toulouse (56 players):
+  ATT Donnum (TFC): 7 [2g,1a]
+  ATT D. Sissoko (TFC): 6
+  MID Hidalgo (TFC): 6 [1a]
+  MID Vossah (TFC): 4
+  DEF McKenzie (TFC): 6
+  DEF D. Diop (TFC): 6 [1a]
+  DEF Nicolaisen (TFC): 5
+  GK Gbaho (TFC): 7 [1g]
+  ATT Colin (FCM): 4.8
+  MID Tsilaitshvili (FCM): 6 [1a]
+  MID Mbela Deninguet (FCM): 6 [1a]
+  DEF Fischer (FCM): 4.8
+  DEF Hein (FCM): 5 [1g]
+  DEF Mbala Russell-Rowe (FCM): 5
+  ATT S. Saïd (FCM): 5
+  MID Gbamin (FCM): 5
+  DEF Kouao (FCM): 5 [1g]
+  GK B. Sarr (FCM): 5
+  ATT M'Bala (TFC): null [1g]
+  DEF Kamanzi (TFC): 4 [1a]
+  ATT Sauer (FCM): null [1g]
+  GK Oukidja (FCM): 4.8
+  DEF G. Traoré (FCM): 4
+  DEF Tchaochvilli (FCM): 4
+  MID Mbada (FCM): 4
+  MID Jean Jacques (FCM): 4.8
+  MID Serin (FCM): 4
+  MID Danley (FCM): 5
+  ATT Mikautadze (FCM): 6 [3g]
+  ATT Van den Kerkhof (FCM): 4
+  GK Restes (TFC): 4.7
+  DEF Desler (TFC): 5
+  DEF Diarra (TFC): 5.2
+  MID Genreau (TFC): 5
+  MID Sierro (TFC): 6
+  MID Schmidt (TFC): 6
+  ATT Gboho (TFC): 6 [1g]
+  ATT Dallinga (TFC): 5 [2g,1a]
+  DEF Candé (FCM): 5
+  DEF Udol (FCM): 6 [1g]
+  DEF Traoré (FCM): 3
+  MID Camara (FCM): 5
+  MID N'Doram (FCM): 5
+  ATT Jallow (FCM): 3 [1g]
+  ATT M. Balde (FCM): 4 [1a]
+  ATT Estupinan (FCM): 3
+  ATT Asoro (FCM): 3 [1a]
+  MID Nduquidi (FCM): 3
+  MID Atta (FCM): 4
+  DEF Costa (TFC): 4
+  MID Spierings (TFC): 4
+  MID Chaibi (TFC): 6 [1g]
+  ATT Aboukhlal (TFC): 7 [2g]
+  ATT Suazo (TFC): 5
+  MID Casseres (TFC): 4
+  MID Gelabert (TFC): 5 [1a]
+
+Annecy 4-2 Troyes (22 players):
+  GK M. Escales (ANNECY): 7
+  DEF Jean-Jacques (ANNECY): 6
+  DEF B. Mendy (ANNECY): 6
+  DEF Soumaré (ANNECY): 5
+  MID Pajot (ANNECY): 7
+  MID Kashi (ANNECY): 7
+  MID Adeline (ANNECY): 7
+  MID Billemaz (ANNECY): 7
+  ATT Dj. Bengueddoudj (ANNECY): 7 [1g]
+  ATT W. Caddy (ANNECY): 8 [1g]
+  ATT A. Kandil (ANNECY): 8 [1g]
+  MID M. Rocchi (ANNECY): null [1g]
+  GK N. Lemaître (TROYES): 4
+  DEF B. N'Diaye (TROYES): 4
+  DEF Tanguy Zoukrou (TROYES): 4
+  DEF Conté (TROYES): 4
+  MID N'Guessan (TROYES): 4
+  MID Diop (TROYES): 5
+  MID Kouao (TROYES): 4
+  ATT M. Baldé (TROYES): 5 [1g]
+  ATT Renaud Ripart (TROYES): 5 [1g]
+  ATT J. Odobert (TROYES): 4
+
+Annecy 2-0 Troyes (30 players):
+  GK Escales (Annecy): 7
+  DEF Lajugie (Annecy): 6
+  DEF Jean (Annecy): 6
+  DEF Mouanga (Annecy): 6
+  DEF Barry (Annecy): 6
+  MID Demoncy (Annecy): 7
+  MID Pajot (Annecy): 6
+  MID Camara (Annecy): 7
+  ATT Kandil (Annecy): 7 [1a]
+  ATT Bosetti (Annecy): 6 [1g]
+  ATT Dj. Testud (Annecy): 6 [1g]
+  DEF Delphis (Annecy): 6
+  ATT Mahop (Annecy): 6
+  MID Adeline (Annecy): 6
+  GK Lis (Troyes): 4
+  DEF Conté (Troyes): 4
+  DEF Palmer-Brown (Troyes): 4
+  DEF Porozo (Troyes): 4
+  DEF Salmier (Troyes): 3
+  MID Tardieu (Troyes): 4
+  MID Chavalerin (Troyes): 4
+  MID Rony Lopes (Troyes): 4
+  ATT Baldé (Troyes): 3
+  ATT Mama Balde (Troyes): 3
+  ATT Ilic (Troyes): 3
+  DEF Bruus (Troyes): 4
+  ATT Kouamé (Troyes): 4
+  MID N'Guessan (Troyes): 4
+  MID Dong (Troyes): 3
+  MID Gomis (Troyes): 3
+
+Guingamp 1-1 Grenoble (28 players):
+  GK Basilio (Guingamp): 5
+  DEF Sivis (Guingamp): 4
+  DEF Gomis (Guingamp): 4
+  DEF Riou (Guingamp): 4
+  DEF Manceau (Guingamp): 4
+  MID Louiserre (Guingamp): 4
+  MID Picard (Guingamp): 5
+  MID Livolant (Guingamp): 4 [1a]
+  ATT Tchimbembé (Guingamp): 4
+  ATT Guillaume (Guingamp): 4 [1g]
+  ATT Merghem (Guingamp): 4
+  DEF Courcoul (Guingamp): 4
+  DEF Quemper (Guingamp): 4
+  MID Phiri (Guingamp): 4
+  GK Maubleu (Grenoble): 6
+  DEF Paquiez (Grenoble): 5
+  DEF Diarra (Grenoble): 5
+  DEF Nestor (Grenoble): 5
+  DEF Mendy (Grenoble): 4
+  MID Touray (Grenoble): 5 [1a]
+  MID Isola (Grenoble): 5
+  MID Tell (Grenoble): 5
+  ATT Sanyang (Grenoble): 4
+  ATT Meissa Ba (Grenoble): 4 [1g]
+  ATT Caddy (Grenoble): 4
+  MID Garcia (Grenoble): 5
+  DEF J. Gaspar (Grenoble): 5
+  MID Thio (Grenoble): 5

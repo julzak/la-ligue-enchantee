@@ -1,0 +1,806 @@
+[dotenv@17.3.1] injecting env (6) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+L'Équipe Kiosque Scraper
+Editions to scrape: 2026-03-15, 2026-03-16
+---
+Checking session...
+Session OK!
+
+
+============================================================
+EDITION: 2026-03-15
+============================================================
+
+Navigating to kiosque/le-journal...
+  Screenshot saved: 01-kiosque-journal.png
+  Scrolling to load previous editions...
+  Screenshot saved: 02-kiosque-scrolled.png
+
+  Page text (editions section, first 3000 chars):
+ 
+voir les directs 
+L'ÉQUIPE
+s'abonner
+parcourir
+accueil
+chrono
+directs
+TV
+le journal
+jeux
+réglages
+accueille kiosque
+tous
+le journal
+le magazine
+France Football
+Vélo Magazine
+Cahier éco
+hors-série
+Spécial L'Équipe
+Journal du Golf
+Journal du Nautisme
+Journal du Runner
+le journal L’Équipe à la Une
+
+Découvrez la Une de l’Equipe et le journal du jour à travers le kiosque. Toutes les dernières éditions sont disponibles afin de ne rien manquer des dernières actualités sportives et des évènements majeurs. Vous pourrez y retrouver les analyses de nos spécialistes, des interviews exclusifs, des reportages et des statistiques détaillées.  Que vous soyez fan de football, de tennis, de rugby ou de tout sport, le Journal l’Equipe est votre guide incontournable pour rester informé de l’actualité sportif en temps réel.
+
+17 mars 2026
+lire l'édition
+16 mars 2026
+lire l'édition
+15 mars 2026
+lire l'édition
+14 mars 2026
+lire l'édition
+13 mars 2026
+lire l'édition
+12 mars 2026
+lire l'édition
+11 mars 2026
+lire l'édition
+10 mars 2026
+lire l'édition
+9 mars 2026
+lire l'édition
+8 mars 2026
+lire l'édition
+chrono
+filtrer : tous les sports
+11:48
+Basket,Podcast
+Les Bleues ont-elles progressé depuis les JO ?
+11:41
+Jeux Paralympiques,Italie
+L'ex-escrimeuse Bebe Vio vise le 100m en athlé à Los Angeles 2028
+11:39
+Foot,Youth League
+Passer pro au PSG ou partir : le dilemme des titis
+11:36
+F1,GP de Chine
+Les fans de Colapinto sommés de ne pas menacer Ocon
+11:34
+Foot,Guerre au Moyen-Orient,Iran
+Deux joueuses réfugiées en Australie s'entraînent avec un club local
+11:32
+Cyclisme
+Seixas, un avenir au centre de toutes les discussions
+11:23
+Foot,Liga,Real Madrid
+Rüdiger dédramatise son coup de genou sur Rico
+11:17
+JO 2030
+Pannekoucke : «L'arrivée de Michel Cadot nous permet de prendre une respiration »
+11:14
+Rugby,Afrique du Sud
+Les Springboks convoquent le Bordelais Sadie pour la première fois
+11:10
+Guerre en Ukraine
+Après l'horreur, Boutcha panse ses plaies grâce au sport
+11:07
+Foot,Ligue des champions,Chelsea
+Jorrel Hato titulaire à la place de Wesley Fofana ?
+11:03
+Foot,Qualif. Coupe d'Asie
+Sanctionnée pour fraudes à la nationalité, la Malaisie éliminée
+11:00
+Respire,Iconique
+Comment John John Kennedy s'était construit par le sport
+10:58
+Tournoi des 6 nations
+Notre équipe type du Tournoi avec cinq Français
+10:57
+Basket,NBA,Warriors
+Kerr : «J'ai eu la chance d'avoir à ma disposition des talents incroyables»
+10:44
+Basket,Entretien
+Fournier : «Je termine ce contrat et je raccroche »
+10:42
+Foot,Ligue des champions
+Qui sont les joueurs menacés de suspension ?
+10:39
+Foot,Médias
+Une minisérie sur la Seleção de 1970 bientôt sur Netflix
+10:24
+Foot,Coupe de France
+La FFF agace France Télévisions
+10:17
+Hockey sur glace,KHL
+Le coup de génie d'un hockeyeur russe pendant les tirs au but
+09:59
+Tournoi des 6 nations
+Une compétition en mode «full attaque»
+09:42
+Tennis de table
+Jusqu'où peut aller Félix Lebrun ?
+09:36
+Cyclisme,Classement UCI
+Vauquelin dans le top 15 après sa 4e place sur Paris-Nice
+09:
+
+  Looking for: 15 mars 2026
+  Clicked edition: 15 mars 2026lire l'édition
+
+  Current URL after click: https://www.lequipe.fr/abonnement/kiosque/le-journal
+  Screenshot saved: 03-after-click.png
+  Page has 3 frames
+
+Capturing football pages from liseuse...
+  Reader URL: https://www.lequipe.fr/abonnement/kiosque/le-journal
+  Looking for 'football' section link...
+  Session expired! Re-logging in...
+Logging in to L'Équipe...
+  Login may have failed, continuing...
+  Saved 8 cookies
+  Screenshot saved: 04-football-section.png
+  Current hash: 
+  Could not parse hash format, falling back to screenshot only
+
+Processing screenshots 1-1/1 with Claude Vision...
+  Extracted 0 ratings
+
+  Edition 2026-03-15: 0 ratings extracted
+
+============================================================
+EDITION: 2026-03-16
+============================================================
+
+Navigating to kiosque/le-journal...
+  Screenshot saved: 01-kiosque-journal.png
+  Scrolling to load previous editions...
+  Screenshot saved: 02-kiosque-scrolled.png
+
+  Page text (editions section, first 3000 chars):
+ 
+voir les directs 
+L'ÉQUIPE
+U
+parcourir
+accueil
+chrono
+directs
+TV
+le journal
+jeux
+réglages
+accueille kiosque
+tous
+le journal
+le magazine
+France Football
+Vélo Magazine
+Cahier éco
+hors-série
+Spécial L'Équipe
+Journal du Golf
+Journal du Nautisme
+Journal du Runner
+le journal L’Équipe à la Une
+
+Découvrez la Une de l’Equipe et le journal du jour à travers le kiosque. Toutes les dernières éditions sont disponibles afin de ne rien manquer des dernières actualités sportives et des évènements majeurs. Vous pourrez y retrouver les analyses de nos spécialistes, des interviews exclusifs, des reportages et des statistiques détaillées.  Que vous soyez fan de football, de tennis, de rugby ou de tout sport, le Journal l’Equipe est votre guide incontournable pour rester informé de l’actualité sportif en temps réel.
+
+17 mars 2026
+lire l'édition
+16 mars 2026
+lire l'édition
+15 mars 2026
+lire l'édition
+14 mars 2026
+lire l'édition
+13 mars 2026
+lire l'édition
+12 mars 2026
+lire l'édition
+11 mars 2026
+lire l'édition
+10 mars 2026
+lire l'édition
+9 mars 2026
+lire l'édition
+8 mars 2026
+lire l'édition
+chrono
+filtrer : tous les sports
+11:48
+Basket,Podcast
+Les Bleues ont-elles progressé depuis les JO ?
+11:41
+Jeux Paralympiques,Italie
+L'ex-escrimeuse Bebe Vio vise le 100m en athlé à Los Angeles 2028
+11:39
+Foot,Youth League
+Passer pro au PSG ou partir : le dilemme des titis
+11:36
+F1,GP de Chine
+Les fans de Colapinto sommés de ne pas menacer Ocon
+11:34
+Foot,Guerre au Moyen-Orient,Iran
+Deux joueuses réfugiées en Australie s'entraînent avec un club local
+11:32
+Cyclisme
+Seixas, un avenir au centre de toutes les discussions
+11:23
+Foot,Liga,Real Madrid
+Rüdiger dédramatise son coup de genou sur Rico
+11:17
+JO 2030
+Pannekoucke : «L'arrivée de Michel Cadot nous permet de prendre une respiration »
+11:14
+Rugby,Afrique du Sud
+Les Springboks convoquent le Bordelais Sadie pour la première fois
+11:10
+Guerre en Ukraine
+Après l'horreur, Boutcha panse ses plaies grâce au sport
+11:07
+Foot,Ligue des champions,Chelsea
+Jorrel Hato titulaire à la place de Wesley Fofana ?
+11:03
+Foot,Qualif. Coupe d'Asie
+Sanctionnée pour fraudes à la nationalité, la Malaisie éliminée
+11:00
+Respire,Iconique
+Comment John John Kennedy s'était construit par le sport
+10:58
+Tournoi des 6 nations
+Notre équipe type du Tournoi avec cinq Français
+10:57
+Basket,NBA,Warriors
+Kerr : «J'ai eu la chance d'avoir à ma disposition des talents incroyables»
+10:44
+Basket,Entretien
+Fournier : «Je termine ce contrat et je raccroche »
+10:42
+Foot,Ligue des champions
+Qui sont les joueurs menacés de suspension ?
+10:39
+Foot,Médias
+Une minisérie sur la Seleção de 1970 bientôt sur Netflix
+10:24
+Foot,Coupe de France
+La FFF agace France Télévisions
+10:17
+Hockey sur glace,KHL
+Le coup de génie d'un hockeyeur russe pendant les tirs au but
+09:59
+Tournoi des 6 nations
+Une compétition en mode «full attaque»
+09:42
+Tennis de table
+Jusqu'où peut aller Félix Lebrun ?
+09:36
+Cyclisme,Classement UCI
+Vauquelin dans le top 15 après sa 4e place sur Paris-Nice
+09:32
+Baske
+
+  Looking for: 16 mars 2026
+  Clicked edition: 16 mars 2026lire l'édition
+
+  Current URL after click: https://kiosque.lequipe.fr/data/1624/reader/reader.html#!1624
+  Screenshot saved: 03-after-click.png
+  Page has 2 frames
+  Found reader iframe: https://kiosque.lequipe.fr/data/1624/reader/reader.html#!1624
+
+Capturing football pages from liseuse...
+  Reader URL: https://kiosque.lequipe.fr/data/1624/reader/reader.html#!1624
+  Looking for 'football' section link...
+  Clicked 'football' text
+  Screenshot saved: 04-football-section.png
+  Current hash: #!preferred/0/package/1624/pub/1624/page/4
+  Publication: 1624, starting at page 4
+  First page hash: #!preferred/0/package/1624/pub/1624/page/4
+  Captured spread 1/8 (page 4)
+  Captured spread 2/8 (page 5)
+  Captured spread 3/8 (page 6)
+  Captured spread 4/8 (page 7)
+  Captured spread 5/8 (page 8)
+  Captured spread 6/8 (page 9)
+  Captured spread 7/8 (page 10)
+  Captured spread 8/8 (page 11)
+  Total: 16 screenshots captured
+
+Processing screenshots 1-1/16 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 2-2/16 with Claude Vision...
+  Extracted 11 ratings
+    Lepoint (LOSC): 6 — Rennes 1-2 Lille
+    Balmont (LOSC): 6 — Rennes 1-2 Lille
+    Debuchy (LOSC): 7 — Rennes 1-2 Lille
+    Beria (LOSC): 6 — Rennes 1-2 Lille
+    Emerson (LOSC): 7 — Rennes 1-2 Lille
+    Makoun (LOSC): 7 — Rennes 1-2 Lille
+    Mavuba (LOSC): 6 — Rennes 1-2 Lille
+    Cabaye (LOSC): 7 — Rennes 1-2 Lille
+    Hazard (LOSC): 7 — Rennes 1-2 Lille
+    Roux (LOSC): 7 — Rennes 1-2 Lille
+    Sow (LOSC): 3 — Rennes 1-2 Lille
+
+Processing screenshots 3-3/16 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 4-4/16 with Claude Vision...
+  Extracted 22 ratings
+    Lépicier (RCSA): 6 — Rennes 1-2 Lille
+    Seidu (RCSA): 4 — Rennes 1-2 Lille
+    Wooh (RCSA): 4 — Rennes 1-2 Lille
+    Theate (RCSA): 4 — Rennes 1-2 Lille
+    Truffert (RCSA): 4 — Rennes 1-2 Lille
+    Santamaria (RCSA): 4 — Rennes 1-2 Lille
+    Matusiwa (RCSA): 5 — Rennes 1-2 Lille
+    Bourigeaud (RCSA): 5 — Rennes 1-2 Lille
+    Doku (RCSA): 6 — Rennes 1-2 Lille
+    Kalimuendo (RCSA): 4 — Rennes 1-2 Lille
+    Terrier (RCSA): 5 [1g] — Rennes 1-2 Lille
+    Chevalier (LOSC): 6 — Rennes 1-2 Lille
+    Çelik (LOSC): 6 — Rennes 1-2 Lille
+    Diakité (LOSC): 7 — Rennes 1-2 Lille
+    Alexsandro (LOSC): 6 — Rennes 1-2 Lille
+    Ismaily (LOSC): 6 — Rennes 1-2 Lille
+    André (LOSC): 7 — Rennes 1-2 Lille
+    Gomes (LOSC): 6 — Rennes 1-2 Lille
+    Cabella (LOSC): 7 [1a] — Rennes 1-2 Lille
+    Bamba (LOSC): 7 — Rennes 1-2 Lille
+    David (LOSC): 8 [2g] — Rennes 1-2 Lille
+    Zhegrova (LOSC): 6 — Rennes 1-2 Lille
+
+Processing screenshots 5-5/16 with Claude Vision...
+  Extracted 12 ratings
+    Paintstael (FCL): 5 — Lille 1-0 Lorient
+    Mvogo (FCL): 7 — Lille 1-0 Lorient
+    Ceesay (FCL): 7 — Lille 1-0 Lorient
+    Talbi (FCL): 7 — Lille 1-0 Lorient
+    Kalulu (FCL): 7 — Lille 1-0 Lorient
+    Diakmann (FCL): 7 — Lille 1-0 Lorient
+    Bouaddi (FCL): 7 — Lille 1-0 Lorient
+    Sahraoui (FCL): 7 [1g] — Lille 1-0 Lorient
+    A. Toussart (FCL): 7 — Lille 1-0 Lorient
+    Haraldsson (FCL): 7 — Lille 1-0 Lorient
+    Zhicho (FCL): 7 — Lille 1-0 Lorient
+    Fernandez-Pardo (FCL): 6 — Lille 1-0 Lorient
+
+Processing screenshots 6-6/16 with Claude Vision...
+  Extracted 22 ratings
+    Desmas (HAC): 6 — Le Havre 0-0 Lyon
+    Lloris (HAC): 5 — Le Havre 0-0 Lyon
+    Sangante (HAC): 5 — Le Havre 0-0 Lyon
+    Operi (HAC): 6 — Le Havre 0-0 Lyon
+    Nego (HAC): 5 — Le Havre 0-0 Lyon
+    Abdelli (HAC): 5 — Le Havre 0-0 Lyon
+    Toure (HAC): 5 — Le Havre 0-0 Lyon
+    Kechta (HAC): 6 — Le Havre 0-0 Lyon
+    Casimir (HAC): 5 — Le Havre 0-0 Lyon
+    Ndiaye (HAC): 4 — Le Havre 0-0 Lyon
+    Logbo (HAC): 4 — Le Havre 0-0 Lyon
+    Perri (OL): 6 — Le Havre 0-0 Lyon
+    Maitland-Niles (OL): 6 — Le Havre 0-0 Lyon
+    Mata (OL): 6 — Le Havre 0-0 Lyon
+    Caleta-Car (OL): 5 — Le Havre 0-0 Lyon
+    Tagliafico (OL): 5 — Le Havre 0-0 Lyon
+    Tolisso (OL): 5 — Le Havre 0-0 Lyon
+    Matic (OL): 5 — Le Havre 0-0 Lyon
+    Cherki (OL): 4 — Le Havre 0-0 Lyon
+    Benrahma (OL): 4 — Le Havre 0-0 Lyon
+    Lacazette (OL): 3 — Le Havre 0-0 Lyon
+    Mikautadze (OL): 4 — Le Havre 0-0 Lyon
+
+Processing screenshots 7-7/16 with Claude Vision...
+  Extracted 11 ratings
+    Pantalacci (AJA): 3 — Auxerre 0-2 Lorient
+    Mensah (AJA): 7 — Auxerre 0-2 Lorient
+    Coeff (AJA): 7 — Auxerre 0-2 Lorient
+    Jubal (AJA): 7 — Auxerre 0-2 Lorient
+    Akpa (AJA): 7 — Auxerre 0-2 Lorient
+    Sissako (AJA): 7 — Auxerre 0-2 Lorient
+    Bouaddi (AJA): 7 — Auxerre 0-2 Lorient
+    Sinayoko (AJA): 7 — Auxerre 0-2 Lorient
+    A. Kossicki (AJA): 7 — Auxerre 0-2 Lorient
+    Traoreson (FCL): 7 — Auxerre 0-2 Lorient
+    Fernandez-Pardo (FCL): 8 — Auxerre 0-2 Lorient
+
+Processing screenshots 8-8/16 with Claude Vision...
+  Extracted 22 ratings
+    Desmas (HAC): 6 — Le Havre 0-0 Lyon
+    Nego (HAC): 5 — Le Havre 0-0 Lyon
+    Youte (HAC): 5 — Le Havre 0-0 Lyon
+    Lloris (HAC): 6 — Le Havre 0-0 Lyon
+    Zouaoui (HAC): 5 — Le Havre 0-0 Lyon
+    Kenji (HAC): 5 — Le Havre 0-0 Lyon
+    Kuzyaev (HAC): 5 — Le Havre 0-0 Lyon
+    Ayew (HAC): 6 — Le Havre 0-0 Lyon
+    Kechta (HAC): 4 — Le Havre 0-0 Lyon
+    Casimir (HAC): 4 — Le Havre 0-0 Lyon
+    Joujou (HAC): 4 — Le Havre 0-0 Lyon
+    Perri (OL): 6 — Le Havre 0-0 Lyon
+    Maitland-Niles (OL): 6 — Le Havre 0-0 Lyon
+    Caleta-Car (OL): 6 — Le Havre 0-0 Lyon
+    Niakhaté (OL): 6 — Le Havre 0-0 Lyon
+    Abner (OL): 5 — Le Havre 0-0 Lyon
+    Tolisso (OL): 5 — Le Havre 0-0 Lyon
+    Veretout (OL): 4 — Le Havre 0-0 Lyon
+    Cherki (OL): 6 — Le Havre 0-0 Lyon
+    Benrahma (OL): 4 — Le Havre 0-0 Lyon
+    Lacazette (OL): 5 — Le Havre 0-0 Lyon
+    Nuamah (OL): 5 — Le Havre 0-0 Lyon
+
+Processing screenshots 9-9/16 with Claude Vision...
+  Extracted 21 ratings
+    Oukidja (FCM): 7 — Metz 3-4 Toulouse
+    Udol (FCM): 4 — Metz 3-4 Toulouse
+    Candé (FCM): 4 — Metz 3-4 Toulouse
+    Kouao (FCM): 4 — Metz 3-4 Toulouse
+    Colin (FCM): 5 — Metz 3-4 Toulouse
+    Traore (FCM): 5 — Metz 3-4 Toulouse
+    N'Doram (FCM): 6 — Metz 3-4 Toulouse
+    Camara (FCM): 6 — Metz 3-4 Toulouse
+    Sabaly (FCM): 6 — Metz 3-4 Toulouse
+    Mikautadze (FCM): 6 [1g] — Metz 3-4 Toulouse
+    Diallo (FCM): 6 — Metz 3-4 Toulouse
+    Restes (TFC): 5 — Metz 3-4 Toulouse
+    Desler (TFC): 7 — Metz 3-4 Toulouse
+    Nicolaisen (TFC): 6 — Metz 3-4 Toulouse
+    McKenzie (TFC): 6 — Metz 3-4 Toulouse
+    Suazo (TFC): 7 — Metz 3-4 Toulouse
+    Sierro (TFC): 7 [1g] — Metz 3-4 Toulouse
+    Casseres Jr (TFC): 8 — Metz 3-4 Toulouse
+    Donnum (TFC): 7 [1g] — Metz 3-4 Toulouse
+    Gboho (TFC): 8 [1g,1a] — Metz 3-4 Toulouse
+    Dallinga (TFC): 7 [1g] — Metz 3-4 Toulouse
+
+Processing screenshots 10-10/16 with Claude Vision...
+  Extracted 21 ratings
+    Majecki (ASM): 4 — Metz 1-2 Monaco
+    Disasi (ASM): 6 — Metz 1-2 Monaco
+    Maripan (ASM): 5 — Metz 1-2 Monaco
+    Henrique (ASM): 5 — Metz 1-2 Monaco
+    Sidibé (ASM): 6 — Metz 1-2 Monaco
+    Fofana (ASM): 5 — Metz 1-2 Monaco
+    Tchouaméni (ASM): 6 — Metz 1-2 Monaco
+    Diatta (ASM): 6 — Metz 1-2 Monaco
+    Golovin (ASM): 6 — Metz 1-2 Monaco
+    Ben Yedder (ASM): 7 [1g] — Metz 1-2 Monaco
+    Volland (ASM): 7 [1g] — Metz 1-2 Monaco
+    Oukidja (FCM): 5 — Metz 1-2 Monaco
+    Udol (FCM): 4 — Metz 1-2 Monaco
+    Kouyaté (FCM): 4 — Metz 1-2 Monaco
+    Sunzu (FCM): 4 — Metz 1-2 Monaco
+    Bronn (FCM): 4 — Metz 1-2 Monaco
+    Pajot (FCM): 5 — Metz 1-2 Monaco
+    Sarr (FCM): 5 — Metz 1-2 Monaco
+    Traoré (FCM): 5 — Metz 1-2 Monaco
+    Centonze (FCM): 5 — Metz 1-2 Monaco
+    Niane (FCM): 6 [1g] — Metz 1-2 Monaco
+
+Processing screenshots 11-11/16 with Claude Vision...
+  Extracted 22 ratings
+    Oukidja (FCM): 7 — Metz 3-4 Toulouse
+    Udol (FCM): 4 — Metz 3-4 Toulouse
+    Traoré (FCM): 4 — Metz 3-4 Toulouse
+    Candé (FCM): 3 — Metz 3-4 Toulouse
+    Colin (FCM): 4 — Metz 3-4 Toulouse
+    Camara (FCM): 5 — Metz 3-4 Toulouse
+    N'Doram (FCM): 6 — Metz 3-4 Toulouse
+    Hein (FCM): 5 — Metz 3-4 Toulouse
+    Diallo (FCM): 6 [1g] — Metz 3-4 Toulouse
+    Mikautadze (FCM): 7 [1g] — Metz 3-4 Toulouse
+    Sabaly (FCM): 5 — Metz 3-4 Toulouse
+    Restes (TFC): 5 — Metz 3-4 Toulouse
+    Desler (TFC): 6 — Metz 3-4 Toulouse
+    Nicolaisen (TFC): 6 — Metz 3-4 Toulouse
+    Cresswell (TFC): 6 — Metz 3-4 Toulouse
+    Suazo (TFC): 7 — Metz 3-4 Toulouse
+    Schmidt (TFC): 7 [1g] — Metz 3-4 Toulouse
+    Sierro (TFC): 7 — Metz 3-4 Toulouse
+    Donnum (TFC): 7 [1g] — Metz 3-4 Toulouse
+    Gboho (TFC): 8 [1g] — Metz 3-4 Toulouse
+    Dallinga (TFC): 7 [1g] — Metz 3-4 Toulouse
+    Aboukhlal (TFC): 5 — Metz 3-4 Toulouse
+
+Processing screenshots 12-12/16 with Claude Vision...
+  Extracted 22 ratings
+    Restes (TFC): 3 — Toulouse 3-4 Metz
+    Desmas (TFC): 4 — Toulouse 3-4 Metz
+    Nicolaisen (TFC): 3 — Toulouse 3-4 Metz
+    McKenzie (TFC): 4 — Toulouse 3-4 Metz
+    Suazo (TFC): 5 — Toulouse 3-4 Metz
+    Cresswell (TFC): 4 — Toulouse 3-4 Metz
+    Sierro (TFC): 5 — Toulouse 3-4 Metz
+    Gboho (TFC): 6 [1g] — Toulouse 3-4 Metz
+    Aboukhlal (TFC): 6 — Toulouse 3-4 Metz
+    Dallinga (TFC): 5 [1g] — Toulouse 3-4 Metz
+    Guo (TFC): 6 [1g] — Toulouse 3-4 Metz
+    Oukidja (FCM): 4 — Toulouse 3-4 Metz
+    Udol (FCM): 6 — Toulouse 3-4 Metz
+    Traoré (FCM): 5 — Toulouse 3-4 Metz
+    Colin (FCM): 5 — Toulouse 3-4 Metz
+    Sabaly (FCM): 6 [1a] — Toulouse 3-4 Metz
+    Camara (FCM): 6 — Toulouse 3-4 Metz
+    N'Doram (FCM): 6 — Toulouse 3-4 Metz
+    Van Den Kerkhof (FCM): 7 [1a] — Toulouse 3-4 Metz
+    Lamkel Zé (FCM): 7 [1g] — Toulouse 3-4 Metz
+    Mikautadze (FCM): 8 [2g] — Toulouse 3-4 Metz
+    Jallow (FCM): 7 [1g] — Toulouse 3-4 Metz
+
+Processing screenshots 13-13/16 with Claude Vision...
+  Extracted 21 ratings
+    Sels (SRFC): 6 — Strasbourg 0-0 Paris FC
+    Doué (SRFC): 6 — Strasbourg 0-0 Paris FC
+    Sarr (SRFC): 4 — Strasbourg 0-0 Paris FC
+    Nyamsi (SRFC): 5 — Strasbourg 0-0 Paris FC
+    Bakwa (SRFC): 4 — Strasbourg 0-0 Paris FC
+    Andrey Santos (SRFC): 5 — Strasbourg 0-0 Paris FC
+    Diarra (SRFC): 4 — Strasbourg 0-0 Paris FC
+    Nanasi (SRFC): 4 — Strasbourg 0-0 Paris FC
+    Lemarechal (SRFC): 4 — Strasbourg 0-0 Paris FC
+    Emegha (SRFC): 3 — Strasbourg 0-0 Paris FC
+    Mothiba (SRFC): 4 — Strasbourg 0-0 Paris FC
+    Filipovic (PFC): 6 — Strasbourg 0-0 Paris FC
+    Caddy (PFC): 6 — Strasbourg 0-0 Paris FC
+    Cozza (PFC): 6 — Strasbourg 0-0 Paris FC
+    Appiah (PFC): 6 — Strasbourg 0-0 Paris FC
+    Janneh (PFC): 5 — Strasbourg 0-0 Paris FC
+    Sissoko (PFC): 6 — Strasbourg 0-0 Paris FC
+    Courtet (PFC): 5 — Strasbourg 0-0 Paris FC
+    Hadjam (PFC): 5 — Strasbourg 0-0 Paris FC
+    Lopez (PFC): 5 — Strasbourg 0-0 Paris FC
+    Campanini (PFC): 5 — Strasbourg 0-0 Paris FC
+
+Processing screenshots 14-14/16 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 15-15/16 with Claude Vision...
+  Extracted 21 ratings
+    Sels (SRFC): 6 — Strasbourg 0-0 Paris FC
+    Doué (SRFC): 6 — Strasbourg 0-0 Paris FC
+    Sarr (SRFC): 5 — Strasbourg 0-0 Paris FC
+    Wiley (SRFC): 6 — Strasbourg 0-0 Paris FC
+    Moreira (SRFC): 5 — Strasbourg 0-0 Paris FC
+    Andrey Santos (SRFC): 6 — Strasbourg 0-0 Paris FC
+    Diarra (SRFC): 5 — Strasbourg 0-0 Paris FC
+    Bakwa (SRFC): 6 — Strasbourg 0-0 Paris FC
+    Nanasi (SRFC): 5 — Strasbourg 0-0 Paris FC
+    Emegha (SRFC): 4 — Strasbourg 0-0 Paris FC
+    Sebas (SRFC): 5 — Strasbourg 0-0 Paris FC
+    Oukidja (PFC): 6 — Strasbourg 0-0 Paris FC
+    Bouchouari (PFC): 6 — Strasbourg 0-0 Paris FC
+    Cozza (PFC): 6 — Strasbourg 0-0 Paris FC
+    Adeline (PFC): 6 — Strasbourg 0-0 Paris FC
+    Zedadka (PFC): 5 — Strasbourg 0-0 Paris FC
+    Sissoko (PFC): 6 — Strasbourg 0-0 Paris FC
+    Camara (PFC): 6 — Strasbourg 0-0 Paris FC
+    Pierrot (PFC): 5 — Strasbourg 0-0 Paris FC
+    Assoumani (PFC): 5 — Strasbourg 0-0 Paris FC
+    Lopez (PFC): 5 — Strasbourg 0-0 Paris FC
+
+Processing screenshots 16-16/16 with Claude Vision...
+  Extracted 0 ratings
+
+  Edition 2026-03-16: 188 ratings extracted
+
+============================================================
+COMBINED RESULTS: 188 unique ratings
+Saved to /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/kiosque-ratings-combined.json
+============================================================
+
+Rennes 1-2 Lille (33 players):
+  GK Lepoint (LOSC): 6
+  DEF Balmont (LOSC): 6
+  DEF Debuchy (LOSC): 7
+  DEF Beria (LOSC): 6
+  DEF Emerson (LOSC): 7
+  MID Makoun (LOSC): 7
+  MID Mavuba (LOSC): 6
+  MID Cabaye (LOSC): 7
+  ATT Hazard (LOSC): 7
+  ATT Roux (LOSC): 7
+  ATT Sow (LOSC): 3
+  GK Lépicier (RCSA): 6
+  DEF Seidu (RCSA): 4
+  DEF Wooh (RCSA): 4
+  DEF Theate (RCSA): 4
+  DEF Truffert (RCSA): 4
+  MID Santamaria (RCSA): 4
+  MID Matusiwa (RCSA): 5
+  MID Bourigeaud (RCSA): 5
+  ATT Doku (RCSA): 6
+  ATT Kalimuendo (RCSA): 4
+  ATT Terrier (RCSA): 5 [1g]
+  GK Chevalier (LOSC): 6
+  DEF Çelik (LOSC): 6
+  DEF Diakité (LOSC): 7
+  DEF Alexsandro (LOSC): 6
+  DEF Ismaily (LOSC): 6
+  MID André (LOSC): 7
+  MID Gomes (LOSC): 6
+  MID Cabella (LOSC): 7 [1a]
+  ATT Bamba (LOSC): 7
+  ATT David (LOSC): 8 [2g]
+  ATT Zhegrova (LOSC): 6
+
+Lille 1-0 Lorient (12 players):
+  GK Paintstael (FCL): 5
+  GK Mvogo (FCL): 7
+  DEF Ceesay (FCL): 7
+  DEF Talbi (FCL): 7
+  DEF Kalulu (FCL): 7
+  MID Diakmann (FCL): 7
+  MID Bouaddi (FCL): 7
+  ATT Sahraoui (FCL): 7 [1g]
+  ATT A. Toussart (FCL): 7
+  ATT Haraldsson (FCL): 7
+  ATT Zhicho (FCL): 7
+  ATT Fernandez-Pardo (FCL): 6
+
+Le Havre 0-0 Lyon (32 players):
+  GK Desmas (HAC): 6
+  DEF Lloris (HAC): 5
+  DEF Sangante (HAC): 5
+  DEF Operi (HAC): 6
+  DEF Nego (HAC): 5
+  MID Abdelli (HAC): 5
+  MID Toure (HAC): 5
+  MID Kechta (HAC): 6
+  MID Casimir (HAC): 5
+  ATT Ndiaye (HAC): 4
+  ATT Logbo (HAC): 4
+  GK Perri (OL): 6
+  DEF Maitland-Niles (OL): 6
+  DEF Mata (OL): 6
+  DEF Caleta-Car (OL): 5
+  DEF Tagliafico (OL): 5
+  MID Tolisso (OL): 5
+  MID Matic (OL): 5
+  MID Cherki (OL): 4
+  ATT Benrahma (OL): 4
+  ATT Lacazette (OL): 3
+  ATT Mikautadze (OL): 4
+  DEF Youte (HAC): 5
+  DEF Zouaoui (HAC): 5
+  MID Kenji (HAC): 5
+  MID Kuzyaev (HAC): 5
+  MID Ayew (HAC): 6
+  ATT Joujou (HAC): 4
+  DEF Niakhaté (OL): 6
+  DEF Abner (OL): 5
+  MID Veretout (OL): 4
+  ATT Nuamah (OL): 5
+
+Auxerre 0-2 Lorient (11 players):
+  GK Pantalacci (AJA): 3
+  DEF Mensah (AJA): 7
+  DEF Coeff (AJA): 7
+  DEF Jubal (AJA): 7
+  DEF Akpa (AJA): 7
+  MID Sissako (AJA): 7
+  MID Bouaddi (AJA): 7
+  ATT Sinayoko (AJA): 7
+  ATT A. Kossicki (AJA): 7
+  GK Traoreson (FCL): 7
+  ATT Fernandez-Pardo (FCL): 8
+
+Metz 3-4 Toulouse (26 players):
+  GK Oukidja (FCM): 7
+  DEF Udol (FCM): 4
+  DEF Candé (FCM): 4
+  DEF Kouao (FCM): 4
+  DEF Colin (FCM): 5
+  MID Traore (FCM): 5
+  MID N'Doram (FCM): 6
+  MID Camara (FCM): 6
+  MID Sabaly (FCM): 6
+  ATT Mikautadze (FCM): 6 [1g]
+  ATT Diallo (FCM): 6 [1g]
+  GK Restes (TFC): 5
+  DEF Desler (TFC): 7
+  DEF Nicolaisen (TFC): 6
+  DEF McKenzie (TFC): 6
+  DEF Suazo (TFC): 7
+  MID Sierro (TFC): 7 [1g]
+  MID Casseres Jr (TFC): 8
+  MID Donnum (TFC): 7 [1g]
+  ATT Gboho (TFC): 8 [1g,1a]
+  ATT Dallinga (TFC): 7 [1g]
+  DEF Traoré (FCM): 4
+  MID Hein (FCM): 5
+  DEF Cresswell (TFC): 6
+  MID Schmidt (TFC): 7 [1g]
+  ATT Aboukhlal (TFC): 5
+
+Metz 1-2 Monaco (21 players):
+  GK Majecki (ASM): 4
+  DEF Disasi (ASM): 6
+  DEF Maripan (ASM): 5
+  DEF Henrique (ASM): 5
+  DEF Sidibé (ASM): 6
+  MID Fofana (ASM): 5
+  MID Tchouaméni (ASM): 6
+  MID Diatta (ASM): 6
+  MID Golovin (ASM): 6
+  ATT Ben Yedder (ASM): 7 [1g]
+  ATT Volland (ASM): 7 [1g]
+  GK Oukidja (FCM): 5
+  DEF Udol (FCM): 4
+  DEF Kouyaté (FCM): 4
+  DEF Sunzu (FCM): 4
+  DEF Bronn (FCM): 4
+  MID Pajot (FCM): 5
+  MID Sarr (FCM): 5
+  MID Traoré (FCM): 5
+  MID Centonze (FCM): 5
+  ATT Niane (FCM): 6 [1g]
+
+Toulouse 3-4 Metz (22 players):
+  GK Restes (TFC): 3
+  DEF Desmas (TFC): 4
+  DEF Nicolaisen (TFC): 3
+  DEF McKenzie (TFC): 4
+  DEF Suazo (TFC): 5
+  MID Cresswell (TFC): 4
+  MID Sierro (TFC): 5
+  MID Gboho (TFC): 6 [1g]
+  ATT Aboukhlal (TFC): 6
+  ATT Dallinga (TFC): 5 [1g]
+  ATT Guo (TFC): 6 [1g]
+  GK Oukidja (FCM): 4
+  DEF Udol (FCM): 6
+  DEF Traoré (FCM): 5
+  DEF Colin (FCM): 5
+  DEF Sabaly (FCM): 6 [1a]
+  MID Camara (FCM): 6
+  MID N'Doram (FCM): 6
+  MID Van Den Kerkhof (FCM): 7 [1a]
+  ATT Lamkel Zé (FCM): 7 [1g]
+  ATT Mikautadze (FCM): 8 [2g]
+  ATT Jallow (FCM): 7 [1g]
+
+Strasbourg 0-0 Paris FC (31 players):
+  GK Sels (SRFC): 6
+  DEF Doué (SRFC): 6
+  DEF Sarr (SRFC): 4
+  DEF Nyamsi (SRFC): 5
+  DEF Bakwa (SRFC): 4
+  MID Andrey Santos (SRFC): 5
+  MID Diarra (SRFC): 4
+  MID Nanasi (SRFC): 4
+  ATT Lemarechal (SRFC): 4
+  ATT Emegha (SRFC): 3
+  ATT Mothiba (SRFC): 4
+  GK Filipovic (PFC): 6
+  DEF Caddy (PFC): 6
+  DEF Cozza (PFC): 6
+  DEF Appiah (PFC): 6
+  DEF Janneh (PFC): 5
+  MID Sissoko (PFC): 6
+  MID Courtet (PFC): 5
+  MID Hadjam (PFC): 5
+  ATT Lopez (PFC): 5
+  ATT Campanini (PFC): 5
+  DEF Wiley (SRFC): 6
+  DEF Moreira (SRFC): 5
+  ATT Sebas (SRFC): 5
+  GK Oukidja (PFC): 6
+  DEF Bouchouari (PFC): 6
+  DEF Adeline (PFC): 6
+  DEF Zedadka (PFC): 5
+  MID Camara (PFC): 6
+  ATT Pierrot (PFC): 5
+  ATT Assoumani (PFC): 5

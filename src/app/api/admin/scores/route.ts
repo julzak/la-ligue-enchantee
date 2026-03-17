@@ -9,7 +9,13 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const day = Number(searchParams.get("day") ?? 0);
-  if (!day) return NextResponse.json({ error: "day required" }, { status: 400 });
+
+  // If day=0, return the current matchday (for auto-detection)
+  if (!day) {
+    const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
+    const currentDay = latest?.day ?? 26;
+    return NextResponse.json({ day: currentDay + 1 }); // next day to fill
+  }
 
   const scores = await prisma.score.findMany({ where: { day } });
   const players = await prisma.player.findMany();

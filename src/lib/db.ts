@@ -258,17 +258,21 @@ export async function getInterleagueStandings(day?: number) {
 export async function getDayStats(day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
 
-  // Stats du jour
-  const scores = await prisma.score.findMany({ where: { day: currentDay } });
-  const totalGoals = scores.reduce((sum, s) => sum + s.goals, 0);
-  const totalPoints = scores.reduce((sum, s) => sum + dec(s.points) + 2 * s.goals + s.passes, 0);
-  const playerCount = scores.filter((s) => s.used > 0).length;
+  // Aggregated SQL instead of loading all rows
+  const [dayRow] = await prisma.$queryRawUnsafe<{ goals: number; pts: number; cnt: number }[]>(
+    "SELECT COALESCE(SUM(GOALS),0) as goals, COALESCE(SUM(POINTS + 2*GOALS + PASSES),0) as pts, COUNT(CASE WHEN USED>0 THEN 1 END) as cnt FROM SCORE WHERE DAY = ?",
+    currentDay
+  );
+  const [seasonRow] = await prisma.$queryRawUnsafe<{ goals: number; pts: number; cnt: number }[]>(
+    "SELECT COALESCE(SUM(GOALS),0) as goals, COALESCE(SUM(POINTS + 2*GOALS + PASSES),0) as pts, COUNT(CASE WHEN USED>0 THEN 1 END) as cnt FROM SCORE"
+  );
 
-  // Cumul saison (toutes journées) pour les moyennes
-  const allScores = await prisma.score.findMany();
-  const seasonGoals = allScores.reduce((sum, s) => sum + s.goals, 0);
-  const seasonPoints = allScores.reduce((sum, s) => sum + dec(s.points) + 2 * s.goals + s.passes, 0);
-  const seasonPlayerCount = allScores.filter((s) => s.used > 0).length;
+  const totalGoals = Number(dayRow.goals);
+  const totalPoints = Number(dayRow.pts);
+  const playerCount = Number(dayRow.cnt);
+  const seasonGoals = Number(seasonRow.goals);
+  const seasonPoints = Number(seasonRow.pts);
+  const seasonPlayerCount = Number(seasonRow.cnt);
 
   return {
     totalGoals,
@@ -694,7 +698,7 @@ export async function getMatchPlayerRatings(day: number): Promise<Map<number, Ma
       playerId: s.playerId,
       playerName: `${player.fname} ${player.lname}`.trim(),
       position: mapPosition(player.position),
-      rating: dec(s.points) || null,
+      rating: s.points !== null ? dec(s.points) : null,
       goals: s.goals,
       passes: s.passes,
       clubId,

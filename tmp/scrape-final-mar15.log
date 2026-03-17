@@ -1,0 +1,234 @@
+[dotenv@17.3.1] injecting env (6) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+L'Équipe Kiosque Scraper
+Target: 2026-03-15
+Output: /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/kiosque-ratings-2026-03-15.json
+---
+Loaded 31 cookies from cache
+
+Navigating to kiosque/le-journal...
+  Screenshot saved: 01-kiosque-journal.png
+  Scrolling to load previous editions...
+  Screenshot saved: 02-kiosque-scrolled.png
+
+  Page text (editions section, first 3000 chars):
+ 
+voir les directs 
+L'ÉQUIPE
+U
+parcourir
+accueil
+chrono
+directs
+TV
+le journal
+jeux
+réglages
+accueille kiosque
+tous
+le journal
+le magazine
+France Football
+Vélo Magazine
+Cahier éco
+hors-série
+Spécial L'Équipe
+Journal du Golf
+Journal du Nautisme
+Journal du Runner
+le journal L’Équipe à la Une
+
+Découvrez la Une de l’Equipe et le journal du jour à travers le kiosque. Toutes les dernières éditions sont disponibles afin de ne rien manquer des dernières actualités sportives et des évènements majeurs. Vous pourrez y retrouver les analyses de nos spécialistes, des interviews exclusifs, des reportages et des statistiques détaillées.  Que vous soyez fan de football, de tennis, de rugby ou de tout sport, le Journal l’Equipe est votre guide incontournable pour rester informé de l’actualité sportif en temps réel.
+
+17 mars 2026
+lire l'édition
+16 mars 2026
+lire l'édition
+15 mars 2026
+lire l'édition
+14 mars 2026
+lire l'édition
+13 mars 2026
+lire l'édition
+12 mars 2026
+lire l'édition
+11 mars 2026
+lire l'édition
+10 mars 2026
+lire l'édition
+9 mars 2026
+lire l'édition
+8 mars 2026
+lire l'édition
+chrono
+filtrer : tous les sports
+11:23
+Foot,Liga,Real Madrid
+Rüdiger dédramatise son coup de genou sur Rico
+11:17
+JO 2030
+Pannekoucke : «L'arrivée de Michel Cadot nous permet de prendre une respiration »
+11:14
+Rugby,Afrique du Sud
+Les Springboks convoquent le Bordelais Sadie pour la première fois
+11:07
+Foot,Ligue des champions,Chelsea
+Jorrel Hato titulaire à la place de Wesley Fofana ?
+11:03
+Foot,Qualif. Coupe d'Asie
+Sanctionnée pour fraudes à la nationalité, la Malaisie éliminée
+11:00
+Respire,Iconique
+Comment John John Kennedy s'était construit par le sport
+10:58
+Tournoi des 6 nations
+Notre équipe type du Tournoi avec cinq Français
+10:57
+Basket,NBA,Warriors
+Kerr : «J'ai eu la chance d'avoir à ma disposition des talents incroyables»
+10:44
+Basket,Entretien
+Fournier : «Je termine ce contrat et je raccroche »
+10:42
+Foot,Ligue des champions
+Qui sont les joueurs menacés de suspension ?
+10:39
+Foot,Médias
+Une minisérie sur la Seleção de 1970 bientôt sur Netflix
+10:24
+Foot,Coupe de France
+La FFF agace France Télévisions
+10:17
+Hockey sur glace,KHL
+Le coup de génie d'un hockeyeur russe pendant les tirs au but
+09:59
+Tournoi des 6 nations
+Une compétition en mode «full attaque»
+09:42
+Tennis de table
+Jusqu'où peut aller Félix Lebrun ?
+09:36
+Cyclisme,Classement UCI
+Vauquelin dans le top 15 après sa 4e place sur Paris-Nice
+09:32
+Basket,NBA
+Alexander-Walker, Brown, Booker : une soirée de fièvre à plus de 40
+09:22
+Foot,Ligue des champions
+Ici, c'est Chelsea: plongée au coeur du quartier des Blues
+08:39
+Foot,Coupe du monde
+L'Iran négocie avec la FIFA pour déplacer ses matches au Mexique
+08:36
+Basket,NBA,Nuit des Bleus
+Coulibaly et Yabusele, éclats français dans une nuit calme
+08:17
+Foot,Ligue des champions,Arsenal
+Dowman, phénomène de précocité et «un régal» pour ses formateurs
+08:15
+Foot,Ligue des champions,Manchester City
+Où et quand voir Manchester City-Real Madrid ?
+08:10
+Foot,Vintage
+Il y a 50
+
+  Looking for: 15 mars 2026
+  Clicked edition: 15 mars 2026lire l'édition
+
+  Current URL after click: https://kiosque.lequipe.fr/data/1623/reader/reader.html#!1623
+  Screenshot saved: 03-after-click.png
+  Page has 2 frames
+  Found reader iframe: https://kiosque.lequipe.fr/data/1623/reader/reader.html#!1623
+
+Capturing football pages from liseuse...
+  Reader URL: https://kiosque.lequipe.fr/data/1623/reader/reader.html#!1623
+  Looking for 'football' section link...
+  Clicked 'football' text
+  Screenshot saved: 04-football-section.png
+  Current hash: #!preferred/0/package/1623/pub/1623/page/6
+  Publication: 1623, starting at page 6
+  First page hash: #!preferred/0/package/1623/pub/1623/page/6
+  Captured spread 1/5 (page 6)
+  Captured spread 2/5 (page 7)
+  Captured spread 3/5 (page 8)
+  Captured spread 4/5 (page 9)
+  Captured spread 5/5 (page 10)
+  Total: 10 screenshots captured
+
+Processing screenshots 1-1/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 2-2/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 3-3/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 4-4/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 5-5/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 6-6/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 7-7/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 8-8/10 with Claude Vision...
+  Extracted 0 ratings
+
+Processing screenshots 9-9/10 with Claude Vision...
+  Extracted 11 ratings
+    Samba (RCL): 6 — Lorient 2-1 Lens
+    Medina (RCL): 4 — Lorient 2-1 Lens
+    Danso (RCL): 3 — Lorient 2-1 Lens
+    Gradit (RCL): 4 — Lorient 2-1 Lens
+    Machado (RCL): 4 — Lorient 2-1 Lens
+    Abdul Samed (RCL): 3 — Lorient 2-1 Lens
+    Diouf (RCL): 4 — Lorient 2-1 Lens
+    Frankowski (RCL): 5 — Lorient 2-1 Lens
+    Fulgini (RCL): 4 — Lorient 2-1 Lens
+    Thomasson (RCL): 3 — Lorient 2-1 Lens
+    Wahi (RCL): 3 — Lorient 2-1 Lens
+
+Processing screenshots 10-10/10 with Claude Vision...
+  Extracted 11 ratings
+    Samba (RCL): 4 — Lorient 2-1 Lens
+    Medina (RCL): 4 — Lorient 2-1 Lens
+    Talbi (RCL): 5 — Lorient 2-1 Lens
+    Laporte (RCL): 4 — Lorient 2-1 Lens
+    Le Goff (RCL): 6 — Lorient 2-1 Lens
+    Abergel (RCL): 6 — Lorient 2-1 Lens
+    Mendes (RCL): 7 — Lorient 2-1 Lens
+    Toure (RCL): 3 — Lorient 2-1 Lens
+    Kalulu (RCL): 7 — Lorient 2-1 Lens
+    Bamba (RCL): 5 — Lorient 2-1 Lens
+    Kroupi (RCL): 5 — Lorient 2-1 Lens
+
+=== TOTAL: 20 unique ratings extracted ===
+Saved to /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/kiosque-ratings-2026-03-15.json
+
+=== SUMMARY ===
+
+Lorient 2-1 Lens (20 players):
+  GK Samba: 6
+  DEF Medina: 4
+  DEF Danso: 3
+  DEF Gradit: 4
+  DEF Machado: 4
+  MID Abdul Samed: 3
+  MID Diouf: 4
+  MID Frankowski: 5
+  MID Fulgini: 4
+  ATT Thomasson: 3
+  ATT Wahi: 3
+  DEF Talbi: 5
+  DEF Laporte: 4
+  DEF Le Goff: 6
+  MID Abergel: 6
+  MID Mendes: 7
+  MID Toure: 3
+  MID Kalulu: 7
+  ATT Bamba: 5
+  ATT Kroupi: 5

@@ -1,0 +1,223 @@
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  override existing env vars with { override: true }
+
+Scraping L'Équipe web articles for J26
+
+9 matches from TheSportsDB:
+  Marseille 1-0 Auxerre
+  Angers 0-2 Nice
+  Lorient 2-1 Lens
+  Monaco 2-0 Brest
+  Le Havre 0-0 Lyon
+  Metz 3-4 Toulouse
+  Paris SG TBD Nantes
+  Rennes 1-2 Lille
+  Strasbourg 0-0 Paris FC
+
+🔍 Marseille 1-0 Auxerre
+  Found 0 article(s)
+  Trying L1 page browse...
+  ❌ No article found (even after browse)
+
+🔍 Angers 0-2 Nice
+  Found 0 article(s)
+  Trying L1 page browse...
+  ❌ No article found (even after browse)
+
+🔍 Lorient 2-1 Lens
+  Found 0 article(s)
+  Trying L1 page browse...
+  ❌ No article found (even after browse)
+
+🔍 Monaco 2-0 Brest
+  Found 0 article(s)
+  Trying L1 page browse...
+  ❌ No article found (even after browse)
+
+🔍 Le Havre 0-0 Lyon
+  Found 0 article(s)
+  Trying L1 page browse...
+  📰 Les-notes-de-le-havre-ol-diaw-solide-karabec-invisible/1659928 (from browse)
+    6 ratings extracted
+      Mory Diaw (Le Havre): 7
+      Sofiane Boufal (Le Havre): 7
+      Tyler Morton (OL): 6
+      Endrick (OL): 6
+      Stephan Zagadou (Le Havre): 3 [1g]
+      Adam Karabec (OL): 3
+
+🔍 Metz 3-4 Toulouse
+  Found 0 article(s)
+  Trying L1 page browse...
+  📰 Les-notes-de-metz-toulouse-gboho-et-donnum-ont-mis-les-messins-au-supplice/1659906 (from browse)
+    7 ratings extracted
+      Yann Gboho (Toulouse): 7 [2g]
+      Aron Dönnum (Toulouse): 7 [1g,1a]
+      Giorgi Tsitaichvili (Metz): 7 [2g,2a]
+      Nathan Mbala (Metz): 7 [1g]
+      Michel Mboula (Metz): 3
+      Jessy Deminguet (Metz): 4 [1g]
+      Djibril Sidibé (Toulouse): 4
+
+⏭  Paris SG vs Nantes — postponed, skipping
+
+🔍 Rennes 1-2 Lille
+  Found 0 article(s)
+  Trying L1 page browse...
+  ❌ No article found (even after browse)
+
+🔍 Strasbourg 0-0 Paris FC
+browserContext.newPage: Target page, context or browser has been closed
+Browser logs:
+
+[pid=69648][err] [0317/185936.611217:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20SCO%20OGC%20Nice&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/185941.578744:WARNING:net/spdy/spdy_session.cc:3071] Received HEADERS for invalid stream 53
+[pid=69648][err] [0317/185941.712315:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/185941.943483:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/185942.256304:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Angers%20OGCN&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/185947.058042:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/185947.269945:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/185947.566614:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Angers%20Nice&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/185952.445860:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/185952.748932:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/185953.107329:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Angers%20OGC%20Nice&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/185953.110369:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/185957.825468:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/185958.037227:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/185958.343053:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20de%20Angers%20Nice&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190003.207333:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190003.433281:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190003.767094:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20angers-nice&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190008.306878:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190008.443761:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190016.425444:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190016.679119:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190017.029158:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20FCL%20RCL&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190021.660590:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190021.916949:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190022.251530:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20FCL%20Lens&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190027.130676:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190027.211477:INFO:CONSOLE:0] "Framing 'https://www.google.com/' violates the following report-only Content Security Policy directive: "frame-ancestors 'self'". The violation has been logged, but no further action has been taken.
+[pid=69648][err] ", source:  (0)
+[pid=69648][err] [0317/190027.407439:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190027.706977:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20FCL%20RC%20Lens&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190032.435065:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190032.672027:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190032.973363:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Lorient%20RCL&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190037.844209:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190038.077372:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190038.349175:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Lorient%20Lens&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190043.208613:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190043.433613:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190043.706313:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Lorient%20RC%20Lens&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190048.516416:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190048.742454:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190048.985931:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20de%20Lorient%20Lens&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190053.814549:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190054.093003:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190054.344396:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20lorient-lens&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190058.915367:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190059.047670:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190107.261639:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190107.509918:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190107.907701:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20ASM%20SB29&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190112.581830:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190112.798861:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190113.025758:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20ASM%20Brest&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190117.910906:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190118.208187:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190118.565225:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20ASM%20Stade%20Brestois&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190118.567093:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190123.714014:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190124.020260:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190124.333443:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Monaco%20SB29&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190129.076216:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190129.294218:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190129.580190:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Monaco%20Brest&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190134.846468:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190135.051913:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190135.340601:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Monaco%20Stade%20Brestois&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190140.218878:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190140.422275:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190140.745489:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20de%20Monaco%20Brest&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190140.746352:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190145.474462:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190145.696243:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190145.983332:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20monaco-brest&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190150.644514:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190150.786780:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190158.891920:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190159.188450:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190159.458558:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20HAC%20Lyon&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190204.332352:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190204.555202:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190204.858405:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Le%20Havre%20Lyon&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190209.657016:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190209.909364:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190210.205255:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20le-havre%20Lyon&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190215.036430:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190215.269164:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190215.565079:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20de%20Havre%20Lyon&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190220.985074:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190221.193721:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190221.478779:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20havre-lyon&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190226.086598:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190226.227229:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190226.362970:INFO:CONSOLE:0] "Framing 'https://news.google.com/' violates the following report-only Content Security Policy directive: "frame-ancestors 'self'". The violation has been logged, but no further action has been taken.
+[pid=69648][err] ", source:  (0)
+[pid=69648][err] [0317/190235.960638:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190236.101659:INFO:CONSOLE:1] "Uncaught (in promise) DataCloneError: Failed to execute 'postMessage' on 'MessagePort': #<Object> could not be cloned.", source: https://0f948b7e-5b98-42a8-b9a9-eb4b49478b1f.edge.permutive.app/0f948b7e-5b98-42a8-b9a9-eb4b49478b1f-web.js (1)
+[pid=69648][err] [0317/190239.916355:INFO:CONSOLE:57] "Conversion Event ping fired.", source: https://static.chartbeat.com/js/subscriptions.js (57)
+[pid=69648][err] [0317/190244.477839:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190244.801075:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190245.086515:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20FCM%20TFC&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190249.680063:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190249.965667:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190250.317813:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20FCM%20Toulouse&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190254.974140:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190255.238907:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190255.559824:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Metz%20TFC&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190300.319040:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190300.556091:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190300.807096:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Metz%20Toulouse&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190305.877629:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190306.106533:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190306.375530:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20FC%20Metz%20TFC&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190311.802479:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190312.018780:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190312.333849:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20FC%20Metz%20Toulouse&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190317.058433:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190317.280843:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190317.578357:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20de%20Metz%20Toulouse&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190322.437002:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190322.647818:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190322.980343:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20metz-toulouse&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190322.981523:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190327.537293:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190327.670978:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190336.322801:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190336.461958:INFO:CONSOLE:1] "Uncaught (in promise) DataCloneError: Failed to execute 'postMessage' on 'MessagePort': #<Object> could not be cloned.", source: https://0f948b7e-5b98-42a8-b9a9-eb4b49478b1f.edge.permutive.app/0f948b7e-5b98-42a8-b9a9-eb4b49478b1f-web.js (1)
+[pid=69648][err] [0317/190340.124896:INFO:CONSOLE:57] "Conversion Event ping fired.", source: https://static.chartbeat.com/js/subscriptions.js (57)
+[pid=69648][err] [0317/190344.783088:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190344.864889:INFO:CONSOLE:0] "Framing 'https://www.google.com/' violates the following report-only Content Security Policy directive: "frame-ancestors 'self'". The violation has been logged, but no further action has been taken.
+[pid=69648][err] ", source:  (0)
+[pid=69648][err] [0317/190345.109686:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190345.367797:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20SRFC%20Lille&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190350.112697:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190350.331490:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190350.612225:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Rennes%20Lille&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190352.035969:ERROR:net/socket/ssl_client_socket_impl.cc:918] handshake failed; returned -1, SSL error code 1, net_error -101
+[pid=69648][err] [0317/190355.493912:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190355.724660:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190356.038609:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20Stade%20Rennais%20Lille&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190400.832778:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190401.045689:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190401.383549:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20de%20Rennes%20Lille&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190401.384758:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190406.133043:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648][err] [0317/190406.343245:ERROR:gpu/ipc/service/gles2_command_buffer_stub.cc:259] ContextResult::kFatalFailure: Failed to create context.
+[pid=69648][err] [0317/190406.624258:INFO:CONSOLE:1] "❌ Fetch error: Error: Erreur réseau : 403  https://dwh.lequipe.fr/api/search/engine/documents?query=notes%20rennes-lille&page=1&order-field=relevance&order-direction=desc&platform=desktop&version=1.4 - <!doctype html><meta charset="utf-8"><meta name=viewport content="width=device-width, initial-scale=1"><title>403</title>403 Forbidden", source: https://www.lequipe.fr/assets/js/useFetch-VkqrWP3L.js (1)
+[pid=69648][err] [0317/190411.204399:INFO:CONSOLE:13] "Hydration completed but contains mismatches.", source: https://www.lequipe.fr/assets/js/vendor-DqkXs8ux.js (13)
+[pid=69648][err] [0317/190411.350294:INFO:CONSOLE:1] "Subscriptions Runtime: 1.0.140", source: https://news.google.com/swg/js/v1/swg.js (1)
+[pid=69648] <gracefully close start>
+    at findNoteArticles (/Users/julienzakoian/Projects/la-ligue-enchantee/scripts/scrape-notes-web.ts:98:30)
+    at main (/Users/julienzakoian/Projects/la-ligue-enchantee/scripts/scrape-notes-web.ts:325:31)

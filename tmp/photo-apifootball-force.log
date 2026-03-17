@@ -1,0 +1,19 @@
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+DB players to process: 1032 (force)
+
+Fetching page 1/1...
+  API players: 20 | Matched: 3 | Requests: 1/95
+
+Fetching page 2/46...
+  API players: 40 | Matched: 7 | Requests: 2/95
+
+Fetching page 3/46...
+  API players: 60 | Matched: 17 | Requests: 3/95
+
+Fetching page 4/46...
+  API players: 60 | Matched: 17 | Requests: 4/95
+
+=== SUMMARY ===
+  API requests used: 4
+  New photos matched: 17
+  Total photos in DB: 110 / 1032 players

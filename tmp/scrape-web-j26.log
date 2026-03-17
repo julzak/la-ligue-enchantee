@@ -1,0 +1,105 @@
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+Scraping L'Équipe web articles for J26
+
+9 matches from TheSportsDB:
+  Marseille 1-0 Auxerre
+  Angers 0-2 Nice
+  Lorient 2-1 Lens
+  Monaco 2-0 Brest
+  Le Havre 0-0 Lyon
+  Metz 3-4 Toulouse
+  Paris SG TBD Nantes
+  Rennes 1-2 Lille
+  Strasbourg 0-0 Paris FC
+
+🔍 Marseille 1-0 Auxerre
+  Found 0 article(s)
+  ❌ No article found
+
+🔍 Angers 0-2 Nice
+  Found 3 article(s)
+  📰 Les-notes-d-angers-nice-la-constance-de-sanson-la-resistance-de-koffi/1659587
+    6 ratings extracted
+      Morgan Sanson (Nice): 6
+      Antoine Mendy (Nice): 6
+      Hervé Koffi (Angers): 7 [1g]
+      Kevin Carlos (Nice): 3
+      Branco Van den Boomen (Angers): 4 [1g]
+      Goduine Koyalipou (Angers): 4
+  📰 Les-notes-de-nice-angers-tom-louchet-et-juma-bah-au-coeur-du-naufrage-des-aiglons/1615246
+    0 ratings extracted
+
+🔍 Lorient 2-1 Lens
+  Found 2 article(s)
+  📰 Les-notes-de-lorient-lens-la-cathedrale-talbi-la-disette-de-sima/1659553
+    7 ratings extracted
+      Montassar Talbi (Lorient): 7
+      Yvon Mvogo (Lorient): 7
+      Mamadou Sangaré (Lens): 7 [1g]
+      Abdallah Sima (Lens): 3
+      Nidal Celik (Lens): 3
+      Malang Sarr (Lens): 4
+      Noah Cadiou (Lorient): 4 [1g]
+  📰 Les-notes-de-lens-lorient-risser-en-toute-serenite-bamba-a-craque/1606717
+    0 ratings extracted
+
+🔍 Monaco 2-0 Brest
+  Found 3 article(s)
+  📰 Les-notes-de-monaco-brest-balogun-inarretable-del-castillo-stoppe/1659624
+    8 ratings extracted
+      Falorin Balogun (Monaco): 6 [1g]
+      Alexandre Golovine (Monaco): 6 [1g]
+      Wout Faes (Monaco): 6
+      Denis Zakaria (Monaco): 6 [1g]
+      Joris Chotard (Brest): 3 [1g]
+      Junior Diaz (Brest): 4 [1g]
+      Kamory Doumbia (Brest): 4
+      Romain Del Castillo (Brest): 3
+  📰 Les-notes-de-brest-monaco-biereth-impuissant-face-a-un-chardonnet-etincelant/1614829
+    0 ratings extracted
+
+🔍 Le Havre 0-0 Lyon
+  Found 0 article(s)
+  ❌ No article found
+
+🔍 Metz 3-4 Toulouse
+  Found 2 article(s)
+  📰 Les-notes-de-metz-toulouse-gboho-et-donnum-ont-mis-les-messins-au-supplice/1659906
+    7 ratings extracted
+      Yann Gboho (Toulouse): 7 [2g]
+      Aron Dönnum (Toulouse): 7 [1g,1a]
+      Giorgi Tsitaichvili (Metz): 7 [2g,2a]
+      Nathan Mbala (Metz): 7 [1g]
+      Michel Mboula (Metz): 3
+      Jessy Deminguet (Metz): 4 [1g]
+      Djibril Sidibé (Toulouse): 4
+  📰 Les-notes-de-toulouse-metz-donnum-et-gboho-enflamment-le-stadium-sane-prend-l-eau/1602976
+    0 ratings extracted
+
+⏭  Paris SG vs Nantes — postponed, skipping
+
+🔍 Rennes 1-2 Lille
+  Found 4 article(s)
+  📰 Les-notes-de-rennes-lille-les-jambes-de-fernandez-pardo-la-tete-d-haraldsson/1659974
+    8 ratings extracted
+      Matias Fernandez-Pardo (Lille): 8 [1g]
+      Ayyoub Bouaddi (Lille): 7
+      Hakon Haraldsson (Lille): 7 [1g]
+      Estéban Lepaul (Rennes): 6 [1g]
+      Félix Correia (Lille): 3
+      Mousa Al-Tamari (Rennes): 4
+      Ludovic Blas (Rennes): 4
+      Mahamadou Nagida (Rennes): 4 [1g]
+  📰 Les-notes-de-lille-rennes-jacquet-solide-verdonk-depasse/1631025
+    0 ratings extracted
+
+🔍 Strasbourg 0-0 Paris FC
+  Found 1 article(s)
+  📰 Les-notes-de-paris-fc-strasbourg-geubbels-en-panne-moreira-en-feu/1595491
+    0 ratings extracted
+
+==================================================
+TOTAL: 36 unique ratings from 9 matches
+Saved to /Users/julienzakoian/Projects/la-ligue-enchantee/tmp/web-ratings-j26.json
+==================================================

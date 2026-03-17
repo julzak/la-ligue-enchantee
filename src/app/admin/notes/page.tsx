@@ -60,7 +60,7 @@ function teamToClubName(team: string): string[] {
 }
 
 export default function AdminNotesPage() {
-  const [day, setDay] = useState(27);
+  const [day, setDay] = useState(0);
   const [scores, setScores] = useState<PlayerScore[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,7 +69,19 @@ export default function AdminNotesPage() {
   const [filter, setFilter] = useState("");
   const [matches, setMatches] = useState<MatchInfo[]>([]);
 
+  // Auto-detect current matchday on mount
+  useEffect(() => {
+    if (day === 0) {
+      fetch("/api/admin/scores?day=0")
+        .then((r) => r.json())
+        .then((d) => { if (d.day) setDay(d.day); else setDay(26); })
+        .catch(() => setDay(26));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const fetchScores = useCallback(async () => {
+    if (day === 0) return;
     setLoading(true);
     setMessage("");
     try {

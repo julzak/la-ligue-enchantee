@@ -36,6 +36,10 @@ export default async function HomePage() {
     currentMatchday
   );
 
+  // Sort leagues: L1 → L2 → National
+  const leagueOrder: Record<string, number> = { "ligue-1": 0, "ligue-2": 1, "national-1": 2 };
+  const sortedLeagues = [...leagues].sort((a, b) => (leagueOrder[a.slug] ?? 9) - (leagueOrder[b.slug] ?? 9));
+
   // Fetch league standings for each league in parallel
   const leagueStandingsMap = new Map<string, Awaited<ReturnType<typeof getLeagueStandings>>>();
   const leagueStandingsResults = await Promise.all(
@@ -88,10 +92,7 @@ export default async function HomePage() {
             <p className="text-xs text-white/30 italic tracking-wide">La fantasy league est une affaire sérieuse</p>
             {/* Quick links to leagues */}
             <div className="flex justify-center gap-3 mt-4">
-              {[...leagues].sort((a, b) => {
-                const order: Record<string, number> = { "ligue-1": 0, "ligue-2": 1, "national-1": 2 };
-                return (order[a.slug] ?? 9) - (order[b.slug] ?? 9);
-              }).map((league) => (
+              {sortedLeagues.map((league) => (
                 <Link
                   key={league.id}
                   href={`/ligue/${league.slug}/resultats`}

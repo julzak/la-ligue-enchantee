@@ -1,0 +1,458 @@
+[
+  {
+    "playerName": "Facundo Medina",
+    "club": "OM",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Marseille 1-0 Auxerre"
+  },
+  {
+    "playerName": "Donovan Léon",
+    "club": "Auxerre",
+    "rating": 6,
+    "goals": 2,
+    "assists": 0,
+    "match": "Marseille 1-0 Auxerre"
+  },
+  {
+    "playerName": "Sinaly Diomandé",
+    "club": "Auxerre",
+    "rating": 6,
+    "goals": 1,
+    "assists": 0,
+    "match": "Marseille 1-0 Auxerre"
+  },
+  {
+    "playerName": "Pierre-Emerick Aubameyang",
+    "club": "OM",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Marseille 1-0 Auxerre"
+  },
+  {
+    "playerName": "Josué Casimir",
+    "club": "Auxerre",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Marseille 1-0 Auxerre"
+  },
+  {
+    "playerName": "Geoffrey Kondogbia",
+    "club": "OM",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Marseille 1-0 Auxerre"
+  },
+  {
+    "playerName": "Danny Namaso",
+    "club": "Auxerre",
+    "rating": 3,
+    "goals": 1,
+    "assists": 0,
+    "match": "Marseille 1-0 Auxerre"
+  },
+  {
+    "playerName": "Morgan Sanson",
+    "club": "Nice",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Angers 0-2 Nice"
+  },
+  {
+    "playerName": "Antoine Mendy",
+    "club": "Nice",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Angers 0-2 Nice"
+  },
+  {
+    "playerName": "Hervé Koffi",
+    "club": "Angers",
+    "rating": 7,
+    "goals": 1,
+    "assists": 0,
+    "match": "Angers 0-2 Nice"
+  },
+  {
+    "playerName": "Kevin Carlos",
+    "club": "Nice",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Angers 0-2 Nice"
+  },
+  {
+    "playerName": "Branco Van den Boomen",
+    "club": "Angers",
+    "rating": 4,
+    "goals": 1,
+    "assists": 0,
+    "match": "Angers 0-2 Nice"
+  },
+  {
+    "playerName": "Goduine Koyalipou",
+    "club": "Angers",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Angers 0-2 Nice"
+  },
+  {
+    "playerName": "Montassar Talbi",
+    "club": "Lorient",
+    "rating": 7,
+    "goals": 0,
+    "assists": 0,
+    "match": "Lorient 2-1 Lens"
+  },
+  {
+    "playerName": "Yvon Mvogo",
+    "club": "Lorient",
+    "rating": 7,
+    "goals": 0,
+    "assists": 0,
+    "match": "Lorient 2-1 Lens"
+  },
+  {
+    "playerName": "Mamadou Sangaré",
+    "club": "Lens",
+    "rating": 7,
+    "goals": 1,
+    "assists": 0,
+    "match": "Lorient 2-1 Lens"
+  },
+  {
+    "playerName": "Abdallah Sima",
+    "club": "Lens",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Lorient 2-1 Lens"
+  },
+  {
+    "playerName": "Nidal Celik",
+    "club": "Lens",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Lorient 2-1 Lens"
+  },
+  {
+    "playerName": "Malang Sarr",
+    "club": "Lens",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Lorient 2-1 Lens"
+  },
+  {
+    "playerName": "Noah Cadiou",
+    "club": "Lorient",
+    "rating": 4,
+    "goals": 1,
+    "assists": 0,
+    "match": "Lorient 2-1 Lens"
+  },
+  {
+    "playerName": "Falorin Balogun",
+    "club": "Monaco",
+    "rating": 6,
+    "goals": 1,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Alexandre Golovine",
+    "club": "Monaco",
+    "rating": 6,
+    "goals": 1,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Wout Faes",
+    "club": "Monaco",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Denis Zakaria",
+    "club": "Monaco",
+    "rating": 6,
+    "goals": 1,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Joris Chotard",
+    "club": "Brest",
+    "rating": 3,
+    "goals": 1,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Junior Diaz",
+    "club": "Brest",
+    "rating": 4,
+    "goals": 1,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Kamory Doumbia",
+    "club": "Brest",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Romain Del Castillo",
+    "club": "Brest",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Monaco 2-0 Brest"
+  },
+  {
+    "playerName": "Mory Diaw",
+    "club": "Le Havre",
+    "rating": 7,
+    "goals": 0,
+    "assists": 0,
+    "match": "Le Havre 0-0 Lyon"
+  },
+  {
+    "playerName": "Sofiane Boufal",
+    "club": "Le Havre",
+    "rating": 7,
+    "goals": 0,
+    "assists": 0,
+    "match": "Le Havre 0-0 Lyon"
+  },
+  {
+    "playerName": "Tyler Morton",
+    "club": "OL",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Le Havre 0-0 Lyon"
+  },
+  {
+    "playerName": "Endrick",
+    "club": "OL",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Le Havre 0-0 Lyon"
+  },
+  {
+    "playerName": "Stephan Zagadou",
+    "club": "Le Havre",
+    "rating": 3,
+    "goals": 1,
+    "assists": 0,
+    "match": "Le Havre 0-0 Lyon"
+  },
+  {
+    "playerName": "Adam Karabec",
+    "club": "OL",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Le Havre 0-0 Lyon"
+  },
+  {
+    "playerName": "Yann Gboho",
+    "club": "Toulouse",
+    "rating": 7,
+    "goals": 2,
+    "assists": 0,
+    "match": "Metz 3-4 Toulouse"
+  },
+  {
+    "playerName": "Aron Dönnum",
+    "club": "Toulouse",
+    "rating": 7,
+    "goals": 1,
+    "assists": 1,
+    "match": "Metz 3-4 Toulouse"
+  },
+  {
+    "playerName": "Giorgi Tsitaichvili",
+    "club": "Metz",
+    "rating": 7,
+    "goals": 2,
+    "assists": 2,
+    "match": "Metz 3-4 Toulouse"
+  },
+  {
+    "playerName": "Nathan Mbala",
+    "club": "Metz",
+    "rating": 7,
+    "goals": 1,
+    "assists": 0,
+    "match": "Metz 3-4 Toulouse"
+  },
+  {
+    "playerName": "Michel Mboula",
+    "club": "Metz",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Metz 3-4 Toulouse"
+  },
+  {
+    "playerName": "Jessy Deminguet",
+    "club": "Metz",
+    "rating": 4,
+    "goals": 1,
+    "assists": 0,
+    "match": "Metz 3-4 Toulouse"
+  },
+  {
+    "playerName": "Djibril Sidibé",
+    "club": "Toulouse",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Metz 3-4 Toulouse"
+  },
+  {
+    "playerName": "Matias Fernandez-Pardo",
+    "club": "Lille",
+    "rating": 8,
+    "goals": 1,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Ayyoub Bouaddi",
+    "club": "Lille",
+    "rating": 7,
+    "goals": 0,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Hakon Haraldsson",
+    "club": "Lille",
+    "rating": 7,
+    "goals": 1,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Estéban Lepaul",
+    "club": "Rennes",
+    "rating": 6,
+    "goals": 1,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Félix Correia",
+    "club": "Lille",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Mousa Al-Tamari",
+    "club": "Rennes",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Ludovic Blas",
+    "club": "Rennes",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Mahamadou Nagida",
+    "club": "Rennes",
+    "rating": 4,
+    "goals": 1,
+    "assists": 0,
+    "match": "Rennes 1-2 Lille"
+  },
+  {
+    "playerName": "Mike Penders",
+    "club": "Strasbourg",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  },
+  {
+    "playerName": "Samir El Mourabet",
+    "club": "Strasbourg",
+    "rating": 6,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  },
+  {
+    "playerName": "Kevin Trapp",
+    "club": "PFC",
+    "rating": 7,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  },
+  {
+    "playerName": "Diego Coppola",
+    "club": "PFC",
+    "rating": 7,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  },
+  {
+    "playerName": "Julio Enciso",
+    "club": "Strasbourg",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  },
+  {
+    "playerName": "Martial Godo",
+    "club": "Strasbourg",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  },
+  {
+    "playerName": "Ciro Immobile",
+    "club": "PFC",
+    "rating": 3,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  },
+  {
+    "playerName": "Jonathan Ikoné",
+    "club": "PFC",
+    "rating": 4,
+    "goals": 0,
+    "assists": 0,
+    "match": "Strasbourg 0-0 Paris FC"
+  }
+]
