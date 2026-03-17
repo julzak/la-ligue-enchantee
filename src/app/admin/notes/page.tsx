@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Save, Send, Loader2, ChevronDown, Info, Image as ImageIcon } from "lucide-react";
+import { Save, Send, Loader2, ChevronDown, Image as ImageIcon } from "lucide-react";
 
 interface PlayerScore {
   playerId: number;
@@ -16,6 +16,39 @@ interface PlayerScore {
   passes: number;
 }
 
+interface MatchInfo {
+  home_team: string;
+  away_team: string;
+  home_score: number | null;
+  away_score: number | null;
+  infographic_url: string | null;
+}
+
+// Match TheSportsDB team name to DB club name
+function teamToClubName(team: string): string[] {
+  const map: Record<string, string[]> = {
+    "Marseille": ["MARSEILLE (OM)"], "Olympique Marseille": ["MARSEILLE (OM)"],
+    "Lyon": ["LYON (OL)"], "Olympique Lyonnais": ["LYON (OL)"],
+    "Monaco": ["MONACO (ASM)"],
+    "Lille": ["LILLE"], "LOSC Lille": ["LILLE"],
+    "Rennes": ["RENNES"],
+    "Le Havre": ["LE HAVRE"],
+    "Metz": ["METZ"],
+    "Toulouse": ["TOULOUSE"],
+    "Strasbourg": ["STRASBOURG"],
+    "Paris FC": ["PARIS FC"], "Paris": ["PARIS FC"],
+    "Lens": ["LENS"],
+    "Lorient": ["LORIENT"],
+    "Brest": ["BREST"],
+    "Angers": ["ANGERS"], "Angers SCO": ["ANGERS"],
+    "Nice": ["NICE"],
+    "Auxerre": ["AUXERRE"],
+    "Nantes": ["NANTES"],
+    "Paris SG": ["PARIS-SG (PSG)"], "Paris Saint Germain": ["PARIS-SG (PSG)"],
+  };
+  return map[team] ?? [team];
+}
+
 export default function AdminNotesPage() {
   const [day, setDay] = useState(27);
   const [scores, setScores] = useState<PlayerScore[]>([]);
@@ -24,15 +57,20 @@ export default function AdminNotesPage() {
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState("");
-  const [showOnlyFilled, setShowOnlyFilled] = useState(false);
+  const [matches, setMatches] = useState<MatchInfo[]>([]);
 
   const fetchScores = useCallback(async () => {
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/admin/scores?day=${day}`);
-      const data = await res.json();
-      setScores(data.scores ?? []);
+      const [scoresRes, matchRes] = await Promise.all([
+        fetch(`/api/admin/scores?day=${day}`),
+        fetch(`/api/admin/match-schedule?day=${day}`),
+      ]);
+      const scoresData = await scoresRes.json();
+      const matchData = await matchRes.json();
+      setScores(scoresData.scores ?? []);
+      setMatches(matchData.matches ?? []);
     } catch {
       setMessage("Erreur chargement");
     }
@@ -65,7 +103,7 @@ export default function AdminNotesPage() {
         .filter((s) => s.used > 0 || s.points !== null || s.goals > 0 || s.passes > 0)
         .map((s) => ({
           playerId: s.playerId,
-          used: s.used,
+          used: s.points !== null && s.points > 0 ? 1 : s.used,
           points: s.points,
           goals: s.goals,
           passes: s.passes,
@@ -89,52 +127,82 @@ export default function AdminNotesPage() {
   }
 
   async function handlePublish() {
-    if (!confirm(`Publier la journée ${day} ? Cela recalculera les classements pour toutes les ligues.`)) return;
+    if (!confirm(`Publier la journée ${day} ? Cela recalculera les classements.`)) return;
     setPublishing(true);
     setMessage("");
     try {
-      // Save first
       await handleSave();
-      // Then publish
       const res = await fetch("/api/admin/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ day }),
       });
       const data = await res.json();
-      if (data.ok) {
-        setMessage(`Journée ${day} publiée avec succès !`);
-      } else {
-        setMessage("Erreur: " + data.error);
-      }
+      if (data.ok) setMessage(`Journée ${day} publiée !`);
+      else setMessage("Erreur: " + data.error);
     } catch {
       setMessage("Erreur publication");
     }
     setPublishing(false);
   }
 
-  // Group by club
-  const filteredScores = scores.filter((s) => {
-    if (showOnlyFilled && s.points === null && s.goals === 0 && s.passes === 0) return false;
-    if (filter && !s.clubName.toLowerCase().includes(filter.toLowerCase()) &&
-        !`${s.fname} ${s.lname}`.toLowerCase().includes(filter.toLowerCase())) return false;
-    return true;
-  });
+  // Group players by match
+  function getMatchPlayers(match: MatchInfo): { home: PlayerScore[]; away: PlayerScore[] } {
+    const homeClubs = teamToClubName(match.home_team);
+    const awayClubs = teamToClubName(match.away_team);
+    return {
+      home: scores.filter((s) => homeClubs.includes(s.clubName)),
+      away: scores.filter((s) => awayClubs.includes(s.clubName)),
+    };
+  }
 
-  const clubs = Array.from(new Set(filteredScores.map((s) => s.clubName))).sort();
+  // Players not in any match (unmatched clubs)
+  const matchedClubs = new Set(
+    matches.flatMap((m) => [...teamToClubName(m.home_team), ...teamToClubName(m.away_team)])
+  );
+  const unmatchedPlayers = scores.filter((s) => !matchedClubs.has(s.clubName));
+  const unmatchedClubs = Array.from(new Set(unmatchedPlayers.map((s) => s.clubName))).sort();
 
   const filledCount = scores.filter((s) => s.points !== null).length;
   const totalWithGoals = scores.filter((s) => s.goals > 0).reduce((sum, s) => sum + s.goals, 0);
 
-  // Infographics for this matchday
-  const [infographics, setInfographics] = useState<{ home_team: string; away_team: string; home_score: number | null; away_score: number | null; infographic_url: string | null }[]>([]);
-  useEffect(() => {
-    fetch(`/api/admin/match-schedule?day=${day}`)
-      .then((r) => r.json())
-      .then((d) => setInfographics(d.matches ?? []))
-      .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day]);
+  function PlayerRow({ s }: { s: PlayerScore }) {
+    if (filter && !`${s.fname} ${s.lname}`.toLowerCase().includes(filter.toLowerCase())) return null;
+    const total = (s.points ?? 0) + 2 * s.goals + s.passes;
+    const hasData = s.points !== null;
+    return (
+      <div className={`grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_3rem] gap-1 px-3 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
+        <span className="text-xs text-white truncate" title={`${s.fname} ${s.lname} (${s.position})`}>
+          {s.lname}
+        </span>
+        <input
+          type="number"
+          value={s.points ?? ""}
+          onChange={(e) => updateScore(s.playerId, "points", e.target.value ? Number(e.target.value) : null)}
+          placeholder="—"
+          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold"
+          min={0} max={10} step={1}
+        />
+        <input
+          type="number"
+          value={s.goals || ""}
+          onChange={(e) => updateScore(s.playerId, "goals", Number(e.target.value) || 0)}
+          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold"
+          min={0}
+        />
+        <input
+          type="number"
+          value={s.passes || ""}
+          onChange={(e) => updateScore(s.playerId, "passes", Number(e.target.value) || 0)}
+          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold"
+          min={0}
+        />
+        <span className={`text-xs text-right tabular-nums ${hasData ? "text-white font-medium" : "text-muted"}`}>
+          {hasData ? total.toFixed(1) : ""}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -142,11 +210,10 @@ export default function AdminNotesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-2xl text-white mb-1">Saisie des notes</h1>
-          <p className="text-sm text-muted">{filledCount} joueurs notés - {totalWithGoals} buts saisis</p>
+          <p className="text-sm text-muted">{filledCount} joueurs notés · {totalWithGoals} buts</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Day selector */}
           <div className="flex items-center gap-2">
             <ChevronDown className="w-4 h-4 text-muted" />
             <select
@@ -160,36 +227,14 @@ export default function AdminNotesPage() {
             </select>
           </div>
 
-          {/* Infographics button */}
-          {infographics.some((m) => m.infographic_url) && (
-            <div className="flex gap-1">
-              {infographics.filter((m) => m.infographic_url).map((m) => (
-                <a
-                  key={`${m.home_team}-${m.away_team}`}
-                  href={m.infographic_url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-9 px-2 bg-surface-2 border border-white/[0.07] rounded text-[10px] text-muted hover:text-gold hover:border-gold/30 flex items-center gap-1 transition-colors"
-                  title={`Notes ${m.home_team} ${m.home_score}-${m.away_score} ${m.away_team}`}
-                >
-                  <ImageIcon className="w-3 h-3" />
-                  {m.home_team.split(" ").pop()}-{m.away_team.split(" ").pop()}
-                </a>
-              ))}
-            </div>
-          )}
+          <input
+            type="text"
+            placeholder="Filtrer..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-surface-2 border border-white/[0.07] rounded px-3 py-1.5 text-sm text-white placeholder:text-muted focus:outline-none focus:border-gold w-36"
+          />
 
-          {/* Pre-fill button (disabled) */}
-          <button
-            disabled
-            className="h-9 px-3 bg-surface-2 border border-white/[0.07] rounded text-sm text-muted cursor-not-allowed flex items-center gap-2"
-            title="Disponible en production - récupère buts/passes/cartons automatiquement"
-          >
-            <Info className="w-3.5 h-3.5" />
-            Pré-remplir API
-          </button>
-
-          {/* Save */}
           <button
             onClick={handleSave}
             disabled={saving}
@@ -199,14 +244,13 @@ export default function AdminNotesPage() {
             Sauvegarder
           </button>
 
-          {/* Publish */}
           <button
             onClick={handlePublish}
             disabled={publishing}
             className="h-9 px-4 bg-gold text-night font-semibold rounded text-sm hover:bg-gold/90 flex items-center gap-2 transition-colors"
           >
             {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Publier la journée
+            Publier
           </button>
         </div>
       </div>
@@ -218,119 +262,92 @@ export default function AdminNotesPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Rechercher joueur ou club..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="bg-surface-2 border border-white/[0.07] rounded px-3 py-1.5 text-sm text-white placeholder:text-muted focus:outline-none focus:border-gold w-64"
-        />
-        <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showOnlyFilled}
-            onChange={(e) => setShowOnlyFilled(e.target.checked)}
-            className="accent-gold"
-          />
-          Joueurs notés uniquement
-        </label>
-      </div>
-
-      {/* Loading */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-gold" />
         </div>
       ) : (
-        /* Table by club */
-        <div className="space-y-4">
-          {clubs.map((clubName) => {
-            const clubPlayers = filteredScores.filter((s) => s.clubName === clubName);
-            return (
-              <div key={clubName} className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
-                <div className="bg-surface-2 px-4 py-2 border-b border-white/[0.07]">
-                  <h3 className="text-sm font-medium text-white">{clubName}</h3>
-                </div>
+        <>
+          {/* Match-based layout */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {matches.map((match) => {
+              const { home, away } = getMatchPlayers(match);
+              const score = match.home_score !== null ? `${match.home_score}-${match.away_score}` : "—";
+              return (
+                <div key={`${match.home_team}-${match.away_team}`} className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+                  {/* Match header */}
+                  <div className="flex items-center justify-between px-4 py-2 bg-surface-2 border-b border-white/[0.07]">
+                    <span className="text-sm font-medium text-white">{match.home_team.split(" ").pop()}</span>
+                    <span className="text-sm font-serif font-bold text-gold tabular-nums">{score}</span>
+                    <span className="text-sm font-medium text-white">{match.away_team.split(" ").pop()}</span>
+                    {match.infographic_url && (
+                      <a
+                        href={match.infographic_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted hover:text-gold transition-colors ml-2"
+                        title="Voir l'infographie"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
 
-                {/* Column headers */}
-                <div className="grid grid-cols-[1fr_3.5rem_3.5rem_3rem_3rem_4rem] gap-1 px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted border-b border-white/[0.07]">
-                  <span>Joueur</span>
-                  <span className="text-center">Note</span>
-                  <span className="text-center">Buts</span>
-                  <span className="text-center">Pass.</span>
-                  <span className="text-center">Joué</span>
-                  <span className="text-right">Total</span>
-                </div>
+                  {/* Column headers */}
+                  <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_3rem] gap-1 px-3 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05]">
+                    <span>Joueur</span>
+                    <span className="text-center">Note</span>
+                    <span className="text-center">But</span>
+                    <span className="text-center">Pas</span>
+                    <span className="text-right">Tot.</span>
+                  </div>
 
-                {/* Player rows */}
-                {clubPlayers.map((s) => {
-                  const total = (s.points ?? 0) + 2 * s.goals + s.passes;
-                  const hasData = s.points !== null || s.goals > 0 || s.passes > 0;
+                  {/* Home team */}
+                  <div className="border-b border-white/[0.05]">
+                    {home.map((s) => <PlayerRow key={s.playerId} s={s} />)}
+                  </div>
+
+                  {/* Away team — subtle separator */}
+                  <div className="border-t border-gold/10">
+                    {away.map((s) => <PlayerRow key={s.playerId} s={s} />)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Unmatched clubs (not in MATCH_SCHEDULE) */}
+          {unmatchedClubs.length > 0 && (
+            <details className="group">
+              <summary className="text-sm text-muted cursor-pointer hover:text-white transition-colors list-none flex items-center gap-2 py-2">
+                <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                Autres clubs ({unmatchedClubs.length})
+              </summary>
+              <div className="grid gap-4 lg:grid-cols-2 mt-4">
+                {unmatchedClubs.map((clubName) => {
+                  const clubPlayers = unmatchedPlayers.filter((s) => s.clubName === clubName);
                   return (
-                    <div
-                      key={s.playerId}
-                      className={`grid grid-cols-[1fr_3.5rem_3.5rem_3rem_3rem_4rem] gap-1 px-3 py-1.5 items-center border-b border-white/[0.05] last:border-b-0 ${
-                        hasData ? "bg-gold/[0.02]" : ""
-                      }`}
-                    >
-                      {/* Name */}
-                      <div className="min-w-0">
-                        <span className="text-sm text-white truncate block">{s.fname} {s.lname}</span>
-                        <span className="text-[10px] text-muted">{s.position}</span>
+                    <div key={clubName} className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+                      <div className="bg-surface-2 px-4 py-2 border-b border-white/[0.07]">
+                        <span className="text-sm font-medium text-white">{clubName}</span>
                       </div>
-
-                      {/* Note */}
-                      <input
-                        type="number"
-                        value={s.points ?? ""}
-                        onChange={(e) => updateScore(s.playerId, "points", e.target.value ? Number(e.target.value) : null)}
-                        className="w-full bg-surface-2 border border-white/[0.07] rounded px-1.5 py-1 text-xs text-center text-white focus:outline-none focus:border-gold"
-                        min={0}
-                        max={10}
-                        step={1}
-                      />
-
-                      {/* Goals */}
-                      <input
-                        type="number"
-                        value={s.goals || ""}
-                        onChange={(e) => updateScore(s.playerId, "goals", Number(e.target.value) || 0)}
-                        className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-1 text-xs text-center text-white focus:outline-none focus:border-gold"
-                        min={0}
-                      />
-
-                      {/* Passes */}
-                      <input
-                        type="number"
-                        value={s.passes || ""}
-                        onChange={(e) => updateScore(s.playerId, "passes", Number(e.target.value) || 0)}
-                        className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-1 text-xs text-center text-white focus:outline-none focus:border-gold"
-                        min={0}
-                      />
-
-                      {/* Used checkbox */}
-                      <div className="flex justify-center">
-                        <input
-                          type="checkbox"
-                          checked={s.used > 0}
-                          onChange={(e) => updateScore(s.playerId, "used", e.target.checked ? 1 : 0)}
-                          className="accent-gold"
-                        />
+                      <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_3rem] gap-1 px-3 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05]">
+                        <span>Joueur</span>
+                        <span className="text-center">Note</span>
+                        <span className="text-center">But</span>
+                        <span className="text-center">Pas</span>
+                        <span className="text-right">Tot.</span>
                       </div>
-
-                      {/* Calculated total */}
-                      <span className={`text-xs font-medium text-right tabular-nums ${total > 0 ? "text-white" : "text-muted"}`}>
-                        {hasData ? total.toFixed(1) : "-"}
-                      </span>
+                      {clubPlayers.map((s) => <PlayerRow key={s.playerId} s={s} />)}
                     </div>
                   );
                 })}
               </div>
-            );
-          })}
-        </div>
+            </details>
+          )}
+        </>
       )}
     </div>
   );
