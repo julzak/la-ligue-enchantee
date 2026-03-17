@@ -24,6 +24,16 @@ interface MatchInfo {
   infographic_url: string | null;
 }
 
+// Club logos (same as assets.ts but client-side)
+const CLUB_LOGOS: Record<number, string> = {
+  241: "/clubs/angers.png", 243: "/clubs/auxerre.png", 201: "/clubs/brest.png",
+  242: "/clubs/le-havre.png", 232: "/clubs/lens.png", 203: "/clubs/lille.png",
+  245: "/clubs/lorient.png", 205: "/clubs/lyon.png", 206: "/clubs/marseille.png",
+  244: "/clubs/metz.png", 208: "/clubs/monaco.png", 210: "/clubs/nantes.png",
+  211: "/clubs/nice.png", 246: "/clubs/parisfc.png", 212: "/clubs/psg.png",
+  214: "/clubs/rennes.png", 230: "/clubs/strasbourg.png", 199: "/clubs/toulouse.png",
+};
+
 // Match TheSportsDB team name to DB club name
 function teamToClubName(team: string): string[] {
   const map: Record<string, string[]> = {
@@ -172,7 +182,11 @@ export default function AdminNotesPage() {
     const hasData = s.points !== null;
     return (
       <div className={`grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_3rem] gap-1 px-3 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
-        <span className="text-xs text-white truncate" title={`${s.fname} ${s.lname} (${s.position})`}>
+        <span className="text-xs text-white truncate flex items-center gap-1" title={`${s.fname} ${s.lname} (${s.position})`}>
+          {CLUB_LOGOS[s.clubId] && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={CLUB_LOGOS[s.clubId]} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
+          )}
           {s.lname}
         </span>
         <input
