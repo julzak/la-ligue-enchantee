@@ -142,9 +142,7 @@ export function EquipeContent({
               <span className="text-white font-medium">{player.playerName}</span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="flex items-center gap-1 text-xs text-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {player.clubLogo && <img src={player.clubLogo} alt="" className="w-4 h-4 object-contain" />}
+              <span className="text-xs text-muted">
                 {player.clubShort || player.clubName}
               </span>
             </div>

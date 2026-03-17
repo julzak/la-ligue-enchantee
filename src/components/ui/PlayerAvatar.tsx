@@ -80,7 +80,7 @@ export function PlayerAvatar({ imageUrl, playerId, name, size = 40, clubLogoUrl 
           width={logoSize}
           height={logoSize}
           className="absolute object-contain drop-shadow-md"
-          style={{ bottom: -2, right: -2, width: logoSize, height: logoSize }}
+          style={{ bottom: -3, right: -4, width: logoSize, height: logoSize }}
         />
       )}
     </div>
