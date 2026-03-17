@@ -153,45 +153,17 @@ export async function POST(request: Request) {
       // Calculate global rank (across all leagues) - simplified: just use league rank for now
       // Real global rank would need all leagues computed first
 
-      // Upsert STATS_USER for each participant
-      for (let i = 0; i < userStats.length; i++) {
-        const s = userStats[i];
-        await prisma.statsUser.upsert({
-          where: {
-            userId_leagueId_day: { userId: s.userId, leagueId: league.id, day },
-          },
-          update: {
-            rankDay: i + 1,
-            rankLeague: leagueRankMap.get(s.userId) ?? i + 1,
-            rankGlobal: 0,
-            playerUsed: s.playerUsed,
-            ptsGk: s.ptsGk,
-            ptsDf: s.ptsDf,
-            ptsMf: s.ptsMf,
-            ptsSt: s.ptsSt,
-            ptsPas: s.ptsPas,
-            ptsGls: s.ptsGls,
-            ptsFrf: s.ptsFrf,
-            ptsTot: s.ptsTot,
-          },
-          create: {
-            userId: s.userId,
-            leagueId: league.id,
-            day,
-            rankDay: i + 1,
-            rankLeague: leagueRankMap.get(s.userId) ?? i + 1,
-            rankGlobal: 0,
-            playerUsed: s.playerUsed,
-            ptsGk: s.ptsGk,
-            ptsDf: s.ptsDf,
-            ptsMf: s.ptsMf,
-            ptsSt: s.ptsSt,
-            ptsPas: s.ptsPas,
-            ptsGls: s.ptsGls,
-            ptsFrf: s.ptsFrf,
-            ptsTot: s.ptsTot,
-          },
-        });
+      // Batch upsert STATS_USER
+      if (userStats.length > 0) {
+        const values = userStats.map((s, i) => {
+          const rankLeague = leagueRankMap.get(s.userId) ?? i + 1;
+          return `(${s.userId}, ${league.id}, ${day}, ${i + 1}, ${rankLeague}, 0, ${s.playerUsed}, ${s.ptsGk}, ${s.ptsDf}, ${s.ptsMf}, ${s.ptsSt}, ${s.ptsPas}, ${s.ptsGls}, ${s.ptsFrf}, ${s.ptsTot})`;
+        }).join(",");
+
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO STATS_USER (ID_USER, ID_LEAGUE, DAY, RANK_DAY, RANK_LEAGUE, RANK_GLOBAL, PLAYER_USED, PTS_GK, PTS_DF, PTS_MF, PTS_ST, PTS_PAS, PTS_GLS, PTS_FRF, PTS_TOT) VALUES ${values}
+           ON DUPLICATE KEY UPDATE RANK_DAY=VALUES(RANK_DAY), RANK_LEAGUE=VALUES(RANK_LEAGUE), PLAYER_USED=VALUES(PLAYER_USED), PTS_GK=VALUES(PTS_GK), PTS_DF=VALUES(PTS_DF), PTS_MF=VALUES(PTS_MF), PTS_ST=VALUES(PTS_ST), PTS_PAS=VALUES(PTS_PAS), PTS_GLS=VALUES(PTS_GLS), PTS_FRF=VALUES(PTS_FRF), PTS_TOT=VALUES(PTS_TOT)`
+        );
       }
     }
 
