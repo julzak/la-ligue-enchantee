@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, MessageSquare } from "lucide-react";
+import { ClipboardList, Zap, MessageSquare, Gavel } from "lucide-react";
 
 const adminLinks = [
   { href: "/admin/notes", label: "Notes", icon: ClipboardList },
+  { href: "/admin/encheres", label: "Enchères", icon: Gavel },
   { href: "/admin/jokers", label: "Jokers", icon: Zap },
   { href: "/admin/reclamations", label: "Reclamations", icon: MessageSquare },
 ];
