@@ -37,7 +37,7 @@ export function PlayerCard({
       } ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-white/[0.04] cursor-pointer active:scale-[0.98]"}`}
     >
       {/* Player photo */}
-      <PlayerAvatar imageUrl={player.imageUrl} name={player.name} size={44} />
+      <PlayerAvatar imageUrl={player.imageUrl} name={player.name} size={44} clubLogoUrl={clubLogoUrl} />
 
       {/* Info block */}
       <div className="flex-1 min-w-0">

@@ -134,6 +134,16 @@ export interface CupMatch {
   matchday: number;
 }
 
+// ── L1 Match result ──────────────────────────────────────
+export interface L1Match {
+  matchday: number;
+  homeClubId: number;
+  awayClubId: number;
+  homeScore: number;
+  awayScore: number;
+  date: string;
+}
+
 // ── Forum ─────────────────────────────────────────────────
 export interface ForumTopic {
   id: string;

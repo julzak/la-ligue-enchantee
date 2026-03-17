@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Sparkles, Loader2 } from "lucide-react";
 
@@ -10,23 +10,33 @@ interface TopoJourneeProps {
   slug: string;
 }
 
-const fallbackTopos: Record<string, string> = {
-  "ligue-1": `Thib reprend les commandes grâce au doublé de Balogun (10 pts), pendant que David A coule tranquillement vers la zone de relégation (-2 places, merci Mandanda et ses 3 buts encaissés). Mention spéciale à Zenigata qui aligne un 19 pts tout sec - on se demande si son équipe a joué ce week-end. Le duel Blek/Duch pour la 2e place se joue à 1 point : préparez le pop-corn. 🍿`,
-  "ligue-2": `Francis Llacer continue son cavalier seul grâce au festival de Greenwood (but + passe). En bas de tableau, la lutte pour ne pas être dernier fait rage.`,
-  "national-1": `Troyan survole les débats et creuse l'écart. Le secret ? Avoir misé sur Thauvin au mercato quand tout le monde rigolait. 👑`,
-};
+export function TopoJournee({ matchday, slug }: TopoJourneeProps) {
+  const [content, setContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
 
-export function TopoJournee({ matchday, leagueName, slug }: TopoJourneeProps) {
-  const topoSlug = leagueName.toLowerCase().includes("baudens") ? "ligue-1"
-    : leagueName.toLowerCase().includes("national") ? "national-1"
-    : "ligue-2";
-
-  const [content, setContent] = useState(fallbackTopos[topoSlug] ?? "");
-  const [isGenerated, setIsGenerated] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // Auto-load saved topo on mount
+  useEffect(() => {
+    async function loadTopo() {
+      try {
+        const res = await fetch(`/api/topo?slug=${slug}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.topo) {
+            setContent(data.topo);
+          }
+        }
+      } catch {
+        // silent fail
+      }
+      setLoading(false);
+    }
+    loadTopo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function generateTopo() {
-    setLoading(true);
+    setGenerating(true);
     try {
       const res = await fetch("/api/topo", {
         method: "POST",
@@ -36,39 +46,58 @@ export function TopoJournee({ matchday, leagueName, slug }: TopoJourneeProps) {
       if (res.ok) {
         const data = await res.json();
         setContent(data.topo);
-        setIsGenerated(true);
       }
     } catch {
-      // Keep fallback
+      // silent fail
     }
-    setLoading(false);
+    setGenerating(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-surface rounded-lg border border-white/[0.07] p-5">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-gold" />
+          <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia</h3>
+          <Loader2 className="w-3 h-3 animate-spin text-muted ml-auto" />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
       <div className="flex items-center gap-2 px-5 pt-4 pb-2">
         <Sparkles className="w-4 h-4 text-gold" />
-        <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia 🤖</h3>
-        {!isGenerated && (
+        <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia</h3>
+        {!content && (
           <button
             onClick={generateTopo}
-            disabled={loading}
+            disabled={generating}
             className="ml-auto text-[10px] uppercase tracking-wider text-gold/60 hover:text-gold bg-surface-2 hover:bg-gold/10 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Générer avec l'IA"}
+            {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Générer avec l'IA"}
           </button>
         )}
       </div>
       <div className="px-5 pb-4">
-        <p className="text-sm text-white/75 leading-relaxed italic">
-          {content}
-        </p>
-        <p className="text-sm text-white/75 leading-relaxed italic mt-3">
-          C&apos;est ça mon analyse. Sur ce, voici le nouveau{" "}
-          <Link href={`/ligue/${slug}/classement-general`} className="text-gold hover:underline not-italic font-medium">
-            classement général
-          </Link>.
-        </p>
+        {content ? (
+          <>
+            <p className="text-sm text-white/75 leading-relaxed italic">
+              {content}
+            </p>
+            <p className="text-sm text-white/75 leading-relaxed italic mt-3">
+              C&apos;est ça mon analyse. Sur ce, voici le nouveau{" "}
+              <Link href={`/ligue/${slug}/classement-general`} className="text-gold hover:underline not-italic font-medium">
+                classement général
+              </Link>.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted italic">
+            La synthèse n&apos;a pas encore été générée pour cette journée.
+          </p>
+        )}
       </div>
     </div>
   );

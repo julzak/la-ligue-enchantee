@@ -1,9 +1,34 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { prisma } from "@/lib/prisma";
 import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday } from "@/lib/db";
 
 const anthropic = new Anthropic();
 
+// GET: retrieve saved topo (if exists)
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const slug = searchParams.get("slug");
+  if (!slug) {
+    return NextResponse.json({ error: "Missing slug" }, { status: 400 });
+  }
+
+  const currentDay = await getCurrentMatchday();
+
+  const rows = await prisma.$queryRawUnsafe<{ content: string }[]>(
+    "SELECT content FROM TOPO WHERE matchday = ? AND league_slug = ? LIMIT 1",
+    currentDay,
+    slug
+  );
+
+  if (rows.length > 0) {
+    return NextResponse.json({ topo: rows[0].content, matchday: currentDay, cached: true });
+  }
+
+  return NextResponse.json({ topo: null, matchday: currentDay, cached: false });
+}
+
+// POST: generate + save topo
 export async function POST(request: Request) {
   try {
     const { slug } = await request.json();
@@ -20,13 +45,23 @@ export async function POST(request: Request) {
       getCurrentMatchday(),
     ]);
 
+    // Check if already generated for this matchday
+    const existing = await prisma.$queryRawUnsafe<{ content: string }[]>(
+      "SELECT content FROM TOPO WHERE matchday = ? AND league_slug = ? LIMIT 1",
+      currentDay,
+      slug
+    );
+
+    if (existing.length > 0) {
+      return NextResponse.json({ topo: existing[0].content, matchday: currentDay, cached: true });
+    }
+
     // Build context for Claude
     const top5 = standings.standings.slice(0, 5);
     const bottom3 = standings.standings.slice(-3);
     const progressions = standings.standings.filter((s) => s.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3);
     const drops = standings.standings.filter((s) => s.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 3);
 
-    // Day rankings (sorted by matchday score)
     const dayRanked = [...standings.standings].sort((a, b) => b.lastMatchdayPoints - a.lastMatchdayPoints);
     const dayBest = dayRanked[0];
     const dayWorst = dayRanked[dayRanked.length - 1];
@@ -93,7 +128,15 @@ ${context}
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
 
-    return NextResponse.json({ topo: text, matchday: currentDay });
+    // Save to DB
+    await prisma.$executeRawUnsafe(
+      "INSERT INTO TOPO (matchday, league_slug, content) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE content = VALUES(content), created_at = CURRENT_TIMESTAMP",
+      currentDay,
+      slug,
+      text
+    );
+
+    return NextResponse.json({ topo: text, matchday: currentDay, cached: false });
   } catch (error) {
     console.error("Topo generation error:", error);
     return NextResponse.json(

@@ -136,7 +136,7 @@ export function EquipeContent({
           } ${index % 2 === 0 ? "" : "bg-white/[0.01]"}`}
         >
           <span className="text-muted text-xs">{isStarter ? index : ""}</span>
-          <PlayerAvatar playerId={player.playerId} name={player.playerName} size={28} />
+          <PlayerAvatar playerId={player.playerId} name={player.playerName} size={28} clubLogoUrl={player.clubLogo} />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-white font-medium">{player.playerName}</span>
@@ -168,7 +168,7 @@ export function EquipeContent({
           className="grid grid-cols-[2rem_2.5rem_minmax(8rem,1fr)_3.5rem_4rem_3rem_3rem_4rem_3.5rem] items-center px-3 py-2 text-sm border-b border-white/[0.05] text-white/30"
         >
           <span className="text-xs">{isStarter ? index : ""}</span>
-          <PlayerAvatar playerId={player.playerId} name={player.playerName} size={28} />
+          <PlayerAvatar playerId={player.playerId} name={player.playerName} size={28} clubLogoUrl={player.clubLogo} />
           <div className="min-w-0">
             <span className="text-white/30">{player.playerName}</span>
             <div className="flex items-center gap-1.5 mt-0.5">

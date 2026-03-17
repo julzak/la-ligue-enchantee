@@ -628,6 +628,54 @@ export async function getPlayerStats(limit = 10) {
   };
 }
 
+// ── Match player ratings (for L1 match cards) ───────────
+export interface MatchPlayerRating {
+  playerId: number;
+  playerName: string;
+  position: Position;
+  rating: number | null;
+  goals: number;
+  passes: number;
+  clubId: number;
+}
+
+export async function getMatchPlayerRatings(day: number): Promise<Map<number, MatchPlayerRating[]>> {
+  const scores = await prisma.score.findMany({
+    where: { day, used: { gt: 0 } },
+  });
+
+  const playerIds = scores.map((s) => s.playerId);
+  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
+  const playerMap = new Map(players.map((p) => [p.id, p]));
+
+  const byClub = new Map<number, MatchPlayerRating[]>();
+
+  scores.forEach((s) => {
+    const player = playerMap.get(s.playerId);
+    if (!player) return;
+    const clubId = player.clubId;
+    const arr = byClub.get(clubId) ?? [];
+    arr.push({
+      playerId: s.playerId,
+      playerName: `${player.fname} ${player.lname}`.trim(),
+      position: mapPosition(player.position),
+      rating: dec(s.points) || null,
+      goals: s.goals,
+      passes: s.passes,
+      clubId,
+    });
+    byClub.set(clubId, arr);
+  });
+
+  // Sort each club's players by position order: GK, DEF, MID, ATT
+  const posOrder: Record<Position, number> = { GK: 0, DEF: 1, MID: 2, ATT: 3 };
+  byClub.forEach((players) => {
+    players.sort((a, b) => posOrder[a.position] - posOrder[b.position]);
+  });
+
+  return byClub;
+}
+
 // ── League stats (vainqueurs par journée, meilleures journées) ──
 export async function getLeagueStats(leagueDbId: number) {
   const allStats = await prisma.statsUser.findMany({
