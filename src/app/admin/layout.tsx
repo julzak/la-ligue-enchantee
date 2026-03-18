@@ -2,46 +2,60 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, MessageSquare, Gavel, CreditCard } from "lucide-react";
+import { ClipboardList, Zap, MessageSquare, Gavel, CreditCard, Trophy } from "lucide-react";
 
-const adminLinks = [
+const mainLinks = [
   { href: "/admin/notes", label: "Notes", icon: ClipboardList },
-  { href: "/admin/encheres", label: "Enchères", icon: Gavel },
   { href: "/admin/jokers", label: "Jokers", icon: Zap },
+  { href: "/admin/coupe-france", label: "Coupe", icon: Trophy },
+  { href: "/admin/reclamations", label: "Réclamations", icon: MessageSquare },
+];
+
+const seasonLinks = [
+  { href: "/admin/encheres", label: "Enchères", icon: Gavel },
   { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
-  { href: "/admin/reclamations", label: "Reclamations", icon: MessageSquare },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
+  function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }) {
+    const isActive = pathname.startsWith(href);
+    return (
+      <Link
+        href={href}
+        className={`flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors ${
+          isActive
+            ? "bg-gold/10 text-gold"
+            : "text-white/50 hover:text-white/70 hover:bg-white/[0.03]"
+        }`}
+      >
+        <Icon className="w-4 h-4" />
+        {label}
+      </Link>
+    );
+  }
+
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
       <aside className="w-56 bg-surface border-r border-white/[0.07] p-4 shrink-0">
         <h2 className="font-serif text-gold text-sm mb-6 px-2">Administration</h2>
         <nav className="space-y-1">
-          {adminLinks.map((link) => {
-            const isActive = pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors ${
-                  isActive
-                    ? "bg-gold/10 text-gold"
-                    : "text-white/50 hover:text-white/70 hover:bg-white/[0.03]"
-                }`}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.label}
-              </Link>
-            );
-          })}
+          {mainLinks.map((link) => (
+            <NavLink key={link.href} {...link} />
+          ))}
         </nav>
+
+        <div className="mt-6 pt-4 border-t border-white/[0.05]">
+          <p className="text-[10px] uppercase tracking-wider text-muted px-3 mb-2">Début de saison</p>
+          <nav className="space-y-1">
+            {seasonLinks.map((link) => (
+              <NavLink key={link.href} {...link} />
+            ))}
+          </nav>
+        </div>
       </aside>
 
-      {/* Content */}
       <main className="flex-1 p-6">
         {children}
       </main>
