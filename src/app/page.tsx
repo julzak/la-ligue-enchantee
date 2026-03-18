@@ -103,9 +103,9 @@ export default async function HomePage() {
               ))}
               <Link
                 href="/coupe"
-                className="text-xs bg-rouge/10 border border-rouge/30 hover:border-rouge/50 text-rouge hover:text-white px-3 py-1.5 rounded transition-colors"
+                className="text-xs bg-surface-2 border border-white/[0.07] hover:border-gold/30 text-white/70 hover:text-gold px-3 py-1.5 rounded transition-colors"
               >
-                Coupe 🔥
+                Coupe →
               </Link>
             </div>
           </div>
