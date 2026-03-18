@@ -73,8 +73,10 @@ export async function POST(request: Request) {
     for (const p of keyParticipants) {
       const dayScores = await getParticipantDayScores(league.dbId, p.userId, currentDay);
       const sorted = [...dayScores].sort((a, b) => b.total - a.total);
-      const topPlayers = sorted.slice(0, 3).map((s) => `${s.playerName} (${s.clubShort}): ${s.total} pts${s.goals > 0 ? ` [${s.goals}g]` : ""}${s.passes > 0 ? ` [${s.passes}a]` : ""}`);
-      const worstPlayers = sorted.slice(-2).map((s) => `${s.playerName} (${s.clubShort}): ${s.total} pts`);
+      // Don't include club abbreviations — Haiku confuses player clubs with participant ownership
+      const realPlayers = sorted.filter((s) => !s.playerName.startsWith("Gardiens"));
+      const topPlayers = realPlayers.slice(0, 3).map((s) => `${s.playerName}: ${s.total} pts${s.goals > 0 ? ` [${s.goals} but${s.goals > 1 ? "s" : ""}]` : ""}${s.passes > 0 ? ` [${s.passes} passe${s.passes > 1 ? "s" : ""}]` : ""}`);
+      const worstPlayers = realPlayers.slice(-2).map((s) => `${s.playerName}: ${s.total} pts`);
       participantDetails.push(`${p.userName} (${p.lastMatchdayPoints} pts, ${p.rank}e) :\n  Meilleurs : ${topPlayers.join(", ")}\n  Pires : ${worstPlayers.join(", ")}`);
     }
 
