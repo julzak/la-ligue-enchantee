@@ -57,7 +57,6 @@ interface EquipeContentProps {
   participantName: string;
   participantTrophies: TrophyType[];
   team: TeamPlayer[];
-  formerPlayers: { playerId: number; playerName: string; position: Position; clubShort: string; clubLogo: string | null; dayFirst: number; dayLast: number }[];
   dayScores: DayScore[] | null;
   cumulativeStats: CumulativeStat[] | null;
   selectedJournee: number | null;
@@ -80,7 +79,6 @@ export function EquipeContent({
   participantName,
   participantTrophies,
   team,
-  formerPlayers,
   dayScores,
   cumulativeStats,
   selectedJournee,
