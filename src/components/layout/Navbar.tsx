@@ -16,7 +16,6 @@ export function Navbar() {
     ? [
         { href: `/ligue/${slug}/classement`, label: "Classement" },
         { href: `/ligue/${slug}/mon-equipe`, label: "Mon équipe" },
-        { href: `/ligue/${slug}/coupe`, label: "Coupe" },
         { href: "https://www.ligueenchantee.com/phpBB/", label: "Forum", external: true },
       ]
     : [];

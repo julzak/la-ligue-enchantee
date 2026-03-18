@@ -55,12 +55,31 @@ function norm(s: string): string {
 // ── Step 1: Get article URLs from L'Équipe ───────────────
 async function findArticleUrls(
   ctx: Awaited<ReturnType<typeof chromium.launchPersistentContext>>,
-  matches: Awaited<ReturnType<typeof getMatchday>>
+  matches: Awaited<ReturnType<typeof getMatchday>>,
+  matchday: number
 ): Promise<Map<string, string>> {
   const page = ctx.pages()[0] || await ctx.newPage();
   const matchToUrl = new Map<string, string>();
 
-  // Browse L1 page to find note articles
+  // First: check MATCH_SCHEDULE for stored article URLs
+  const storedUrls = await prisma.$queryRawUnsafe<{ home_team: string; away_team: string; infographic_url: string }[]>(
+    "SELECT home_team, away_team, infographic_url FROM MATCH_SCHEDULE WHERE matchday = ? AND infographic_url IS NOT NULL",
+    matchday
+  );
+  for (const s of storedUrls) {
+    const match = matches.find((m) => m.homeTeam === s.home_team);
+    if (match && match.homeScore !== null) {
+      const label = `${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam}`;
+      matchToUrl.set(label, s.infographic_url);
+    }
+  }
+
+  if (matchToUrl.size === matches.filter((m) => m.homeScore !== null).length) {
+    console.log(`  All ${matchToUrl.size} URLs found in DB`);
+    return matchToUrl;
+  }
+
+  // Fallback: browse L1 page to find missing articles
   await page.goto("https://www.lequipe.fr/Football/Ligue-1/", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(3000);
   try { await page.click('text="oui, j\'accepte"', { timeout: 2000 }); } catch {}
@@ -330,7 +349,7 @@ async function main() {
   if (!fs.existsSync(PROFILE)) fs.mkdirSync(PROFILE, { recursive: true });
   const ctx = await chromium.launchPersistentContext(PROFILE, { headless: true, viewport: { width: 1440, height: 900 } });
 
-  const articleUrls = await findArticleUrls(ctx, matches);
+  const articleUrls = await findArticleUrls(ctx, matches, matchday);
   console.log(`  Found ${articleUrls.size}/${matches.filter(m => m.homeScore !== null).length} articles`);
 
   const notes = await extractNotesFromArticles(ctx, articleUrls);
