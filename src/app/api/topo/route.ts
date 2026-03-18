@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores } from "@/lib/db";
 
-const anthropic = new Anthropic();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // GET: retrieve saved topo (if exists)
 export async function GET(request: Request) {
@@ -111,41 +111,30 @@ Détail par participant (meilleurs/pires joueurs L1 de LEUR effectif) :
 ${participantDetails.join("\n\n")}
 `;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 400,
-      messages: [
-        {
-          role: "user",
-          content: `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
 
 Ton style :
 - Élégant, mordant, drôle. Style chronique sportive british avec une pointe d'ironie française.
 - JAMAIS de long tirets (—), JAMAIS les mots "pauvre", "misérables", "misérable", "pathétique", "néant", "hécatombe", "décombres", "abysses". Le chambrage est fin et spirituel, jamais misérabiliste.
 - Sois SYNTHÉTIQUE : 4-5 phrases max, chaque phrase doit porter un fait + une punchline.
-- IMPORTANT : utilise UNIQUEMENT les joueurs listés dans le détail par participant ci-dessous. Ne devine PAS quels joueurs appartiennent à qui — c'est indiqué explicitement.
-- Les "Gardiens [Club]" sont des joueurs fictifs (forfait), ignore-les dans tes commentaires. Cite les vrais joueurs par leur NOM, pas par leur club.
-- Tu relies les performances des participants aux joueurs de L1 de LEUR effectif. Invente des vannes contextuelles :
-  * Mauvaise perf : "ses joueurs hésitent à demander leur mutation", "aperçus au Macumba Night samedi soir", "menacent de se mettre en grève", "ont visiblement confondu le terrain avec leur canapé", "son gardien cherche encore le ballon"
-  * Bonne perf : "Balogun va demander une augmentation après ce doublé", "Gboho devrait envoyer la facture directement à [participant]", "son agent négocie déjà une prime de résultat"
-- Tu cites les noms des participants ET les joueurs/clubs de L1 concernés.
+- IMPORTANT : utilise UNIQUEMENT les joueurs listés dans le détail par participant ci-dessous. Ne devine PAS quels joueurs appartiennent à qui — c'est indiqué explicitement. Ne fais AUCUNE déduction basée sur le club réel d'un joueur.
+- Les "Gardiens [Club]" sont des joueurs fictifs (forfait), ignore-les dans tes commentaires. Cite les vrais joueurs par leur NOM uniquement.
+- Tu relies les performances des participants aux joueurs de LEUR effectif. Invente des vannes contextuelles.
+- Tu cites les noms des participants ET les noms des joueurs de L1 (pas leur club).
 - Tu donnes la nouvelle position au classement quand il y a un mouvement.
 - 1-2 emojis max, bien placés.
 - 3e personne uniquement (pas de "tu" ni "vous").
 - Pas de formules de politesse, pas d'intro. Attaque direct.
 
-Exemple de ton attendu :
-"Thib signe le carton de la journée (58 pts) et remonte en 6e, porté par le doublé de Balogun qui a martyrisé la défense nantaise. Blek le Roc tient bon en tête (54 pts) mais sent le souffle de Kazu dans son cou, ce dernier grimpant en 5e grâce aux exploits de Gboho. Côté dégâts, Zenigata coule en 7e avec 19 pts : ses joueurs rennais ont visiblement confondu le Roazhon Park avec une maison de retraite 🔥 Mathieu L. et ses 27 pts ne feront rire personne, surtout pas ses attaquants qui hésitent à demander leur mutation."
-
 Voici les données de la journée :
 ${context}
 
-Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`,
-        },
-      ],
-    });
+Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`;
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
     // Save to DB
     await prisma.$executeRawUnsafe(
