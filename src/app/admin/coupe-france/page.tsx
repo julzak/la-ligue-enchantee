@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, Loader2, Shuffle, Play, ChevronDown, Check } from "lucide-react";
+import { Trophy, Loader2, Plus, Shuffle, Play, ChevronDown, Check } from "lucide-react";
 
 interface CupInfo { id: number; name: string; status: string; season: string }
 interface CupMatch {
@@ -171,7 +171,7 @@ export default function CoupeFrancePage() {
           onClick={() => { setShowCreate(!showCreate); setSelectedCup(0); if (!showCreate && allParticipants.length === 0) loadParticipants(); }}
           className="h-9 px-4 bg-gold text-night rounded text-sm font-semibold flex items-center gap-2 hover:bg-gold/80"
         >
-          <Shuffle className="w-4 h-4" /> Nouvelle coupe
+          <Plus className="w-4 h-4" /> Nouvelle coupe
         </button>
       </div>
 
