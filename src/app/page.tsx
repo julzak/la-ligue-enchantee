@@ -101,6 +101,12 @@ export default async function HomePage() {
                   {league.name.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")} →
                 </Link>
               ))}
+              <Link
+                href="/coupe"
+                className="text-xs bg-rouge/10 border border-rouge/30 hover:border-rouge/50 text-rouge hover:text-white px-3 py-1.5 rounded transition-colors"
+              >
+                Coupe 🔥
+              </Link>
             </div>
           </div>
 
@@ -276,6 +282,20 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
+
+          {/* Coupe encart */}
+          <Link href="/coupe" className="block bg-surface rounded-lg border border-rouge/30 overflow-hidden mt-4 hover:border-rouge/50 transition-colors group">
+            <div className="bg-rouge/10 px-4 py-3 border-b border-rouge/20">
+              <h2 className="font-serif text-sm text-rouge font-medium flex items-center gap-2">
+                🔥 La Coupe
+              </h2>
+            </div>
+            <div className="px-4 py-3">
+              <p className="text-sm text-white/70">Huitièmes de finale</p>
+              <p className="text-xs text-muted mt-1">16 matchs joués — Quarts à venir</p>
+              <p className="text-xs text-rouge/70 mt-2 group-hover:text-rouge transition-colors">Voir le tableau →</p>
+            </div>
+          </Link>
         </aside>
       </div>
     </div>
