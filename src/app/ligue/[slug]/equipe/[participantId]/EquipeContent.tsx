@@ -96,6 +96,15 @@ export function EquipeContent({
     dayScores.forEach((s) => scoreMap.set(s.playerId, s));
   }
 
+  // Empty team check
+  if (team.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-muted">Ce participant n&apos;a pas d&apos;équipe dans cette ligue.</p>
+      </div>
+    );
+  }
+
   // Separate starters and bench
   const starters = team.filter((p) => p.isStarter);
   const bench = team.filter((p) => !p.isStarter);
