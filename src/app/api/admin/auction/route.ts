@@ -205,6 +205,63 @@ export async function POST(request: Request) {
     });
   }
 
+  if (action === "resolve-tiebreak") {
+    // Resolve ties by random draw (for last round when ties persist)
+    const auction = await prisma.$queryRawUnsafe<{ id: number; current_round: number }[]>(
+      "SELECT id, current_round FROM AUCTION WHERE league_id = ? ORDER BY id DESC LIMIT 1",
+      leagueId
+    );
+    if (auction.length === 0) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+
+    const aId = Number(auction[0].id);
+    const round = Number(auction[0].current_round);
+
+    // Find all ties in current round
+    const ties = await prisma.$queryRawUnsafe<{
+      id: number; user_id: number; player_id: number; amount: number;
+    }[]>(
+      "SELECT id, user_id, player_id, amount FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'tie'",
+      aId, round
+    );
+
+    // Group ties by player
+    const tiesByPlayer = new Map<number, typeof ties>();
+    ties.forEach((b) => {
+      const arr = tiesByPlayer.get(Number(b.player_id)) ?? [];
+      arr.push(b);
+      tiesByPlayer.set(Number(b.player_id), arr);
+    });
+
+    let resolved = 0;
+    const results: string[] = [];
+
+    for (const [playerId, playerTies] of Array.from(tiesByPlayer.entries())) {
+      // Random draw: pick one winner
+      const winnerIdx = Math.floor(Math.random() * playerTies.length);
+      for (let i = 0; i < playerTies.length; i++) {
+        const status = i === winnerIdx ? "won" : "lost";
+        await prisma.$executeRawUnsafe(
+          "UPDATE AUCTION_BID SET status = ? WHERE id = ?",
+          status, Number(playerTies[i].id)
+        );
+      }
+      resolved++;
+
+      // Get player name for message
+      const player = await prisma.player.findUnique({ where: { id: playerId } });
+      const winnerUser = await prisma.user.findUnique({ where: { id: Number(playerTies[winnerIdx].user_id) } });
+      const pName = player ? `${player.fname} ${player.lname}`.trim() : `#${playerId}`;
+      const wName = winnerUser ? winnerUser.name.replace(/<[^>]*>/g, "").trim() : `#${playerTies[winnerIdx].user_id}`;
+      results.push(`${pName} → ${wName} (tirage au sort)`);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      message: `${resolved} égalité(s) résolue(s) par tirage au sort`,
+      details: results,
+    });
+  }
+
   if (action === "close-auction") {
     await prisma.$executeRawUnsafe(
       "UPDATE AUCTION SET status = 'resolved' WHERE league_id = ? AND status != 'resolved'",
