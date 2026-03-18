@@ -67,6 +67,7 @@ export default function AdminNotesPage() {
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState("");
+  const [showOnlyFilled, setShowOnlyFilled] = useState(false);
   const [matches, setMatches] = useState<MatchInfo[]>([]);
 
   // Auto-detect current matchday on mount
@@ -190,6 +191,7 @@ export default function AdminNotesPage() {
 
   function PlayerRow({ s }: { s: PlayerScore }) {
     if (filter && !`${s.fname} ${s.lname}`.toLowerCase().includes(filter.toLowerCase())) return null;
+    if (showOnlyFilled && s.points === null && s.goals === 0 && s.passes === 0) return null;
     const total = (s.points ?? 0) + 2 * s.goals + s.passes;
     const hasData = s.points !== null;
     return (
@@ -252,6 +254,16 @@ export default function AdminNotesPage() {
               ))}
             </select>
           </div>
+
+          <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showOnlyFilled}
+              onChange={(e) => setShowOnlyFilled(e.target.checked)}
+              className="accent-gold"
+            />
+            Notés
+          </label>
 
           <input
             type="text"
