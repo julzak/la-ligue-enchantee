@@ -88,14 +88,24 @@ export async function POST(request: Request) {
   const { action } = body as { action: string };
 
   if (action === "create-draw") {
-    // Create cup + draw entire bracket
-    const { matchdays } = body as { action: string; matchdays: Record<string, number> };
+    const { matchdays, participantIds, season } = body as {
+      action: string;
+      matchdays?: Record<string, number>;
+      participantIds?: number[];
+      season?: string;
+    };
 
-    // Get all participants
-    const participants = await prisma.$queryRawUnsafe<{ ID_USER: number }[]>(
-      "SELECT DISTINCT ID_USER FROM LEAGUE_USER WHERE ID_LEAGUE > 0"
-    );
-    const userIds = participants.map((p) => Number(p.ID_USER));
+    // Get participants: either from selection or all
+    let userIds: number[];
+    if (participantIds && participantIds.length > 0) {
+      userIds = participantIds;
+    } else {
+      const participants = await prisma.$queryRawUnsafe<{ ID_USER: number }[]>(
+        "SELECT DISTINCT ID_USER FROM LEAGUE_USER WHERE ID_LEAGUE > 0"
+      );
+      userIds = participants.map((p) => Number(p.ID_USER));
+    }
+    const cupSeason = season ?? "2025-2026";
     const total = userIds.length;
 
     // Shuffle for random draw
@@ -109,7 +119,8 @@ export async function POST(request: Request) {
 
     // Create cup
     await prisma.$executeRawUnsafe(
-      "INSERT INTO CUP (name, season, status) VALUES ('Coupe de France', '2025-2026', 'active')"
+      "INSERT INTO CUP (name, season, status) VALUES ('Coupe de France', ?, 'active')",
+      cupSeason
     );
     const [cupRow] = await prisma.$queryRawUnsafe<{ id: number }[]>("SELECT LAST_INSERT_ID() as id");
     const cupId = Number(cupRow.id);
