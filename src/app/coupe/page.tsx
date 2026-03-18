@@ -64,10 +64,10 @@ export default async function CoupePage() {
             <h1 className="font-serif text-3xl text-rouge mb-2 flex items-center justify-center gap-3">
               🔥 {cup.name}
             </h1>
-            <p className="text-sm text-muted">Saison {cup.season} — Compétition interligue</p>
+            <p className="text-sm text-muted">Saison {cup.season} - Compétition interligue</p>
             <p className="text-xs text-white/30 italic mt-3 max-w-lg mx-auto">
               &laquo; Je ne joue pas contre une équipe en particulier. Je joue pour me battre contre l&apos;idée de perdre. &raquo;
-              <span className="text-white/20 not-italic"> — Eric Cantona</span>
+              <span className="text-white/20 not-italic"> - Eric Cantona</span>
             </p>
           </div>
 
@@ -91,8 +91,8 @@ export default async function CoupePage() {
 
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     {roundMatches.map((m) => {
-                      const u1Name = m.user1_id ? userMap.get(Number(m.user1_id)) ?? "?" : "—";
-                      const u2Name = m.user2_id ? userMap.get(Number(m.user2_id)) ?? "?" : "—";
+                      const u1Name = m.user1_id ? userMap.get(Number(m.user1_id)) ?? "?" : "";
+                      const u2Name = m.user2_id ? userMap.get(Number(m.user2_id)) ?? "?" : "";
                       const u1League = m.user1_id ? leagueLabels[leagueMap.get(Number(m.user1_id)) ?? 0] ?? "" : "";
                       const u2League = m.user2_id ? leagueLabels[leagueMap.get(Number(m.user2_id)) ?? 0] ?? "" : "";
                       const isResolved = m.winner_id !== null;
