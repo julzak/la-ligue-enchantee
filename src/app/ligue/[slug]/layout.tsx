@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { LockCountdown } from "@/components/layout/LockCountdown";
-import { Search } from "lucide-react";
+import { Search, Gavel } from "lucide-react";
 
 const leagueNames: Record<string, string> = {
   "ligue-1": "Ligue 1 (Baudens League)",
@@ -22,6 +23,31 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
   const lockAt = new Date();
   lockAt.setDate(lockAt.getDate() + 1);
   lockAt.setHours(13, 0, 0, 0);
+
+  // Check if there's an active auction for this league
+  const [auctionOpen, setAuctionOpen] = useState(false);
+  const [auctionRound, setAuctionRound] = useState(0);
+  useEffect(() => {
+    fetch(`/api/auction?leagueId=0&checkOnly=1`)
+      .catch(() => {});
+    // Check by fetching the league's auction status
+    async function checkAuction() {
+      try {
+        const leaguesRes = await fetch("/api/admin/jokers/leagues");
+        const leaguesData = await leaguesRes.json();
+        const league = (leaguesData.leagues ?? []).find((l: { slug: string }) => l.slug === slug);
+        if (!league) return;
+        const res = await fetch(`/api/auction?leagueId=${league.dbId}`);
+        const data = await res.json();
+        if (data.auction?.isOpen) {
+          setAuctionOpen(true);
+          setAuctionRound(data.auction.currentRound);
+        }
+      } catch {}
+    }
+    checkAuction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   const tabs = [
     { href: `/ligue/${slug}/classement`, label: "RÉSULTATS", live: true },
@@ -42,6 +68,19 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
       <Navbar />
       <div className="pt-[52px]">
         <LockCountdown matchdayNumber={26} lockAt={lockAt} isLocked={false} />
+
+        {/* Auction banner */}
+        {auctionOpen && (
+          <Link
+            href={`/ligue/${slug}/encheres`}
+            className="block bg-gold/10 border-b border-gold/20 py-2.5 text-center hover:bg-gold/15 transition-colors"
+          >
+            <span className="text-sm text-gold font-medium flex items-center justify-center gap-2">
+              <Gavel className="w-4 h-4" />
+              Mercato en cours - Tour {auctionRound} - Placez vos enchères !
+            </span>
+          </Link>
+        )}
 
         {/* League header + sub-nav */}
         <div className="bg-night border-b border-gold/20">
