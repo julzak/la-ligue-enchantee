@@ -58,7 +58,7 @@ export function TopoJournee({ matchday, slug }: TopoJourneeProps) {
       <div className="bg-surface rounded-lg border border-white/[0.07] p-5">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-gold" />
-          <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia</h3>
+          <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia 🤖</h3>
           <Loader2 className="w-3 h-3 animate-spin text-muted ml-auto" />
         </div>
       </div>
@@ -69,7 +69,7 @@ export function TopoJournee({ matchday, slug }: TopoJourneeProps) {
     <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
       <div className="flex items-center gap-2 px-5 pt-4 pb-2">
         <Sparkles className="w-4 h-4 text-gold" />
-        <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia</h3>
+        <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia 🤖</h3>
         {!content && (
           <button
             onClick={generateTopo}
