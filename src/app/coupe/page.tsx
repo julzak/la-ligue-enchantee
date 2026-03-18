@@ -65,6 +65,10 @@ export default async function CoupePage() {
               🔥 {cup.name}
             </h1>
             <p className="text-sm text-muted">Saison {cup.season} — Compétition interligue</p>
+            <p className="text-xs text-white/30 italic mt-3 max-w-lg mx-auto">
+              &laquo; Je ne joue pas contre une équipe en particulier. Je joue pour me battre contre l&apos;idée de perdre. &raquo;
+              <span className="text-white/20 not-italic"> — Eric Cantona</span>
+            </p>
           </div>
 
           {/* Bracket */}
