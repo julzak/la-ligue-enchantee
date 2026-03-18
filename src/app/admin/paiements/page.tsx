@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CreditCard, Loader2, Check, X } from "lucide-react";
+import { CreditCard, Loader2, Check } from "lucide-react";
 
 interface Payment {
   userId: number;

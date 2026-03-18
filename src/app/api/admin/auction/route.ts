@@ -98,7 +98,7 @@ export async function POST(request: Request) {
   if (auth.error) return auth.error;
 
   const { action, leagueId } = await request.json() as {
-    action: "open" | "close-round" | "resolve-round" | "close-auction";
+    action: "open" | "close-round" | "resolve-round" | "resolve-tiebreak" | "close-auction";
     leagueId: number;
   };
 
