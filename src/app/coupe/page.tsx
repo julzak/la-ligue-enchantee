@@ -106,9 +106,9 @@ export default async function CoupePage() {
                         >
                           {/* Player 1 */}
                           <div className={`flex items-center gap-2 px-3 py-2 ${u1Won ? "bg-rouge/10" : isResolved ? "opacity-40" : ""}`}>
-                            {u1League && <span className="text-[9px] text-muted">{u1League}</span>}
                             <span className={`text-xs flex-1 truncate ${u1Won ? "text-white font-medium" : "text-white/70"}`}>
                               {u1Name}
+                              {u1League && <span className="text-[9px] text-muted ml-1">({u1League})</span>}
                             </span>
                             {m.score1 !== null && (
                               <span className={`text-xs tabular-nums font-bold ${u1Won ? "text-rouge" : "text-muted"}`}>
@@ -122,9 +122,9 @@ export default async function CoupePage() {
 
                           {/* Player 2 */}
                           <div className={`flex items-center gap-2 px-3 py-2 ${u2Won ? "bg-rouge/10" : isResolved ? "opacity-40" : ""}`}>
-                            {u2League && <span className="text-[9px] text-muted">{u2League}</span>}
                             <span className={`text-xs flex-1 truncate ${u2Won ? "text-white font-medium" : "text-white/70"}`}>
                               {u2Name}
+                              {u2League && <span className="text-[9px] text-muted ml-1">({u2League})</span>}
                             </span>
                             {m.score2 !== null && (
                               <span className={`text-xs tabular-nums font-bold ${u2Won ? "text-rouge" : "text-muted"}`}>
