@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
-import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores } from "@/lib/db";
 
 const anthropic = new Anthropic();
 
@@ -66,6 +66,20 @@ export async function POST(request: Request) {
     const dayBest = dayRanked[0];
     const dayWorst = dayRanked[dayRanked.length - 1];
 
+    // Get top/bottom scorers per participant (top 3 + bottom 3 by day score)
+    const topParticipants = dayRanked.slice(0, 3);
+    const bottomParticipants = dayRanked.slice(-3);
+    const keyParticipants = [...topParticipants, ...bottomParticipants];
+
+    const participantDetails: string[] = [];
+    for (const p of keyParticipants) {
+      const dayScores = await getParticipantDayScores(league.dbId, p.userId, currentDay);
+      const sorted = [...dayScores].sort((a, b) => b.total - a.total);
+      const topPlayers = sorted.slice(0, 3).map((s) => `${s.playerName} (${s.clubShort}): ${s.total} pts${s.goals > 0 ? ` [${s.goals}g]` : ""}${s.passes > 0 ? ` [${s.passes}a]` : ""}`);
+      const worstPlayers = sorted.slice(-2).map((s) => `${s.playerName} (${s.clubShort}): ${s.total} pts`);
+      participantDetails.push(`${p.userName} (${p.lastMatchdayPoints} pts, ${p.rank}e) :\n  Meilleurs : ${topPlayers.join(", ")}\n  Pires : ${worstPlayers.join(", ")}`);
+    }
+
     const context = `
 Ligue : ${league.name}
 Journée : ${currentDay}
@@ -92,6 +106,9 @@ Pires performances joueurs L1 :
 ${worstPerfs.map((p) => `${p.playerName} (${p.club}) - ${p.points} pts`).join("\n")}
 
 Total journée : ${standings.pointsJournee.toFixed(1)} pts pour ${standings.standings.length} participants
+
+Détail par participant (meilleurs/pires joueurs L1 de LEUR effectif) :
+${participantDetails.join("\n\n")}
 `;
 
     const message = await anthropic.messages.create({
@@ -106,7 +123,8 @@ Ton style :
 - Élégant, mordant, drôle. Style chronique sportive british avec une pointe d'ironie française.
 - JAMAIS de long tirets (—), JAMAIS les mots "pauvre", "misérables", "misérable", "pathétique", "néant", "hécatombe", "décombres", "abysses". Le chambrage est fin et spirituel, jamais misérabiliste.
 - Sois SYNTHÉTIQUE : 4-5 phrases max, chaque phrase doit porter un fait + une punchline.
-- Tu relies les performances des participants aux joueurs de L1 responsables. Invente des vannes contextuelles :
+- IMPORTANT : utilise UNIQUEMENT les joueurs listés dans le détail par participant ci-dessous. Ne devine PAS quels joueurs appartiennent à qui — c'est indiqué explicitement.
+- Tu relies les performances des participants aux joueurs de L1 de LEUR effectif. Invente des vannes contextuelles :
   * Mauvaise perf : "ses joueurs hésitent à demander leur mutation", "aperçus au Macumba Night samedi soir", "menacent de se mettre en grève", "ont visiblement confondu le terrain avec leur canapé", "son gardien cherche encore le ballon"
   * Bonne perf : "Balogun va demander une augmentation après ce doublé", "Gboho devrait envoyer la facture directement à [participant]", "son agent négocie déjà une prime de résultat"
 - Tu cites les noms des participants ET les joueurs/clubs de L1 concernés.
