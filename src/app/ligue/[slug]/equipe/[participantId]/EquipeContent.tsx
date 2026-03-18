@@ -231,7 +231,7 @@ export function EquipeContent({
   return (
     <div className="flex flex-col xl:flex-row gap-6">
       {/* Main content */}
-      <div className="flex-1 min-w-0 space-y-6">
+      <div className="flex-1 min-w-0 space-y-6 overflow-x-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
