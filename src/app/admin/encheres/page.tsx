@@ -54,12 +54,17 @@ export default function AdminEncheresPage() {
   const fetchAuction = useCallback(async () => {
     if (!selectedLeague) return;
     setLoading(true);
+    setMessage("");
     try {
       const res = await fetch(`/api/admin/auction?leagueId=${selectedLeague}`);
       const data = await res.json();
-      setAuction(data.auction);
-      setBids(data.bids ?? []);
-      setParticipants(data.participants ?? []);
+      if (data.error) {
+        setMessage(data.error);
+      } else {
+        setAuction(data.auction);
+        setBids(data.bids ?? []);
+        setParticipants(data.participants ?? []);
+      }
     } catch {
       setMessage("Erreur chargement");
     }
