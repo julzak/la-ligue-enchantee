@@ -66,10 +66,8 @@ export async function POST(request: Request) {
     const dayBest = dayRanked[0];
     const dayWorst = dayRanked[dayRanked.length - 1];
 
-    // Get top/bottom scorers per participant (top 3 + bottom 3 by day score)
-    const topParticipants = dayRanked.slice(0, 3);
-    const bottomParticipants = dayRanked.slice(-3);
-    const keyParticipants = [...topParticipants, ...bottomParticipants];
+    // Get player details for ALL participants (so Lia knows exactly who owns what)
+    const keyParticipants = dayRanked;
 
     const participantDetails: string[] = [];
     for (const p of keyParticipants) {
