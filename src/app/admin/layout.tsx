@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, MessageSquare, Gavel, CreditCard, Trophy } from "lucide-react";
+import { ClipboardList, Zap, MessageSquare, Trophy, Gavel, Snowflake, CreditCard } from "lucide-react";
 
 const mainLinks = [
   { href: "/admin/notes", label: "Notes", icon: ClipboardList },
@@ -11,8 +11,9 @@ const mainLinks = [
   { href: "/admin/reclamations", label: "Réclamations", icon: MessageSquare },
 ];
 
-const seasonLinks = [
-  { href: "/admin/encheres", label: "Enchères", icon: Gavel },
+const foireLinks = [
+  { href: "/admin/encheres", label: "Mercato d'été", icon: Gavel },
+  { href: "/admin/mercato-hiver", label: "Mercato d'hiver", icon: Snowflake },
   { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
 ];
 
@@ -47,9 +48,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="mt-6 pt-4 border-t border-white/[0.05]">
-          <p className="text-[10px] uppercase tracking-wider text-muted px-3 mb-2">Début de saison</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted px-3 mb-2">Foire à la saucisse</p>
           <nav className="space-y-1">
-            {seasonLinks.map((link) => (
+            {foireLinks.map((link) => (
               <NavLink key={link.href} {...link} />
             ))}
           </nav>
