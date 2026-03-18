@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
 import { getLeagueBySlug, getPlayerStats, getLeagueStats } from "@/lib/db";
+import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { getClubLogoUrl } from "@/lib/assets";
 
 interface StatEntry {
   rank: number;
+  playerId: number;
   name: string;
   club: string;
+  clubId: number;
   position: string;
   value: number;
   days: number;
@@ -119,9 +123,7 @@ function StatCard({
       {top && (
         <div className="px-4 py-4 bg-gold/[0.04] border-b border-gold/10">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gold text-night text-sm font-bold flex items-center justify-center shrink-0">
-              1
-            </div>
+            <PlayerAvatar playerId={top.playerId} name={top.name} size={36} clubLogoUrl={getClubLogoUrl(top.clubId)} />
             <div className="flex-1 min-w-0">
               <div className="text-white font-semibold truncate">{top.name}</div>
               <div className="text-muted text-xs">{top.club} - {top.days} matchs</div>
@@ -139,12 +141,12 @@ function StatCard({
           const pct = maxValue > 0 ? (entry.value / maxValue) * 100 : 0;
           return (
             <div key={entry.rank} className="px-4 py-2.5">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <span className={`w-5 text-xs font-medium shrink-0 ${entry.rank <= 3 ? "text-gold" : "text-muted"}`}>
                   {entry.rank}
                 </span>
+                <PlayerAvatar playerId={entry.playerId} name={entry.name} size={24} clubLogoUrl={getClubLogoUrl(entry.clubId)} />
                 <span className="flex-1 text-sm text-white truncate">{entry.name}</span>
-                <span className="text-muted text-xs mr-2 shrink-0">{entry.club}</span>
                 <span className="text-white font-medium text-sm tabular-nums shrink-0 w-12 text-right">
                   {formatValue(entry.value)}
                 </span>

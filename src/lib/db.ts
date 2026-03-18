@@ -650,8 +650,10 @@ export async function getPlayerStats(limit = 10) {
       const player = playerMap.get(playerId);
       return {
         rank: i + 1,
+        playerId,
         name: player ? `${player.fname} ${player.lname}`.trim() : `Player ${playerId}`,
         club: player ? (clubMap.get(player.clubId) ?? "") : "",
+        clubId: player?.clubId ?? 0,
         position: player ? mapPosition(player.position) : "MID" as Position,
         value: stats[sortKey],
         days: stats.days,
