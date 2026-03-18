@@ -250,7 +250,8 @@ export default async function HomePage() {
 
         {/* Sidebar - Classement interligue */}
         <aside className="w-full lg:w-80 lg:shrink-0">
-          <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden sticky top-6">
+          <div className="sticky top-6 space-y-4">
+          <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
             <div className="bg-gold/10 px-4 py-3 border-b border-gold/20">
               <h2 className="font-serif text-sm text-gold font-medium">Classement interligue</h2>
             </div>
@@ -292,10 +293,11 @@ export default async function HomePage() {
             </div>
             <div className="px-4 py-3">
               <p className="text-sm text-white/70">Huitièmes de finale</p>
-              <p className="text-xs text-muted mt-1">16 matchs joués — Quarts à venir</p>
+              <p className="text-xs text-muted mt-1">16 matchs joués - Quarts à venir</p>
               <p className="text-xs text-rouge/70 mt-2 group-hover:text-rouge transition-colors">Voir le tableau →</p>
             </div>
           </Link>
+          </div>
         </aside>
       </div>
     </div>
