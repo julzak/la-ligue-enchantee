@@ -403,8 +403,15 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
   const clubs = await prisma.club.findMany();
   const clubMap = new Map(clubs.map((c) => [c.id, c]));
 
+  // Deduplicate by playerId (a player can have multiple periods, e.g., J3-J7 + J21-J34)
+  const seenPlayers = new Set<number>();
   return teamMembers
-    .filter((t) => playerMap.has(t.playerId)) // Hide ghost players (no PLAYER record)
+    .filter((t) => {
+      if (!playerMap.has(t.playerId)) return false; // Hide ghost players
+      if (seenPlayers.has(t.playerId)) return false; // Deduplicate
+      seenPlayers.add(t.playerId);
+      return true;
+    })
     .map((t) => {
     const player = playerMap.get(t.playerId)!;
     const club = clubMap.get(player.clubId) ?? null;
