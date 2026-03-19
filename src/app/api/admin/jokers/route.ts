@@ -43,9 +43,6 @@ export async function GET(request: Request) {
     };
   });
 
-  // Count jokers used: players added mid-season (dayFirst > 1) that aren't from mercato
-  // Simple heuristic: count TEAM entries with dayFirst > 1 and dayFirst != mercato day
-  // For now, count all mid-season additions as joker uses
   // Count jokers from JOKER_LOG
   const jokerLogs = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
     "SELECT COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? AND user_id = ?",
@@ -53,10 +50,20 @@ export async function GET(request: Request) {
   );
   const jokerUsed = Number(jokerLogs[0]?.cnt ?? 0);
 
+  // Get joker config (max allowed)
+  const configs = await prisma.$queryRawUnsafe<{ type: string; max_count: number; deadline: string | null; is_active: number }[]>(
+    "SELECT type, max_count, deadline, is_active FROM JOKER_CONFIG WHERE season = '2025-2026' AND is_active = 1"
+  );
+  const totalMax = configs.reduce((sum, c) => {
+    // Summer jokers: only count if before deadline
+    if (c.deadline && new Date(c.deadline) < new Date()) return sum;
+    return sum + Number(c.max_count);
+  }, 0);
+
   return NextResponse.json({
     squad: squadData,
     jokersUsed: jokerUsed,
-    jokersRemaining: 2 - jokerUsed,
+    jokersRemaining: totalMax - jokerUsed,
     currentDay,
   });
 }
@@ -81,13 +88,23 @@ export async function POST(request: Request) {
     const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
     const nextDay = currentDay + 1;
 
-    // Check joker limit (max 2 per season)
+    // Check joker limit from config
     const jokerCount = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
       "SELECT COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? AND user_id = ?",
       leagueId, userId
     );
-    if (Number(jokerCount[0]?.cnt ?? 0) >= 2) {
-      return NextResponse.json({ error: "Plus de jokers disponibles (2/2 utilisés)" }, { status: 400 });
+    const used = Number(jokerCount[0]?.cnt ?? 0);
+
+    const configs = await prisma.$queryRawUnsafe<{ max_count: number; deadline: string | null }[]>(
+      "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = '2025-2026' AND is_active = 1"
+    );
+    const maxJokers = configs.reduce((sum, c) => {
+      if (c.deadline && new Date(c.deadline) < new Date()) return sum;
+      return sum + Number(c.max_count);
+    }, 0);
+
+    if (used >= maxJokers) {
+      return NextResponse.json({ error: `Plus de jokers disponibles (${used}/${maxJokers} utilisés)` }, { status: 400 });
     }
 
     // Validate: playerOut is in this user's squad

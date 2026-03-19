@@ -213,6 +213,23 @@ export async function POST(request: Request) {
   if (action === "resolve-round") {
     const { cupId, round } = body as { action: string; cupId: number; round: string };
 
+    // Check if petit poucet is enabled
+    const [cupRow] = await prisma.$queryRawUnsafe<{ petit_poucet: number }[]>(
+      "SELECT petit_poucet FROM CUP WHERE id = ?", cupId
+    );
+    const petitPoucet = cupRow?.petit_poucet === 1;
+
+    // Get interleague ranks for petit poucet calculation
+    const rankMap = new Map<number, number>();
+    if (petitPoucet) {
+      const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
+        `SELECT s.ID_USER as userId, SUM(s.PTS_TOT) as total
+         FROM STATS_USER s WHERE s.ID_LEAGUE > 0
+         GROUP BY s.ID_USER ORDER BY total DESC`
+      );
+      allStats.forEach((s, i) => rankMap.set(Number(s.userId), i + 1));
+    }
+
     // Get matches for this round
     const matches = await prisma.$queryRawUnsafe<{
       id: number; user1_id: number | null; user2_id: number | null; matchday: number | null;
@@ -225,7 +242,7 @@ export async function POST(request: Request) {
     for (const match of matches) {
       if (!match.user1_id || !match.user2_id || !match.matchday) continue;
 
-      // Get day scores for both users (from STATS_USER, sum across all leagues)
+      // Get day scores for both users
       const [s1] = await prisma.$queryRawUnsafe<{ pts: number; player_used: number }[]>(
         "SELECT COALESCE(SUM(PTS_TOT),0) as pts, COALESCE(SUM(PLAYER_USED),0) as player_used FROM STATS_USER WHERE ID_USER = ? AND DAY = ?",
         match.user1_id, match.matchday
@@ -235,10 +252,22 @@ export async function POST(request: Request) {
         match.user2_id, match.matchday
       );
 
-      const pts1 = Number(s1.pts);
-      const pts2 = Number(s2.pts);
+      let pts1 = Number(s1.pts);
+      let pts2 = Number(s2.pts);
       const used1 = Number(s1.player_used) || 11;
       const used2 = Number(s2.player_used) || 11;
+
+      // Petit Poucet: bonus for the lower-ranked team
+      // Bonus = floor(rank difference / 2)
+      if (petitPoucet) {
+        const rank1 = rankMap.get(Number(match.user1_id)) ?? 99;
+        const rank2 = rankMap.get(Number(match.user2_id)) ?? 99;
+        const diff = Math.abs(rank1 - rank2);
+        const bonus = Math.floor(diff / 2);
+        if (rank1 > rank2) pts1 += bonus; // user1 is lower ranked
+        else if (rank2 > rank1) pts2 += bonus; // user2 is lower ranked
+      }
+
       const avg1 = pts1 / used1;
       const avg2 = pts2 / used2;
 
