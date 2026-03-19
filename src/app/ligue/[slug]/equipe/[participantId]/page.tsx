@@ -28,14 +28,14 @@ export default async function EquipeParticipantPage({
   const participant = await getUserById(participantId);
   if (!participant) notFound();
 
+  const selectedJournee = j ? Number(j) : null;
+
   const [team, standingsData, interleagueData, currentDay] = await Promise.all([
-    getParticipantTeam(league.dbId, participantId),
+    getParticipantTeam(league.dbId, participantId, selectedJournee ?? undefined),
     getLeagueStandings(league.dbId),
     getInterleagueStandings(),
     getCurrentMatchday(),
   ]);
-
-  const selectedJournee = j ? Number(j) : null;
 
   // Fetch day scores or cumulative stats
   const dayScores = selectedJournee
