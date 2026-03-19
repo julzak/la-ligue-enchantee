@@ -262,7 +262,7 @@ export default async function HomePage() {
                 <span>Ligue</span>
                 <span className="text-right">Points</span>
               </div>
-              {interleagueStandings.map((s) => (
+              {interleagueStandings.slice(0, 20).map((s) => (
                 <Link
                   key={s.userId}
                   href={`/ligue/${s.leagueSlug}/equipe/${s.userId}`}
@@ -282,6 +282,11 @@ export default async function HomePage() {
                 </Link>
               ))}
             </div>
+            {interleagueStandings.length > 20 && (
+              <Link href="/classement-interligue" className="block text-center py-2 text-xs text-gold hover:underline border-t border-white/[0.05]">
+                Voir tout le classement ({interleagueStandings.length} participants)
+              </Link>
+            )}
           </div>
 
           {/* Coupe encart */}

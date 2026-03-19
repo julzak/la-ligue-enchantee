@@ -232,7 +232,7 @@ export async function getInterleagueStandings(day?: number) {
   // Sort by total and take top 20
   const sorted = Array.from(cumulMap.values())
     .sort((a, b) => b.total - a.total)
-    ; // No limit — show all participants
+    ;
 
   const userIds = sorted.map((s) => s.userId);
   const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
