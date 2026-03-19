@@ -70,7 +70,7 @@ export default async function ResultatsPage({ params }: { params: Promise<{ slug
               >
                 <span className={`text-sm font-medium ${i < 3 ? "text-gold" : "text-muted"}`}>{i + 1}</span>
                 <Link
-                  href={`/ligue/${slug}/equipe/${s.userId}`}
+                  href={`/ligue/${slug}/equipe/${s.userId}?j=${currentMatchday}`}
                   className="text-sm text-white hover:text-gold transition-colors flex items-center gap-1 truncate"
                 >
                   {s.userName}

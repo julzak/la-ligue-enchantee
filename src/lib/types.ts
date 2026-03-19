@@ -2,7 +2,7 @@
 export type Position = "GK" | "DEF" | "MID" | "ATT";
 
 // ── Trophies ──────────────────────────────────────────────
-export type TrophyType = "star" | "star-gold" | "cup" | "skull";
+export type TrophyType = "star" | "star-gold" | "star-red" | "cup" | "skull" | "leaf" | "ballon-dor";
 
 // ── Club ──────────────────────────────────────────────────
 export interface Club {

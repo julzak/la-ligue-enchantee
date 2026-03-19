@@ -9,7 +9,7 @@ function dec(v: Decimal | number | null): number {
 }
 
 // Trophy types from the img tags in USER.NAME
-type TrophyType = "star" | "star-gold" | "cup" | "skull";
+type TrophyType = "star" | "star-gold" | "star-red" | "cup" | "skull" | "leaf" | "ballon-dor";
 
 interface ParsedUser {
   id: number;
@@ -20,15 +20,18 @@ interface ParsedUser {
 
 function parseUserName(raw: string): { cleanName: string; trophies: TrophyType[] } {
   const trophies: TrophyType[] = [];
-  const imgRegex = /<img[^>]*src="[^"]*?(\w+)\.gif"[^>]*>/gi;
+  const imgRegex = /<img[^>]*src="[^"]*?(\w+)\.(gif|png)"[^>]*>/gi;
   let match;
   while ((match = imgRegex.exec(raw)) !== null) {
     const filename = match[1].toLowerCase();
     if (filename === "etoile_jaune" || filename === "etoile_or") trophies.push("star-gold");
-    else if (filename === "etoile_rouge" || filename === "etoile") trophies.push("cup");
+    else if (filename === "etoile_rouge" || filename === "etoile") trophies.push("star-red");
     else if (filename === "etoile_noire") trophies.push("star");
+    else if (filename === "etoile_verte") trophies.push("star-gold");
     else if (filename === "coupe" || filename === "trophee") trophies.push("cup");
     else if (filename === "skull" || filename === "tete_mort") trophies.push("skull");
+    else if (filename === "champion_automne") trophies.push("leaf");
+    else if (filename === "ballon_dor") trophies.push("ballon-dor");
     else trophies.push("star"); // fallback
   }
   const cleanName = raw.replace(/<[^>]*>/g, "").trim();
@@ -229,7 +232,7 @@ export async function getInterleagueStandings(day?: number) {
   // Sort by total and take top 20
   const sorted = Array.from(cumulMap.values())
     .sort((a, b) => b.total - a.total)
-    .slice(0, 20);
+    ; // No limit — show all participants
 
   const userIds = sorted.map((s) => s.userId);
   const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
