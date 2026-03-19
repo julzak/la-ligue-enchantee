@@ -66,6 +66,7 @@ export default function AdminNotesPage() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [showOnlyFilled, setShowOnlyFilled] = useState(false);
   const [matches, setMatches] = useState<MatchInfo[]>([]);
@@ -140,6 +141,7 @@ export default function AdminNotesPage() {
       const data = await res.json();
       if (data.ok) {
         setMessage(`Sauvegardé (${toSave.length} joueurs)`);
+        setLastSaved(new Date().toLocaleString("fr-FR"));
       } else {
         setMessage("Erreur: " + data.error);
       }
@@ -238,7 +240,10 @@ export default function AdminNotesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-2xl text-white mb-1">Saisie des notes</h1>
-          <p className="text-sm text-muted">{filledCount} joueurs notés · {totalWithGoals} buts</p>
+          <p className="text-sm text-muted">
+            {filledCount} joueurs notés · {totalWithGoals} buts
+            {lastSaved && <span className="ml-2 text-white/30">· Sauvé {lastSaved}</span>}
+          </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">

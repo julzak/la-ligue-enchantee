@@ -20,7 +20,7 @@ export default async function StatistiquesPage({ params }: { params: Promise<{ s
   if (!league) notFound();
 
   const [playerStats, leagueStats] = await Promise.all([
-    getPlayerStats(10),
+    getPlayerStats(20),
     getLeagueStats(league.dbId),
   ]);
 
