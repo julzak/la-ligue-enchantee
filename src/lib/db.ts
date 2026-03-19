@@ -347,6 +347,12 @@ export async function getWorstPerformances(day?: number, limit = 5) {
   const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
 
   const ranked = scores
+    .filter((s) => {
+      // Exclude forfait/bench players (2 pts base = didn't actually play)
+      // L'Équipe almost never gives 2/10, so 2 = forfait in practice
+      const pts = dec(s.points);
+      return pts > 0 && pts !== 2;
+    })
     .map((s) => {
       const player = playerMap.get(s.playerId);
       const total = dec(s.points) + 2 * s.goals + s.passes;
@@ -397,9 +403,11 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
   const clubs = await prisma.club.findMany();
   const clubMap = new Map(clubs.map((c) => [c.id, c]));
 
-  return teamMembers.map((t) => {
-    const player = playerMap.get(t.playerId);
-    const club = player ? clubMap.get(player.clubId) : null;
+  return teamMembers
+    .filter((t) => playerMap.has(t.playerId)) // Hide ghost players (no PLAYER record)
+    .map((t) => {
+    const player = playerMap.get(t.playerId)!;
+    const club = clubMap.get(player.clubId) ?? null;
     const isStarter = lineupPlayerIds.has(t.playerId);
     const lineupEntry = lineup.find((l) => l.playerId === t.playerId);
 

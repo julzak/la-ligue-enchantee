@@ -4,7 +4,7 @@ import { Star, Trophy, Skull, Leaf, Circle } from "lucide-react";
 import type { TrophyType } from "@/lib/types";
 
 const trophyConfig: Record<TrophyType, { icon: React.ElementType; color: string; glow: string }> = {
-  star: { icon: Star, color: "#6B7280", glow: "" }, // noire/gris
+  star: { icon: Star, color: "#8B6914", glow: "" }, // marron/bronze (etoile_noire in legacy)
   "star-gold": { icon: Star, color: "#C8A84B", glow: "drop-shadow(0 0 2px rgba(200,168,75,0.5))" },
   "star-red": { icon: Star, color: "#C0392B", glow: "drop-shadow(0 0 2px rgba(192,57,43,0.5))" },
   cup: { icon: Trophy, color: "#C8A84B", glow: "drop-shadow(0 0 3px rgba(200,168,75,0.6))" },
@@ -32,7 +32,7 @@ export function TrophyBadges({ trophies }: { trophies: TrophyType[] }) {
       {grouped.map((g, i) => {
         const cfg = trophyConfig[g.type];
         const Icon = cfg.icon;
-        if (g.count > 2) {
+        if (g.count > 1) {
           // Compact: icon + xN
           return (
             <span key={i} className="inline-flex items-center">
