@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, MessageSquare, Trophy, Gavel, Snowflake, CreditCard } from "lucide-react";
+import { ClipboardList, Zap, MessageSquare, Trophy, Gavel, Snowflake, CreditCard, Users } from "lucide-react";
 
 const mainLinks = [
   { href: "/admin/notes", label: "Notes", icon: ClipboardList },
   { href: "/admin/jokers", label: "Jokers", icon: Zap },
+  { href: "/admin/equipes", label: "Équipes", icon: Users },
   { href: "/admin/coupe-france", label: "Coupe", icon: Trophy },
   { href: "/admin/reclamations", label: "Réclamations", icon: MessageSquare },
 ];

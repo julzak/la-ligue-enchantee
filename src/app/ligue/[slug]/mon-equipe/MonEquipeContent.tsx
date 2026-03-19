@@ -42,6 +42,7 @@ interface MonEquipeContentProps {
   currentDay: number;
   leagueId: number;
   userName: string;
+  adminOverrideUserId?: number;
 }
 
 const positionOrder: Position[] = ["GK", "DEF", "MID", "ATT"];
@@ -84,6 +85,7 @@ export function MonEquipeContent({
   currentDay,
   leagueId,
   userName,
+  adminOverrideUserId,
 }: MonEquipeContentProps) {
   // Track which players are starters locally
   const [starterIds, setStarterIds] = useState<Set<number>>(() => {
@@ -174,11 +176,12 @@ export function MonEquipeContent({
 
     const payload = {
       leagueId,
-      day: currentDay + 1, // Save for NEXT matchday
+      day: currentDay + 1,
       starters: sorted.map((p, i) => ({
         playerId: p.playerId,
         indx: i + 1,
       })),
+      ...(adminOverrideUserId ? { userId: adminOverrideUserId } : {}),
     };
 
     try {
