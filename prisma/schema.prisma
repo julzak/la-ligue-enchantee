@@ -74,8 +74,11 @@ model Score {
   day      Int     @default(0) @map("DAY") @db.UnsignedInt
   used     Int     @default(0) @map("USED") @db.UnsignedInt
   points   Decimal @default(0.0) @map("POINTS") @db.Decimal(3, 1)
-  goals    Int     @default(0) @map("GOALS") @db.UnsignedInt
-  passes   Int     @default(0) @map("PASSES") @db.UnsignedInt
+  goals        Int @default(0) @map("GOALS") @db.UnsignedInt
+  passes       Int @default(0) @map("PASSES") @db.UnsignedInt
+  redCard      Int @default(0) @map("RED_CARD") @db.UnsignedTinyInt
+  ownGoals     Int @default(0) @map("OWN_GOALS") @db.UnsignedInt
+  penaltySaved Int @default(0) @map("PENALTY_SAVED") @db.UnsignedInt
 
   @@id([playerId, day])
   @@index([day], map: "DAY")

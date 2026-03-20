@@ -136,7 +136,7 @@ async function main() {
 
   // 4. Match and inject
   let matched = 0, unmatched = 0, skipped = 0, warnings = 0;
-  const toInject: { playerId: number; playerName: string; rating: number; goals: number; passes: number; confidence: string }[] = [];
+  const toInject: { playerId: number; playerName: string; rating: number; goals: number; passes: number; redCard: number; ownGoals: number; penaltySaved: number; confidence: string }[] = [];
   const warningList: string[] = [];
 
   validScraped.forEach((s) => {
@@ -185,6 +185,9 @@ async function main() {
       rating: s.rating!,
       goals: s.goals ?? 0,
       passes: s.assists ?? 0,
+      redCard: s.redCard ? 1 : 0,
+      ownGoals: s.ownGoals ?? 0,
+      penaltySaved: 0,
       confidence: s.confidence ?? "high",
     });
     matched++;
@@ -216,14 +219,12 @@ async function main() {
     console.log(`\nWriting ${toInject.length} scores to DB...`);
     for (const s of toInject) {
       await prisma.$executeRawUnsafe(
-        `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES)
-         VALUES (?, ?, 1, ?, ?, ?)
+        `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES, RED_CARD, OWN_GOALS, PENALTY_SAVED)
+         VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
-           USED = 1,
-           POINTS = VALUES(POINTS),
-           GOALS = VALUES(GOALS),
-           PASSES = VALUES(PASSES)`,
-        s.playerId, matchday, s.rating, s.goals, s.passes
+           USED = 1, POINTS = VALUES(POINTS), GOALS = VALUES(GOALS), PASSES = VALUES(PASSES),
+           RED_CARD = VALUES(RED_CARD), OWN_GOALS = VALUES(OWN_GOALS), PENALTY_SAVED = VALUES(PENALTY_SAVED)`,
+        s.playerId, matchday, s.rating, s.goals, s.passes, s.redCard, s.ownGoals, s.penaltySaved
       );
     }
     console.log(`Done! ${toInject.length} scores injected for J${matchday}`);

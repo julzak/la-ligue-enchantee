@@ -30,6 +30,9 @@ interface Rating {
   rating: number;
   goals: number;
   assists: number;
+  redCard: boolean;
+  ownGoals: number;
+  penaltySaved: number;
   match: string;
 }
 
@@ -77,10 +80,22 @@ function parseRatingsFromText(text: string, matchLabel: string): Rating[] {
 
       // Parse assists
       let assistCount = 0;
-      if (desc.match(/passe[s]?\s+d[ée]cisive/i)) assistCount = 1;
       if (desc.match(/deux\s+passe|doubl[ée]\s+de\s+passe/i)) assistCount = 2;
-      // "passeur" / "à l'origine du but" / "service pour"
+      else if (desc.match(/passe[s]?\s+d[ée]cisive/i)) assistCount = 1;
       if (desc.match(/\bpasseur\b|à l'origine du but|service pour/i) && assistCount === 0) assistCount = 1;
+
+      // Red cards
+      const redCard = !!desc.match(
+        /\bexpuls[ée]\b|\bcarton rouge\b|\bexclu\b|\brouge directe?\b|\brenvoy[ée] aux vestiaires\b|\bsecond (?:carton )?jaune\b|\bdeux(?:ième)? (?:carton )?jaune\b/i
+      );
+
+      // Own goals (CSC)
+      let ownGoals = 0;
+      if (desc.match(/\bcsc\b|\bcontre son camp\b|\bautogoal\b|\bbut contre son camp\b/i)) ownGoals = 1;
+
+      // Penalty saved (goalkeepers)
+      let penaltySaved = 0;
+      if (desc.match(/\barr[êe]t[ée]? (?:un |le )?p[ée]nalty\b|\bp[ée]nalty (?:repouss|arr[êe]t|stopp)\b|\ba stopp[ée] (?:un |le )?p[ée]nalty\b|\brepouss[ée] (?:un |le )?p[ée]nalty\b/i)) penaltySaved = 1;
 
       ratings.push({
         playerName: match[1].trim(),
@@ -88,6 +103,9 @@ function parseRatingsFromText(text: string, matchLabel: string): Rating[] {
         rating: Number(match[3]),
         goals: goalCount,
         assists: assistCount,
+        redCard,
+        ownGoals,
+        penaltySaved,
         match: matchLabel,
       });
     }
@@ -352,6 +370,9 @@ async function main() {
         const extras = [];
         if (r.goals > 0) extras.push(`${r.goals}g`);
         if (r.assists > 0) extras.push(`${r.assists}a`);
+        if (r.redCard) extras.push("🟥");
+        if (r.ownGoals > 0) extras.push(`${r.ownGoals}csc`);
+        if (r.penaltySaved > 0) extras.push(`${r.penaltySaved}pen`);
         console.log(`      ${r.playerName} (${r.club}): ${r.rating}${extras.length ? " [" + extras.join(",") + "]" : ""}`);
       });
 
