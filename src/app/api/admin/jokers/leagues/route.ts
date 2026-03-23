@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { getLeagues } from "@/lib/db";
 // import { requireAdmin } from "@/lib/admin-auth";

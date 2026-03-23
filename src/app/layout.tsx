@@ -26,13 +26,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" data-theme="dark" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{const t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}`,
-          }}
-        />
-      </head>
       <body
         className={`${inter.variable} ${playfair.variable} font-sans antialiased`}
       >

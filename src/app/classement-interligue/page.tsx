@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { getInterleagueStandings, getCurrentMatchday } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
