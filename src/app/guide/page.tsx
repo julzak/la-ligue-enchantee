@@ -1,63 +1,82 @@
 import { Navbar } from "@/components/layout/Navbar";
+import { Trophy, Users, BarChart3, Gavel, Shield, BookOpen } from "lucide-react";
+
+function Section({ icon: Icon, title, children }: { icon: React.ComponentType<{ className?: string }>; title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-surface rounded-xl border border-white/[0.07] p-6">
+      <h2 className="font-serif text-lg text-gold mb-4 flex items-center gap-2.5">
+        <Icon className="w-5 h-5 text-gold/70" />
+        {title}
+      </h2>
+      <div className="space-y-3 text-sm text-white/70 leading-relaxed">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function GuidePage() {
   return (
     <>
       <Navbar />
       <div className="pt-[52px]">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-8">
-          <article className="prose prose-invert prose-sm max-w-none [&_h1]:font-serif [&_h1]:text-gold [&_h1]:text-2xl [&_h1]:mb-6 [&_h2]:font-serif [&_h2]:text-gold [&_h2]:text-lg [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:border-b [&_h2]:border-gold/20 [&_h2]:pb-2 [&_h3]:text-white [&_h3]:text-base [&_h3]:mt-5 [&_h3]:mb-2 [&_p]:text-white/70 [&_p]:text-sm [&_li]:text-white/70 [&_li]:text-sm [&_strong]:text-white [&_table]:text-sm [&_th]:text-gold [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider [&_td]:text-white/70 [&_hr]:border-white/10">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-10">
 
-            <h1>Guide du nouveau site</h1>
-
-            <p>
-              Le nouveau site remplace l&apos;ancien ligueenchantee.com. Toutes les données sont les mêmes — seule l&apos;interface change.
+          {/* Header */}
+          <div className="text-center mb-10">
+            <h1 className="font-serif text-3xl text-gold mb-3">Guide du site</h1>
+            <p className="text-sm text-white/50 max-w-lg mx-auto">
+              Tout ce qu&apos;il faut savoir pour utiliser le nouveau site de La Ligue Enchantée.
+              Même identifiant et mot de passe qu&apos;avant.
             </p>
+          </div>
 
-            <h2>Se connecter</h2>
-            <p>Même identifiant (pseudo) et mot de passe qu&apos;avant.</p>
+          <div className="space-y-5">
 
-            <h2>Résultats et classements</h2>
-            <ul>
-              <li><strong>Page d&apos;accueil</strong> : journée en cours, meilleurs/pires joueurs, résultats L1, classement interligue</li>
-              <li><strong>Résultats</strong> : classement de la journée, leader, progressions, résumé IA</li>
-              <li><strong>Général</strong> : classement cumulé de la saison</li>
-              <li><strong>Stats</strong> : classement joueurs L1 filtrable par poste</li>
-            </ul>
+            <Section icon={BarChart3} title="Résultats et classements">
+              <p><strong className="text-white">Page d&apos;accueil</strong> — Résumé de la journée en cours, meilleurs et pires joueurs, résultats L1, classement interligue.</p>
+              <p><strong className="text-white">Résultats</strong> — Classement de la journée dans votre ligue, leader, progressions et chutes, résumé IA &quot;Lia&quot;.</p>
+              <p><strong className="text-white">Général</strong> — Classement cumulé de la saison complète.</p>
+              <p><strong className="text-white">Stats</strong> — Classement des joueurs L1 filtrable par poste (Gardiens, Défenseurs, Milieux, Attaquants) et par nombre (10, 20, 50, 100).</p>
+            </Section>
 
-            <h2>Mon équipe</h2>
-            <ul>
-              <li>Voir votre effectif de 13 joueurs avec photos et scores</li>
-              <li>Choisir vos <strong>11 titulaires</strong> en cliquant sur les joueurs</li>
-              <li>Contraintes : 1 GK, 3-5 DEF, 3-5 MIL, 1-3 ATT</li>
-              <li><strong>Valider avant la deadline</strong> affichée en haut de page</li>
-            </ul>
+            <Section icon={Users} title="Mon équipe">
+              <p>Voir votre effectif de 13 joueurs avec photos, club et scores de la dernière journée.</p>
+              <p>Choisir vos <strong className="text-white">11 titulaires</strong> en cliquant sur les joueurs. Contraintes de composition : 1 gardien, 3 à 5 défenseurs, 3 à 5 milieux, 1 à 3 attaquants.</p>
+              <p><strong className="text-white">Valider avant la deadline</strong> affichée en haut de page. Si pas validé à temps, la composition précédente est reconduite automatiquement.</p>
+            </Section>
 
-            <h2>Coupe Enchantée</h2>
-            <p>Bracket complet accessible depuis l&apos;accueil. Règle du Petit Poucet : bonus pour l&apos;équipe moins bien classée.</p>
+            <Section icon={Trophy} title="Coupe Enchantée">
+              <p>Compétition interligue à élimination directe, accessible depuis la page d&apos;accueil.</p>
+              <p>Bracket complet : préliminaire → seizièmes → huitièmes → quarts → demi-finales → finale.</p>
+              <p><strong className="text-white">Règle du Petit Poucet</strong> — L&apos;équipe moins bien classée au classement interligue reçoit un bonus de points proportionnel à l&apos;écart de classement.</p>
+            </Section>
 
-            <h2>Mercato</h2>
-            <p>Quand le mercato est ouvert, un bandeau apparaît sur toutes les pages. Cliquez dessus pour enchérir sur les joueurs libres.</p>
+            <Section icon={Gavel} title="Mercato">
+              <p>Quand le mercato est ouvert, un bandeau apparaît sur toutes les pages. Cliquez dessus pour accéder à la page d&apos;enchères.</p>
+              <p><strong className="text-white">Mercato d&apos;été</strong> — 130 points de budget identique pour tous. Enchères aveugles : le plus offrant remporte le joueur. En cas d&apos;égalité, le joueur et les points sont remis en jeu au tour suivant.</p>
+              <p><strong className="text-white">Mercato d&apos;hiver</strong> — Budget proportionnel au classement (le dernier reçoit le plus). Chaque recrutement implique la libération d&apos;un joueur de votre effectif (1 entrant = 1 sortant).</p>
+            </Section>
 
-            <h2>Ce qui a changé</h2>
-            <div className="overflow-x-auto">
-              <table>
-                <thead>
-                  <tr><th>Fonctionnalité</th><th>Avant</th><th>Maintenant</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>Interface</td><td>PHP/HTML</td><td>Design moderne, responsive</td></tr>
-                  <tr><td>Photos joueurs</td><td>Aucune</td><td>99% des joueurs</td></tr>
-                  <tr><td>Mon équipe</td><td>Via forum</td><td>Page dédiée</td></tr>
-                  <tr><td>Coupe</td><td>Excel</td><td>Bracket interactif</td></tr>
-                  <tr><td>Enchères</td><td>Excel/email</td><td>Module en ligne</td></tr>
-                  <tr><td>Topo IA</td><td>N&apos;existait pas</td><td>Résumé auto chaque journée</td></tr>
-                  <tr><td>Classement interligue</td><td>Limité</td><td>Page complète</td></tr>
-                </tbody>
-              </table>
-            </div>
+            <Section icon={Shield} title="Scoring">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                <span className="text-white/50">Note L&apos;Équipe</span><span>1 à 10 pts</span>
+                <span className="text-white/50">But (ATT / MIL)</span><span>+2 pts</span>
+                <span className="text-white/50">But (DEF)</span><span>+4 pts</span>
+                <span className="text-white/50">But (GK)</span><span>+10 pts</span>
+                <span className="text-white/50">Passe décisive</span><span>+1 pt</span>
+                <span className="text-white/50">CSC</span><span className="text-rouge">-2 pts</span>
+                <span className="text-white/50">Carton rouge</span><span className="text-rouge">Note → 0</span>
+                <span className="text-white/50">Penalty arrêté (GK)</span><span className="text-vert">+2 pts</span>
+                <span className="text-white/50">Joueur non noté</span><span>2 pts forfait</span>
+              </div>
+            </Section>
 
-          </article>
+            <Section icon={BookOpen} title="Jokers">
+              <p>Chaque participant dispose de jokers pour remplacer un joueur de son effectif en cours de saison. Le nombre et la date limite sont définis par les admins.</p>
+            </Section>
+
+          </div>
         </div>
       </div>
     </>
