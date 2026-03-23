@@ -34,10 +34,10 @@ export default function GuidePage() {
           <div className="space-y-5">
 
             <Section icon={BarChart3} title="Résultats et classements">
-              <p><strong className="text-white">Page d&apos;accueil</strong> — Résumé de la journée en cours, meilleurs et pires joueurs, résultats L1, classement interligue.</p>
-              <p><strong className="text-white">Résultats</strong> — Classement de la journée dans votre ligue, leader, progressions et chutes, résumé IA &quot;Lia&quot;.</p>
-              <p><strong className="text-white">Général</strong> — Classement cumulé de la saison complète.</p>
-              <p><strong className="text-white">Stats</strong> — Classement des joueurs L1 filtrable par poste (Gardiens, Défenseurs, Milieux, Attaquants) et par nombre (10, 20, 50, 100).</p>
+              <p><strong className="text-white">Page d&apos;accueil</strong> :Résumé de la journée en cours, meilleurs et pires joueurs, résultats L1, classement interligue.</p>
+              <p><strong className="text-white">Résultats</strong> :Classement de la journée dans votre ligue, leader, progressions et chutes, résumé IA &quot;Lia&quot;.</p>
+              <p><strong className="text-white">Général</strong> :Classement cumulé de la saison complète.</p>
+              <p><strong className="text-white">Stats</strong> :Classement des joueurs L1 filtrable par poste (Gardiens, Défenseurs, Milieux, Attaquants) et par nombre (10, 20, 50, 100).</p>
             </Section>
 
             <Section icon={Users} title="Mon équipe">
@@ -49,13 +49,13 @@ export default function GuidePage() {
             <Section icon={Trophy} title="Coupe Enchantée">
               <p>Compétition interligue à élimination directe, accessible depuis la page d&apos;accueil.</p>
               <p>Bracket complet : préliminaire → seizièmes → huitièmes → quarts → demi-finales → finale.</p>
-              <p><strong className="text-white">Règle du Petit Poucet</strong> — L&apos;équipe moins bien classée au classement interligue reçoit un bonus de points proportionnel à l&apos;écart de classement.</p>
+              <p><strong className="text-white">Règle du Petit Poucet</strong> :L&apos;équipe moins bien classée au classement interligue reçoit un bonus de points proportionnel à l&apos;écart de classement.</p>
             </Section>
 
             <Section icon={Gavel} title="Mercato">
               <p>Quand le mercato est ouvert, un bandeau apparaît sur toutes les pages. Cliquez dessus pour accéder à la page d&apos;enchères.</p>
-              <p><strong className="text-white">Mercato d&apos;été</strong> — 130 points de budget identique pour tous. Enchères aveugles : le plus offrant remporte le joueur. En cas d&apos;égalité, le joueur et les points sont remis en jeu au tour suivant.</p>
-              <p><strong className="text-white">Mercato d&apos;hiver</strong> — Budget proportionnel au classement (le dernier reçoit le plus). Chaque recrutement implique la libération d&apos;un joueur de votre effectif (1 entrant = 1 sortant).</p>
+              <p><strong className="text-white">Mercato d&apos;été</strong> :130 points de budget identique pour tous. Enchères aveugles : le plus offrant remporte le joueur. En cas d&apos;égalité, le joueur et les points sont remis en jeu au tour suivant.</p>
+              <p><strong className="text-white">Mercato d&apos;hiver</strong> :Budget proportionnel au classement (le dernier reçoit le plus). Chaque recrutement implique la libération d&apos;un joueur de votre effectif (1 entrant = 1 sortant).</p>
             </Section>
 
             <Section icon={Shield} title="Scoring">
