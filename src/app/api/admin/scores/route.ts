@@ -11,10 +11,11 @@ export async function GET(request: Request) {
   const day = Number(searchParams.get("day") ?? 0);
 
   // If day=0, return the current matchday (for auto-detection)
+  // Open on the latest day that has scores (not +1), so admin can review/complete
   if (!day) {
     const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
     const currentDay = latest?.day ?? 26;
-    return NextResponse.json({ day: currentDay + 1 }); // next day to fill
+    return NextResponse.json({ day: currentDay });
   }
 
   const scores = await prisma.score.findMany({ where: { day } });
