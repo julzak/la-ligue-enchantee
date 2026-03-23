@@ -3,11 +3,61 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* ── Dark theme (default) ── */
+  :root,
+  [data-theme="dark"] {
     --background: #141414;
     --foreground: rgba(255, 255, 255, 0.85);
     --border: rgba(255, 255, 255, 0.07);
+    --color-night: #141414;
+    --color-surface: #1E1E1C;
+    --color-surface-2: #252523;
+    --color-muted: #6B6860;
+    --scrollbar-color: #8A7133;
+    color-scheme: dark;
   }
+
+  /* ── Light theme ── */
+  [data-theme="light"] {
+    --background: #F5F2EB;
+    --foreground: #1a1a1a;
+    --border: rgba(0, 0, 0, 0.1);
+    --color-night: #F5F2EB;
+    --color-surface: #ffffff;
+    --color-surface-2: #EDE9E0;
+    --color-muted: #8B8680;
+    --scrollbar-color: #C8A84B;
+    color-scheme: light;
+  }
+
+  /* In light mode, invert white → dark text, and white/opacity → dark/opacity */
+  [data-theme="light"] .text-white { color: #1a1a1a !important; }
+  [data-theme="light"] .text-white\/50 { color: rgba(0,0,0,0.5) !important; }
+  [data-theme="light"] .text-white\/60 { color: rgba(0,0,0,0.6) !important; }
+  [data-theme="light"] .text-white\/70 { color: rgba(0,0,0,0.7) !important; }
+  [data-theme="light"] .text-white\/30 { color: rgba(0,0,0,0.3) !important; }
+  [data-theme="light"] .text-white\/20 { color: rgba(0,0,0,0.2) !important; }
+  [data-theme="light"] .bg-white\/\[0\.02\] { background-color: rgba(0,0,0,0.02) !important; }
+  [data-theme="light"] .bg-white\/\[0\.03\] { background-color: rgba(0,0,0,0.03) !important; }
+  [data-theme="light"] .bg-white\/\[0\.04\] { background-color: rgba(0,0,0,0.04) !important; }
+  [data-theme="light"] .bg-white\/\[0\.05\] { background-color: rgba(0,0,0,0.05) !important; }
+  [data-theme="light"] .border-white\/\[0\.04\] { border-color: rgba(0,0,0,0.04) !important; }
+  [data-theme="light"] .border-white\/\[0\.05\] { border-color: rgba(0,0,0,0.05) !important; }
+  [data-theme="light"] .border-white\/\[0\.07\] { border-color: rgba(0,0,0,0.08) !important; }
+  [data-theme="light"] .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(0,0,0,0.06) !important; }
+  [data-theme="light"] .hover\:text-white:hover { color: #1a1a1a !important; }
+  [data-theme="light"] .hover\:text-white\/70:hover { color: rgba(0,0,0,0.7) !important; }
+  [data-theme="light"] .hover\:bg-white\/\[0\.03\]:hover { background-color: rgba(0,0,0,0.03) !important; }
+  [data-theme="light"] .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(0,0,0,0.05) !important; }
+  [data-theme="light"] .placeholder\:text-muted::placeholder { color: var(--color-muted) !important; }
+
+  /* Light mode: gold accents need slightly darker bg for contrast */
+  [data-theme="light"] .bg-gold\/10 { background-color: rgba(200,168,75,0.15) !important; }
+  [data-theme="light"] .bg-gold\/\[0\.02\] { background-color: rgba(200,168,75,0.06) !important; }
+  [data-theme="light"] .bg-gold\/\[0\.06\] { background-color: rgba(200,168,75,0.1) !important; }
+
+  /* Light mode shadows */
+  [data-theme="light"] .bg-surface { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 
   * {
     border-color: var(--border);
@@ -21,7 +71,7 @@
 
   html {
     scrollbar-width: thin;
-    scrollbar-color: #8A7133 transparent;
+    scrollbar-color: var(--scrollbar-color) transparent;
   }
 
   ::-webkit-scrollbar {
@@ -34,7 +84,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #8A7133;
+    background: var(--scrollbar-color);
     border-radius: 2px;
   }
 
