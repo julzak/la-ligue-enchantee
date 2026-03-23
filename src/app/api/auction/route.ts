@@ -26,7 +26,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ auction: null });
   }
 
-  const a = auction[0];
+  const a = {
+    id: Number(auction[0].id),
+    status: auction[0].status,
+    current_round: Number(auction[0].current_round),
+    budget_per_user: Number(auction[0].budget_per_user),
+    players_per_user: Number(auction[0].players_per_user),
+  };
 
   // My spent budget (won bids)
   const [spentRow] = await prisma.$queryRawUnsafe<{ total: number }[]>(
@@ -116,7 +122,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Pas d'enchère ouverte" }, { status: 400 });
   }
 
-  const a = auction[0];
+  const a = {
+    id: Number(auction[0].id),
+    status: auction[0].status,
+    current_round: Number(auction[0].current_round),
+    budget_per_user: Number(auction[0].budget_per_user),
+  };
 
   // Calculate remaining budget
   const [spentRow] = await prisma.$queryRawUnsafe<{ total: number }[]>(
