@@ -27,7 +27,9 @@ export default function GuidePage() {
             <h1 className="font-serif text-3xl text-gold mb-3">Guide du site</h1>
             <p className="text-sm text-white/50 max-w-lg mx-auto">
               Tout ce qu&apos;il faut savoir pour utiliser le nouveau site de La Ligue Enchantée.
-              Même identifiant et mot de passe qu&apos;avant.
+            </p>
+            <p className="text-xs text-white/30 mt-2">
+              Connexion : votre nom de participant + mot de passe <strong className="text-white/50">ligue</strong>
             </p>
           </div>
 
