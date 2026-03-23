@@ -237,7 +237,7 @@ export function EquipeContent({
           <div>
             <h1 className="font-serif text-lg sm:text-xl text-white flex flex-wrap items-center gap-2">
               {participantName}
-              <TrophyBadges trophies={participantTrophies} />
+              <TrophyBadges trophies={participantTrophies} leagueSlug={slug} />
               <span className="text-muted text-sm font-sans">
                 - {showCumul ? "Cumul" : `Resultats de la journee ${selectedJournee}`}
               </span>

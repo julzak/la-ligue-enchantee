@@ -80,7 +80,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
               <p className="text-[10px] uppercase tracking-widest text-gold-dim mb-1">L&apos;homme a abattre</p>
               <p className="text-lg font-serif text-white flex items-center gap-2">
                 {leader.userName}
-                <TrophyBadges trophies={leader.trophies} />
+                <TrophyBadges trophies={leader.trophies} leagueSlug={slug} />
               </p>
               <p className="text-sm text-muted">
                 {leader.totalPoints.toFixed(1)} pts - {leader.lastMatchdayPoints.toFixed(1)} pts a la J{currentMatchday}
@@ -106,7 +106,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
                     <div>
                       <span className="text-sm text-white flex items-center gap-1">
                         {s.userName}
-                        <TrophyBadges trophies={s.trophies} />
+                        <TrophyBadges trophies={s.trophies} leagueSlug={slug} />
                       </span>
                       <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday} - maintenant {s.rank}e</span>
                     </div>
@@ -133,7 +133,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
                     <div>
                       <span className="text-sm text-white flex items-center gap-1">
                         {s.userName}
-                        <TrophyBadges trophies={s.trophies} />
+                        <TrophyBadges trophies={s.trophies} leagueSlug={slug} />
                       </span>
                       <span className="text-xs text-muted">{s.lastMatchdayPoints.toFixed(1)} pts J{currentMatchday} - tombe à la {s.rank}e place</span>
                     </div>
@@ -174,7 +174,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
                 <span className={`w-5 font-medium ${s.rank <= 3 ? "text-gold" : "text-muted"}`}>{s.rank}</span>
                 <span className="flex-1 text-white truncate flex items-center">
                   {s.userName}
-                  <TrophyBadges trophies={s.trophies} />
+                  <TrophyBadges trophies={s.trophies} leagueSlug={slug} />
                 </span>
                 <span className="text-white font-medium tabular-nums">{s.totalPoints.toFixed(1)}</span>
               </div>

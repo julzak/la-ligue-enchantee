@@ -54,7 +54,7 @@ export function ClassementTable({ standings, participants }: ClassementTableProp
             <span className="text-sm text-white truncate flex items-center gap-1 hover:text-gold transition-colors">
               <RankBadge rank={s.rank} total={total} />
               {s.participantName}
-              {participant && <TrophyBadges trophies={participant.trophies} />}
+              {participant && <TrophyBadges trophies={participant.trophies} leagueSlug={slug} />}
               {s.delta !== 0 && (
                 <span className="ml-0.5"><DeltaBadge delta={s.delta} /></span>
               )}

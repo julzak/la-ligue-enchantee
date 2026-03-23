@@ -31,14 +31,14 @@ export default async function ResultatsPage({ params }: { params: Promise<{ slug
           <div className="bg-surface rounded-lg border-l-2 border-l-vert border border-white/[0.07] p-4">
             <p className="text-[10px] uppercase tracking-widest text-vert mb-1">L&apos;exploit de la journée</p>
             <p className="text-sm text-white font-medium flex items-center gap-1">
-              {best.userName} <TrophyBadges trophies={best.trophies} />
+              {best.userName} <TrophyBadges trophies={best.trophies} leagueSlug={slug} />
             </p>
             <p className="text-xs text-muted mt-1">{best.lastMatchdayPoints} pts</p>
           </div>
           <div className="bg-surface rounded-lg border-l-2 border-l-rouge border border-white/[0.07] p-4">
             <p className="text-[10px] uppercase tracking-widest text-rouge mb-1">La saucisse de la journée 🌭</p>
             <p className="text-sm text-white font-medium flex items-center gap-1">
-              {worst.userName} <TrophyBadges trophies={worst.trophies} />
+              {worst.userName} <TrophyBadges trophies={worst.trophies} leagueSlug={slug} />
             </p>
             <p className="text-xs text-muted mt-1">{worst.lastMatchdayPoints} pts</p>
           </div>
@@ -74,7 +74,7 @@ export default async function ResultatsPage({ params }: { params: Promise<{ slug
                   className="text-sm text-white hover:text-gold transition-colors flex items-center gap-1 truncate"
                 >
                   {s.userName}
-                  <TrophyBadges trophies={s.trophies} />
+                  <TrophyBadges trophies={s.trophies} leagueSlug={slug} />
                 </Link>
                 <span className="text-sm text-right tabular-nums text-muted">{s.rank}</span>
                 <span className="text-sm text-right tabular-nums text-white font-semibold">{dayPts.toFixed(1)}</span>

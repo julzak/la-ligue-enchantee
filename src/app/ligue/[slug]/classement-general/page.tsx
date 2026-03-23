@@ -59,7 +59,7 @@ export default async function ClassementGeneralPage({ params }: { params: Promis
                   className="text-sm text-white hover:text-gold transition-colors flex items-center gap-1 truncate"
                 >
                   {s.userName}
-                  <TrophyBadges trophies={s.trophies} />
+                  <TrophyBadges trophies={s.trophies} leagueSlug={slug} />
                 </Link>
                 <span className="text-sm text-right text-white font-semibold tabular-nums">
                   {s.totalPoints.toFixed(1)}

@@ -273,7 +273,7 @@ export default async function HomePage() {
                   </span>
                   <span className="text-white truncate flex items-center hover:text-gold transition-colors">
                     {s.userName}
-                    <TrophyBadges trophies={s.trophies} />
+                    <TrophyBadges trophies={s.trophies} leagueSlug={s.leagueSlug} />
                   </span>
                   <span className="text-[10px] text-muted truncate">{s.leagueName.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")}</span>
                   <span className="text-right text-white font-medium tabular-nums">
@@ -328,7 +328,7 @@ export default async function HomePage() {
                     </span>
                     <span className="text-white/60 truncate flex items-center hover:text-white transition-colors">
                       {s.userName}
-                      <TrophyBadges trophies={s.trophies} />
+                      <TrophyBadges trophies={s.trophies} leagueSlug={s.leagueSlug} />
                     </span>
                     <span className="text-[10px] text-muted truncate">{s.leagueName.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")}</span>
                     <span className="text-right text-white/50 font-medium tabular-nums">

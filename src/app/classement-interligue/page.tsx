@@ -50,7 +50,7 @@ export default async function ClassementInterliguePage() {
                         className="text-white hover:text-gold transition-colors flex items-center"
                       >
                         {s.userName}
-                        <TrophyBadges trophies={s.trophies} />
+                        <TrophyBadges trophies={s.trophies} leagueSlug={s.leagueSlug} />
                       </Link>
                     </td>
                     <td className="px-3 py-2.5 text-muted text-xs">
