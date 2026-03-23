@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const auction = await prisma.$queryRawUnsafe<{
     id: number; league_id: number; status: string; current_round: number; budget_per_user: number; players_per_user: number;
   }[]>(
-    "SELECT * FROM AUCTION WHERE league_id = ? ORDER BY id DESC LIMIT 1",
+    "SELECT * FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' ORDER BY id DESC LIMIT 1",
     leagueId
   );
 
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
   if (action === "open") {
     // Create or reopen auction
     const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      "SELECT id FROM AUCTION WHERE league_id = ? AND status != 'resolved' ORDER BY id DESC LIMIT 1",
+      "SELECT id FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
       leagueId
     );
 
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
   if (action === "close-round") {
     // Close bidding for current round
     await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'closed' WHERE league_id = ? AND status = 'open'",
+      "UPDATE AUCTION SET status = 'closed' WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status = 'open'",
       leagueId
     );
     return NextResponse.json({ ok: true, message: "Tour fermé aux enchères" });
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
   if (action === "resolve-round") {
     // Resolve current round: highest bid wins, ties void
     const auction = await prisma.$queryRawUnsafe<{ id: number; current_round: number }[]>(
-      "SELECT id, current_round FROM AUCTION WHERE league_id = ? ORDER BY id DESC LIMIT 1",
+      "SELECT id, current_round FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' ORDER BY id DESC LIMIT 1",
       leagueId
     );
     if (auction.length === 0) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
@@ -218,7 +218,7 @@ export async function POST(request: Request) {
   if (action === "resolve-tiebreak") {
     // Resolve ties by random draw (for last round when ties persist)
     const auction = await prisma.$queryRawUnsafe<{ id: number; current_round: number }[]>(
-      "SELECT id, current_round FROM AUCTION WHERE league_id = ? ORDER BY id DESC LIMIT 1",
+      "SELECT id, current_round FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' ORDER BY id DESC LIMIT 1",
       leagueId
     );
     if (auction.length === 0) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
@@ -274,7 +274,7 @@ export async function POST(request: Request) {
 
   if (action === "close-auction") {
     await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'resolved' WHERE league_id = ? AND status != 'resolved'",
+      "UPDATE AUCTION SET status = 'resolved' WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status != 'resolved'",
       leagueId
     );
     return NextResponse.json({ ok: true, message: "Enchère terminée" });

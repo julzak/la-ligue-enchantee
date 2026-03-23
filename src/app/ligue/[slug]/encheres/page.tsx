@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Gavel, Loader2, Search, Plus, Minus, Send } from "lucide-react";
+import { Gavel, Loader2, Search, Plus, Minus, Send, Snowflake, ArrowRightLeft } from "lucide-react";
 
 interface AuctionState {
   id: number;
   status: string;
   currentRound: number;
   isOpen: boolean;
+  type?: string;
 }
 
 interface MyBid {
@@ -17,6 +18,8 @@ interface MyBid {
   clubName: string;
   amount: number;
   status: string;
+  playerOutId?: number | null;
+  playerOutName?: string | null;
 }
 
 interface WonPlayer {
@@ -34,6 +37,22 @@ interface FreePlayer {
   clubName: string;
 }
 
+interface SquadPlayer {
+  playerId: number;
+  playerName: string;
+  position: string;
+  clubName: string;
+}
+
+interface DraftBid {
+  playerId: number;
+  playerName: string;
+  clubName: string;
+  amount: number;
+  playerOutId?: number;
+  playerOutName?: string;
+}
+
 export default function EncheresPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -44,12 +63,13 @@ export default function EncheresPage() {
   const [playersNeeded, setPlayersNeeded] = useState(13);
   const [myBids, setMyBids] = useState<MyBid[]>([]);
   const [wonPlayers, setWonPlayers] = useState<WonPlayer[]>([]);
+  const [squad, setSquad] = useState<SquadPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // New bids being composed
-  const [draftBids, setDraftBids] = useState<{ playerId: number; playerName: string; clubName: string; amount: number }[]>([]);
+  const [draftBids, setDraftBids] = useState<DraftBid[]>([]);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<FreePlayer[]>([]);
 
@@ -77,11 +97,14 @@ export default function EncheresPage() {
       setPlayersNeeded(data.playersNeeded ?? 13);
       setMyBids(data.myBids ?? []);
       setWonPlayers(data.wonPlayers ?? []);
+      setSquad(data.squad ?? []);
     } catch {}
     setLoading(false);
   }, [leagueDbId]);
 
   useEffect(() => { fetchAuction(); }, [fetchAuction]);
+
+  const isWinter = auction?.type === "winter";
 
   // Search free players
   useEffect(() => {
@@ -97,7 +120,12 @@ export default function EncheresPage() {
 
   function addBid(player: FreePlayer) {
     if (draftBids.some((b) => b.playerId === player.id)) return;
-    setDraftBids((prev) => [...prev, { playerId: player.id, playerName: player.name, clubName: player.clubName, amount: 1 }]);
+    setDraftBids((prev) => [...prev, {
+      playerId: player.id,
+      playerName: player.name,
+      clubName: player.clubName,
+      amount: 1,
+    }]);
     setSearch("");
     setSearchResults([]);
   }
@@ -110,6 +138,15 @@ export default function EncheresPage() {
     setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? { ...b, amount } : b));
   }
 
+  function setPlayerOut(playerId: number, playerOutId: number) {
+    const outPlayer = squad.find((s) => s.playerId === playerOutId);
+    setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? {
+      ...b,
+      playerOutId,
+      playerOutName: outPlayer?.playerName ?? "",
+    } : b));
+  }
+
   function removeBid(playerId: number) {
     setDraftBids((prev) => prev.filter((b) => b.playerId !== playerId));
   }
@@ -117,9 +154,17 @@ export default function EncheresPage() {
   const totalDraft = draftBids.reduce((sum, b) => sum + b.amount, 0);
   const budgetAfter = budget - totalDraft;
 
+  // For winter: track which squad players are already selected as "out"
+  const usedOutIds = new Set(draftBids.map((b) => b.playerOutId).filter((id): id is number => !!id));
+
+  // Validation for winter: all bids must have a player_out
+  const winterValid = !isWinter || draftBids.every((b) => b.playerOutId && b.playerOutId > 0);
+
   async function submitBids() {
     if (draftBids.length === 0) return;
     if (budgetAfter < 0) { setMessage("Budget insuffisant"); return; }
+    if (isWinter && !winterValid) { setMessage("Chaque enchere doit designer un joueur sortant"); return; }
+
     setSubmitting(true);
     setMessage("");
     try {
@@ -128,7 +173,11 @@ export default function EncheresPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           leagueId: leagueDbId,
-          bids: draftBids.map((b) => ({ playerId: b.playerId, amount: b.amount })),
+          bids: draftBids.map((b) => ({
+            playerId: b.playerId,
+            amount: b.amount,
+            ...(isWinter ? { playerOutId: b.playerOutId } : {}),
+          })),
         }),
       });
       const data = await res.json();
@@ -140,7 +189,7 @@ export default function EncheresPage() {
         setMessage("Erreur: " + data.error);
       }
     } catch {
-      setMessage("Erreur réseau");
+      setMessage("Erreur reseau");
     }
     setSubmitting(false);
   }
@@ -153,36 +202,49 @@ export default function EncheresPage() {
     return (
       <div className="text-center py-20">
         <Gavel className="w-12 h-12 text-muted mx-auto mb-4" />
-        <p className="text-muted">Aucune enchère en cours pour cette ligue</p>
+        <p className="text-muted">Aucune enchere en cours pour cette ligue</p>
       </div>
     );
   }
+
+  const accentColor = isWinter ? "blue-400" : "gold";
+  const AuctionIcon = isWinter ? Snowflake : Gavel;
 
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
       <div className="bg-surface rounded-lg border border-white/[0.07] p-6">
         <div className="flex items-center gap-3 mb-4">
-          <Gavel className="w-6 h-6 text-gold" />
-          <h2 className="font-serif text-xl text-white">Enchères — Tour {auction.currentRound}</h2>
+          <AuctionIcon className={`w-6 h-6 ${isWinter ? "text-blue-400" : "text-gold"}`} />
+          <h2 className="font-serif text-xl text-white">
+            {isWinter ? "Mercato d'hiver" : "Encheres"} &mdash; Tour {auction.currentRound}
+          </h2>
           <span className={`text-xs px-2 py-1 rounded ${auction.isOpen ? "bg-vert/20 text-vert" : "bg-rouge/20 text-rouge"}`}>
-            {auction.isOpen ? "Ouvert" : "Fermé"}
+            {auction.isOpen ? "Ouvert" : "Ferme"}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className={`grid ${isWinter ? "grid-cols-2" : "grid-cols-3"} gap-4 text-center`}>
           <div>
-            <span className="text-2xl font-serif font-bold text-gold">{budget}</span>
+            <span className={`text-2xl font-serif font-bold ${isWinter ? "text-blue-400" : "text-gold"}`}>{budget}</span>
             <p className="text-xs text-muted mt-1">Points restants</p>
           </div>
           <div>
             <span className="text-2xl font-serif font-bold text-white">{playersWon}</span>
-            <p className="text-xs text-muted mt-1">Joueurs acquis</p>
+            <p className="text-xs text-muted mt-1">Joueurs {isWinter ? "recrutes" : "acquis"}</p>
           </div>
-          <div>
-            <span className="text-2xl font-serif font-bold text-white/50">{playersNeeded}</span>
-            <p className="text-xs text-muted mt-1">Encore à recruter</p>
-          </div>
+          {!isWinter && (
+            <div>
+              <span className="text-2xl font-serif font-bold text-white/50">{playersNeeded}</span>
+              <p className="text-xs text-muted mt-1">Encore a recruter</p>
+            </div>
+          )}
         </div>
+        {isWinter && (
+          <p className="text-xs text-muted text-center mt-3 flex items-center justify-center gap-1.5">
+            <ArrowRightLeft className="w-3.5 h-3.5" />
+            Chaque recrutement implique la liberation d&apos;un joueur (1 IN = 1 OUT)
+          </p>
+        )}
       </div>
 
       {message && (
@@ -194,7 +256,9 @@ export default function EncheresPage() {
       {/* Place bids (only when open) */}
       {auction.isOpen && (
         <div className="space-y-4">
-          <h3 className="font-serif text-base text-white">Placer vos enchères</h3>
+          <h3 className="font-serif text-base text-white">
+            {isWinter ? "Placer vos encheres (mercato d'hiver)" : "Placer vos encheres"}
+          </h3>
 
           {/* Search */}
           <div className="relative">
@@ -204,7 +268,7 @@ export default function EncheresPage() {
               placeholder="Chercher un joueur..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-surface-2 border border-white/[0.07] rounded pl-9 pr-3 py-2 text-sm text-white placeholder:text-muted focus:outline-none focus:border-gold"
+              className={`w-full bg-surface-2 border border-white/[0.07] rounded pl-9 pr-3 py-2 text-sm text-white placeholder:text-muted focus:outline-none focus:border-${accentColor}`}
             />
           </div>
 
@@ -227,39 +291,65 @@ export default function EncheresPage() {
 
           {/* Draft bids */}
           {draftBids.length > 0 && (
-            <div className="bg-surface rounded-lg border border-gold/20 overflow-hidden">
+            <div className={`bg-surface rounded-lg border ${isWinter ? "border-blue-400/20" : "border-gold/20"} overflow-hidden`}>
               {draftBids.map((b) => (
-                <div key={b.playerId} className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.04] last:border-b-0">
-                  <button onClick={() => removeBid(b.playerId)} className="text-rouge hover:text-rouge/70">
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="text-sm text-white flex-1 truncate">{b.playerName}</span>
-                  <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => updateBidAmount(b.playerId, -1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">-</button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={budget}
-                      value={b.amount}
-                      onChange={(e) => setBidAmount(b.playerId, Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-14 h-6 rounded bg-surface-2 border border-white/[0.07] text-sm text-gold font-bold text-center tabular-nums focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    <button onClick={() => updateBidAmount(b.playerId, 1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">+</button>
+                <div key={b.playerId} className="border-b border-white/[0.04] last:border-b-0">
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <button onClick={() => removeBid(b.playerId)} className="text-rouge hover:text-rouge/70">
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-sm text-white flex-1 truncate">{b.playerName}</span>
+                    <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateBidAmount(b.playerId, -1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">-</button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={budget}
+                        value={b.amount}
+                        onChange={(e) => setBidAmount(b.playerId, Math.max(1, parseInt(e.target.value) || 1))}
+                        className={`w-14 h-6 rounded bg-surface-2 border border-white/[0.07] text-sm ${isWinter ? "text-blue-400" : "text-gold"} font-bold text-center tabular-nums focus:outline-none focus:border-${accentColor} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                      />
+                      <button onClick={() => updateBidAmount(b.playerId, 1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">+</button>
+                    </div>
                   </div>
+
+                  {/* Winter: player OUT selector */}
+                  {isWinter && (
+                    <div className="px-4 pb-2">
+                      <div className="flex items-center gap-2">
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-rouge shrink-0" />
+                        <span className="text-xs text-muted shrink-0">Joueur sortant :</span>
+                        <select
+                          value={b.playerOutId ?? ""}
+                          onChange={(e) => setPlayerOut(b.playerId, Number(e.target.value))}
+                          className="flex-1 bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-400"
+                        >
+                          <option value="">Choisir un joueur a liberer...</option>
+                          {squad
+                            .filter((s) => !usedOutIds.has(s.playerId) || s.playerId === b.playerOutId)
+                            .map((s) => (
+                              <option key={s.playerId} value={s.playerId}>
+                                {s.playerName} ({s.position.slice(0, 3)}) - {s.clubName.split(" ")[0]}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <div className="flex items-center justify-between px-4 py-3 bg-surface-2">
                 <span className={`text-sm ${budgetAfter < 0 ? "text-rouge" : "text-muted"}`}>
-                  Reste après enchères : <strong className="text-white">{budgetAfter}</strong> pts
+                  Reste apres encheres : <strong className="text-white">{budgetAfter}</strong> pts
                 </span>
                 <button
                   onClick={submitBids}
-                  disabled={submitting || budgetAfter < 0}
-                  className="h-9 px-4 bg-gold text-night font-semibold rounded text-sm hover:bg-gold/90 flex items-center gap-2 disabled:opacity-50"
+                  disabled={submitting || budgetAfter < 0 || (isWinter && !winterValid)}
+                  className={`h-9 px-4 ${isWinter ? "bg-blue-500" : "bg-gold"} text-${isWinter ? "white" : "night"} font-semibold rounded text-sm hover:opacity-90 flex items-center gap-2 disabled:opacity-50`}
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Enchérir
+                  Encherir
                 </button>
               </div>
             </div>
@@ -270,20 +360,28 @@ export default function EncheresPage() {
       {/* My current bids */}
       {myBids.length > 0 && (
         <div>
-          <h3 className="font-serif text-base text-white mb-3">Mes enchères (tour {auction.currentRound})</h3>
+          <h3 className="font-serif text-base text-white mb-3">Mes encheres (tour {auction.currentRound})</h3>
           <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
             {myBids.map((b) => (
-              <div key={b.playerId} className={`flex items-center gap-2 px-4 py-2 border-b border-white/[0.04] last:border-b-0 ${
-                b.status === "won" ? "bg-vert/5" : b.status === "lost" ? "bg-rouge/5 opacity-50" : b.status === "tie" ? "bg-gold/5" : ""
+              <div key={b.playerId} className={`px-4 py-2 border-b border-white/[0.04] last:border-b-0 ${
+                b.status === "won" ? "bg-vert/5" : b.status === "lost" ? "bg-rouge/5 opacity-50" : b.status === "tie" ? "bg-blue-400/5" : ""
               }`}>
-                <span className="text-sm text-white flex-1">{b.playerName}</span>
-                <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
-                <span className="text-sm text-gold font-bold tabular-nums">{b.amount}</span>
-                <span className={`text-xs ${
-                  b.status === "won" ? "text-vert" : b.status === "lost" ? "text-rouge" : b.status === "tie" ? "text-gold" : "text-muted"
-                }`}>
-                  {b.status === "won" ? "✓" : b.status === "lost" ? "✗" : b.status === "tie" ? "=" : "⏳"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-white flex-1">{b.playerName}</span>
+                  <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
+                  <span className={`text-sm ${isWinter ? "text-blue-400" : "text-gold"} font-bold tabular-nums`}>{b.amount}</span>
+                  <span className={`text-xs ${
+                    b.status === "won" ? "text-vert" : b.status === "lost" ? "text-rouge" : b.status === "tie" ? "text-blue-400" : "text-muted"
+                  }`}>
+                    {b.status === "won" ? "\u2713" : b.status === "lost" ? "\u2717" : b.status === "tie" ? "=" : "\u23F3"}
+                  </span>
+                </div>
+                {isWinter && b.playerOutName && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <ArrowRightLeft className="w-3 h-3 text-rouge" />
+                    <span className="text-[11px] text-muted">Sortant : <span className="text-rouge/80">{b.playerOutName}</span></span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -293,14 +391,16 @@ export default function EncheresPage() {
       {/* Won players */}
       {wonPlayers.length > 0 && (
         <div>
-          <h3 className="font-serif text-base text-white mb-3">Mon effectif ({wonPlayers.length} joueurs)</h3>
+          <h3 className="font-serif text-base text-white mb-3">
+            {isWinter ? `Recrutes cet hiver (${wonPlayers.length})` : `Mon effectif (${wonPlayers.length} joueurs)`}
+          </h3>
           <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
             {wonPlayers.map((p) => (
               <div key={p.playerId} className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.04] last:border-b-0">
                 <span className="text-[10px] text-muted w-8">{p.position.slice(0, 3)}</span>
                 <span className="text-sm text-white flex-1">{p.playerName}</span>
                 <span className="text-[10px] text-muted">{p.clubName.split(" ")[0]}</span>
-                <span className="text-xs text-gold tabular-nums">{p.amount} pts</span>
+                <span className={`text-xs ${isWinter ? "text-blue-400" : "text-gold"} tabular-nums`}>{p.amount} pts</span>
               </div>
             ))}
           </div>

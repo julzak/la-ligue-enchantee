@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { LockCountdown } from "@/components/layout/LockCountdown";
-import { Search, Gavel } from "lucide-react";
+import { Search, Gavel, Snowflake } from "lucide-react";
 
 const leagueNames: Record<string, string> = {
   "ligue-1": "Ligue 1 (Baudens League)",
@@ -27,6 +27,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
   // Check if there's an active auction for this league
   const [auctionOpen, setAuctionOpen] = useState(false);
   const [auctionRound, setAuctionRound] = useState(0);
+  const [auctionType, setAuctionType] = useState<string>("summer");
   useEffect(() => {
     fetch(`/api/auction?leagueId=0&checkOnly=1`)
       .catch(() => {});
@@ -42,6 +43,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
         if (data.auction?.isOpen) {
           setAuctionOpen(true);
           setAuctionRound(data.auction.currentRound);
+          setAuctionType(data.auction.type ?? "summer");
         }
       } catch {}
     }
@@ -73,11 +75,11 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
         {auctionOpen && !pathname.includes("/encheres") && (
           <Link
             href={`/ligue/${slug}/encheres`}
-            className="block bg-gold/10 border-b border-gold/20 py-2.5 text-center hover:bg-gold/15 transition-colors"
+            className={`block ${auctionType === "winter" ? "bg-blue-500/10 border-b border-blue-400/20" : "bg-gold/10 border-b border-gold/20"} py-2.5 text-center hover:opacity-80 transition-colors`}
           >
-            <span className="text-sm text-gold font-medium flex items-center justify-center gap-2">
-              <Gavel className="w-4 h-4" />
-              Mercato en cours - Tour {auctionRound} - Placez vos enchères !
+            <span className={`text-sm ${auctionType === "winter" ? "text-blue-400" : "text-gold"} font-medium flex items-center justify-center gap-2`}>
+              {auctionType === "winter" ? <Snowflake className="w-4 h-4" /> : <Gavel className="w-4 h-4" />}
+              {auctionType === "winter" ? "Mercato d'hiver" : "Mercato"} en cours - Tour {auctionRound} - Placez vos enchères !
             </span>
           </Link>
         )}
