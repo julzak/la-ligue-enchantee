@@ -69,8 +69,8 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
       <div className="pt-[52px]">
         <LockCountdown matchdayNumber={26} lockAt={lockAt} isLocked={false} />
 
-        {/* Auction banner */}
-        {auctionOpen && (
+        {/* Auction banner — hidden on the auction page itself */}
+        {auctionOpen && !pathname.includes("/encheres") && (
           <Link
             href={`/ligue/${slug}/encheres`}
             className="block bg-gold/10 border-b border-gold/20 py-2.5 text-center hover:bg-gold/15 transition-colors"

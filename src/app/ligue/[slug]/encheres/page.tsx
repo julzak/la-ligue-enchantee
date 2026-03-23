@@ -106,6 +106,10 @@ export default function EncheresPage() {
     setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? { ...b, amount: Math.max(1, b.amount + delta) } : b));
   }
 
+  function setBidAmount(playerId: number, amount: number) {
+    setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? { ...b, amount } : b));
+  }
+
   function removeBid(playerId: number) {
     setDraftBids((prev) => prev.filter((b) => b.playerId !== playerId));
   }
@@ -233,7 +237,14 @@ export default function EncheresPage() {
                   <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
                   <div className="flex items-center gap-1">
                     <button onClick={() => updateBidAmount(b.playerId, -1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">-</button>
-                    <span className="text-sm text-gold font-bold w-8 text-center tabular-nums">{b.amount}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={budget}
+                      value={b.amount}
+                      onChange={(e) => setBidAmount(b.playerId, Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-14 h-6 rounded bg-surface-2 border border-white/[0.07] text-sm text-gold font-bold text-center tabular-nums focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                     <button onClick={() => updateBidAmount(b.playerId, 1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">+</button>
                   </div>
                 </div>
