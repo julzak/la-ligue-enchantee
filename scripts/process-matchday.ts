@@ -177,7 +177,12 @@ async function extractFromArticles(
       return null;
     });
 
+    // Get article text (needed for both formats)
+    const bodyText = await page.evaluate(() => document.body.innerText);
+    const isPaywalled = bodyText.includes("réservée à nos abonnés");
+
     if (imgSrc) {
+      // ── Format A: Infographic OCR ──
       const imgBuffer = await page.evaluate(async (src) => {
         const res = await fetch(src);
         const buf = await res.arrayBuffer();
@@ -206,26 +211,45 @@ async function extractFromArticles(
         console.log(`  ❌ OCR error: ${err}`);
       }
       await new Promise(r => setTimeout(r, 4500)); // rate limit
+    } else if (!isPaywalled) {
+      // ── Format B: Text parsing (name / rating / description lines) ──
+      const textNotes = parseNotesFromTextFormat(bodyText, match);
+      if (textNotes.length > 0) {
+        console.log(`  ✅ ${textNotes.length} notes (texte)`);
+        allNotes.push(...textNotes);
+      } else {
+        console.log("  ❌ No infographic + no text ratings found");
+      }
     } else {
-      console.log("  ❌ No infographic found");
+      console.log("  ❌ Paywalled — no data");
     }
 
-    // ── 2b: Text parsing for events (goals, assists, cards, CSC, penalties) ──
-    const bodyText = await page.evaluate(() => document.body.innerText);
-    if (!bodyText.includes("réservée à nos abonnés")) {
+    // ── Events from text (goals, assists, cards) — works with both formats ──
+    if (!isPaywalled) {
       const textEvents = parseEventsFromText(bodyText, match);
-      if (textEvents.length > 0) {
-        console.log(`  📝 ${textEvents.length} joueurs avec events (texte)`);
-        textEvents.forEach(e => {
+      // Also parse events from format B descriptions
+      const textEventsB = parseEventsFromTextFormatB(bodyText, match);
+      const combined = [...textEvents, ...textEventsB];
+      // Dedup by player name
+      const seen = new Set<string>();
+      const deduped = combined.filter(e => {
+        const key = norm(e.playerName);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      if (deduped.length > 0) {
+        console.log(`  📝 ${deduped.length} joueurs avec events (texte)`);
+        deduped.forEach(e => {
           const extras = [];
           if (e.goals > 0) extras.push(`${e.goals}g`);
           if (e.assists > 0) extras.push(`${e.assists}a`);
           if (e.redCard) extras.push("🟥");
           if (e.ownGoals > 0) extras.push(`${e.ownGoals}csc`);
           if (e.penaltySaved > 0) extras.push(`${e.penaltySaved}pen`);
-          if (extras.length > 0) console.log(`    ${e.playerName} (${e.club}): [${extras.join(",")}]`);
+          if (extras.length > 0) console.log(`    ${e.playerName}: [${extras.join(",")}]`);
         });
-        allEvents.push(...textEvents);
+        allEvents.push(...deduped);
       }
     }
   }
@@ -233,7 +257,99 @@ async function extractFromArticles(
   return { notes: allNotes, events: allEvents };
 }
 
-// ── Parse events from article text ───────────────────────
+// ── Parse notes from text format B (name / rating / description lines) ──
+function parseNotesFromTextFormat(text: string, matchLabel: string): PlayerNote[] {
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  const notes: PlayerNote[] = [];
+  const seen = new Set<string>();
+
+  // Find "la note moyenne" marker to know where ratings start
+  let startIdx = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].toLowerCase().includes("la note moyenne")) { startIdx = i; break; }
+  }
+
+  for (let i = startIdx; i < lines.length - 1; i++) {
+    const name = lines[i];
+    const nextLine = lines[i + 1];
+
+    // Name: 1-3 words, starts with uppercase, no digits, reasonable length
+    if (name.length < 3 || name.length > 25 || !/^[A-ZÀ-Ü]/.test(name) || /^\d/.test(name)) continue;
+    // Skip common non-name lines
+    if (/^(Lyon|Monaco|Marseille|Lille|Nice|PSG|Rennes|Metz|Lens|Toulouse|Nantes|Brest|Auxerre|Strasbourg|Angers|Le Havre|Paris FC|Lorient|Reims|Montpellier|Saint-Étienne)$/i.test(name)) continue;
+    if (/l'entraîneur|coach|moyenne|partager|commenter/i.test(name)) continue;
+
+    // Rating: single number 1-10
+    if (/^[1-9]$|^10$/.test(nextLine)) {
+      // Clean name: remove trailing "l'entraîneur" etc.
+      const cleanName = name.replace(/l'entraîneur.*$/i, "").trim();
+      if (cleanName.length < 2) continue;
+
+      // Skip if already seen (dedup first occurrence vs summary at bottom)
+      const key = norm(cleanName);
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      notes.push({ playerName: cleanName, rating: parseInt(nextLine), match: matchLabel });
+    }
+  }
+
+  return notes;
+}
+
+// ── Parse events from text format B (name / rating / description) ──
+function parseEventsFromTextFormatB(text: string, matchLabel: string): PlayerEvents[] {
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  const events: PlayerEvents[] = [];
+
+  let startIdx = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].toLowerCase().includes("la note moyenne")) { startIdx = i; break; }
+  }
+
+  for (let i = startIdx; i < lines.length - 2; i++) {
+    const name = lines[i];
+    const nextLine = lines[i + 1];
+
+    if (name.length < 3 || name.length > 25 || !/^[A-ZÀ-Ü]/.test(name) || /^\d/.test(name)) continue;
+    if (!/^[1-9]$|^10$/.test(nextLine)) continue;
+
+    const cleanName = name.replace(/l'entraîneur.*$/i, "").trim();
+    if (cleanName.length < 2) continue;
+
+    // Get description (line after rating)
+    const desc = (i + 2 < lines.length && lines[i + 2].length > 30) ? lines[i + 2] : "";
+    if (!desc) continue;
+
+    // Parse goals
+    let goalCount = 0;
+    if (desc.match(/tripl[ée]/i) && !desc.match(/tripl[ée]\s+de\s+passe/i)) goalCount = 3;
+    else if (desc.match(/doubl[ée]/i) && !desc.match(/doubl[ée]\s+de\s+passe/i)) goalCount = 2;
+    else if (desc.match(/\ba marqu[ée]\b|\ba inscrit\b|\bauteur d'un but\b|\bson (?:premier |second )?but\b/i) && !desc.match(/n'a pas marqu/i)) goalCount = 1;
+    if (desc.match(/couronn[ée]e? par un but|r[ée]compens[ée]e? par un but/i) && goalCount === 0) goalCount = 1;
+    if (desc.match(/sur le.*but|premier but adverse|encaiss[ée]|fautif sur le but/i)) goalCount = 0;
+
+    // Parse assists
+    let assistCount = 0;
+    if (desc.match(/deux\s+passe|doubl[ée]\s+de\s+passe/i)) assistCount = 2;
+    else if (desc.match(/passe[s]?\s+d[ée]cisive/i)) assistCount = 1;
+    if (desc.match(/\bpasseur\b|à l'origine du but|service pour/i) && assistCount === 0) assistCount = 1;
+
+    const redCard = !!desc.match(/\bexpuls[ée]\b|\bcarton rouge\b|\bexclu\b|\brouge directe?\b|\bsecond (?:carton )?jaune\b/i);
+    let ownGoals = 0;
+    if (desc.match(/\bcsc\b|\bcontre son camp\b/i)) ownGoals = 1;
+    let penaltySaved = 0;
+    if (desc.match(/\barr[êe]t[ée]? (?:un |le )?p[ée]nalty\b/i)) penaltySaved = 1;
+
+    if (goalCount > 0 || assistCount > 0 || redCard || ownGoals > 0 || penaltySaved > 0) {
+      events.push({ playerName: cleanName, club: "", goals: goalCount, assists: assistCount, redCard, ownGoals, penaltySaved, match: matchLabel });
+    }
+  }
+
+  return events;
+}
+
+// ── Parse events from article text (format A: "Nom (Club) : N") ──
 function parseEventsFromText(text: string, matchLabel: string): PlayerEvents[] {
   const lines = text.split("\n");
   const events: PlayerEvents[] = [];

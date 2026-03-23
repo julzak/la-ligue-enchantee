@@ -14,6 +14,9 @@ interface PlayerScore {
   points: number | null;
   goals: number;
   passes: number;
+  redCard: number;
+  ownGoals: number;
+  penaltySaved: number;
 }
 
 interface MatchInfo {
@@ -124,13 +127,16 @@ export default function AdminNotesPage() {
     setMessage("");
     try {
       const toSave = scores
-        .filter((s) => s.used > 0 || s.points !== null || s.goals > 0 || s.passes > 0)
+        .filter((s) => s.used > 0 || s.points !== null || s.goals > 0 || s.passes > 0 || s.redCard > 0 || s.ownGoals > 0 || s.penaltySaved > 0)
         .map((s) => ({
           playerId: s.playerId,
           used: s.points !== null && s.points > 0 ? 1 : s.used,
           points: s.points,
           goals: s.goals,
           passes: s.passes,
+          redCard: s.redCard,
+          ownGoals: s.ownGoals,
+          penaltySaved: s.penaltySaved,
         }));
 
       const res = await fetch("/api/admin/scores", {
@@ -191,13 +197,28 @@ export default function AdminNotesPage() {
   const filledCount = scores.filter((s) => s.points !== null).length;
   const totalWithGoals = scores.filter((s) => s.goals > 0).reduce((sum, s) => sum + s.goals, 0);
 
+  function getPositionGoalBonus(position: string): number {
+    const lower = position.toLowerCase();
+    if (lower.includes("gardien")) return 10;
+    if (lower.includes("fense")) return 4;
+    return 2; // MID + ATT
+  }
+
+  function calcTotal(s: PlayerScore): number {
+    const base = s.redCard ? 0 : (s.points ?? 0);
+    const goalBonus = getPositionGoalBonus(s.position) * s.goals;
+    return base + goalBonus + s.passes - 2 * s.ownGoals + 2 * s.penaltySaved;
+  }
+
+  const isGK = (position: string) => position.toLowerCase().includes("gardien");
+
   function PlayerRow({ s }: { s: PlayerScore }) {
     if (filter && !`${s.fname} ${s.lname}`.toLowerCase().includes(filter.toLowerCase())) return null;
     if (showOnlyFilled && s.points === null && s.goals === 0 && s.passes === 0) return null;
-    const total = (s.points ?? 0) + 2 * s.goals + s.passes;
+    const total = calcTotal(s);
     const hasData = s.points !== null;
     return (
-      <div className={`grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_3rem] gap-1 px-3 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
+      <div className={`grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
         <span className="text-xs text-white truncate flex items-center gap-1" title={`${s.fname} ${s.lname} (${s.position})`}>
           {CLUB_LOGOS[s.clubId] && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -210,23 +231,53 @@ export default function AdminNotesPage() {
           value={s.points ?? ""}
           onChange={(e) => updateScore(s.playerId, "points", e.target.value ? Number(e.target.value) : null)}
           placeholder="—"
-          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold"
+          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           min={0} max={10} step={1}
         />
         <input
           type="number"
           value={s.goals || ""}
           onChange={(e) => updateScore(s.playerId, "goals", Number(e.target.value) || 0)}
-          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold"
+          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           min={0}
         />
         <input
           type="number"
           value={s.passes || ""}
           onChange={(e) => updateScore(s.playerId, "passes", Number(e.target.value) || 0)}
-          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold"
+          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           min={0}
         />
+        {/* CSC */}
+        <input
+          type="number"
+          value={s.ownGoals || ""}
+          onChange={(e) => updateScore(s.playerId, "ownGoals", Number(e.target.value) || 0)}
+          className="w-full bg-surface-2 border border-rouge/20 rounded px-1 py-0.5 text-xs text-center text-rouge focus:outline-none focus:border-rouge [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          min={0}
+        />
+        {/* Red card */}
+        <div className="flex justify-center">
+          <input
+            type="checkbox"
+            checked={s.redCard > 0}
+            onChange={(e) => updateScore(s.playerId, "redCard", e.target.checked ? 1 : 0)}
+            className="accent-red-600 w-3.5 h-3.5"
+            title="Carton rouge"
+          />
+        </div>
+        {/* Penalty saved — only for GK */}
+        {isGK(s.position) ? (
+          <input
+            type="number"
+            value={s.penaltySaved || ""}
+            onChange={(e) => updateScore(s.playerId, "penaltySaved", Number(e.target.value) || 0)}
+            className="w-full bg-surface-2 border border-vert/20 rounded px-1 py-0.5 text-xs text-center text-vert focus:outline-none focus:border-vert [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            min={0}
+          />
+        ) : (
+          <span />
+        )}
         <span className={`text-xs text-right tabular-nums ${hasData ? "text-white font-medium" : "text-muted"}`}>
           {hasData ? total.toFixed(1) : ""}
         </span>
@@ -337,11 +388,14 @@ export default function AdminNotesPage() {
                   </div>
 
                   {/* Column headers */}
-                  <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_3rem] gap-1 px-3 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05]">
+                  <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05]">
                     <span>Joueur</span>
                     <span className="text-center">Note</span>
                     <span className="text-center">But</span>
                     <span className="text-center">Pas</span>
+                    <span className="text-center text-rouge/70">CSC</span>
+                    <span className="text-center text-rouge/70">🟥</span>
+                    <span className="text-center text-vert/70">Pen</span>
                     <span className="text-right">Tot.</span>
                   </div>
 

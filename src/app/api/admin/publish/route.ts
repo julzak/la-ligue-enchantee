@@ -105,11 +105,14 @@ export async function POST(request: Request) {
           const player = playerMap.get(playerId);
           if (!score || !player) continue;
 
-          const pts = dec(score.points);
+          const pos = mapPosition(player.position);
+          // Red card: note replaced by 0, bonuses kept
+          const pts = score.redCard ? 0 : dec(score.points);
           const goals = score.goals;
           const passes = score.passes;
-          const total = pts + 2 * goals + passes;
-          const pos = mapPosition(player.position);
+          // Position-based goal bonus: GK +10, DEF +4, MID/ATT +2
+          const goalBonus = pos === "GK" ? 10 : pos === "DEF" ? 4 : 2;
+          const total = pts + goalBonus * goals + passes - 2 * (score.ownGoals ?? 0) + 2 * (score.penaltySaved ?? 0);
 
           playerUsed++;
           ptsFrf += pts;

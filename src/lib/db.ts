@@ -8,6 +8,25 @@ function dec(v: Decimal | number | null): number {
   return typeof v === "number" ? v : Number(v);
 }
 
+// ── Scoring formula ─────────────────────────────────────
+// GK +10/goal, DEF +4/goal, MID/ATT +2/goal
+// Red card: note → 0 (bonuses kept)
+// CSC: -2, Penalty saved: +2
+function goalBonus(position: string): number {
+  const p = position.toLowerCase();
+  if (p.includes("gardien")) return 10;
+  if (p.includes("fense")) return 4;
+  return 2;
+}
+
+function calcPlayerTotal(
+  points: number, goals: number, passes: number, position: string,
+  redCard = 0, ownGoals = 0, penaltySaved = 0
+): number {
+  const base = redCard ? 0 : points;
+  return base + goalBonus(position) * goals + passes - 2 * ownGoals + 2 * penaltySaved;
+}
+
 // Trophy types from the img tags in USER.NAME
 type TrophyType = "star" | "star-gold" | "star-red" | "cup" | "skull" | "leaf" | "ballon-dor";
 
@@ -312,10 +331,14 @@ export async function getBestPerformances(day?: number, limit = 5) {
   const ranked = scores
     .map((s) => {
       const player = playerMap.get(s.playerId);
-      const total = dec(s.points) + 2 * s.goals + s.passes;
+      const pos = player?.position ?? "";
+      const total = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
       const details: string[] = [];
       if (s.goals > 0) details.push(`${s.goals} but${s.goals > 1 ? "s" : ""}`);
       if (s.passes > 0) details.push(`${s.passes} passe${s.passes > 1 ? "s" : ""}`);
+      if (s.redCard) details.push("🟥");
+      if (s.ownGoals > 0) details.push(`${s.ownGoals} csc`);
+      if (s.penaltySaved > 0) details.push(`${s.penaltySaved} pen arr.`);
       details.push(`${dec(s.points)} pts`);
 
       return {
@@ -355,7 +378,8 @@ export async function getWorstPerformances(day?: number, limit = 5) {
     })
     .map((s) => {
       const player = playerMap.get(s.playerId);
-      const total = dec(s.points) + 2 * s.goals + s.passes;
+      const pos = player?.position ?? "";
+      const total = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
       return {
         playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${s.playerId}`,
         club: player ? (clubMap.get(player.clubId) ?? "") : "",
@@ -492,7 +516,10 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
   return lineup.map((l) => {
     const player = playerMap.get(l.playerId);
     const score = scoreMap.get(l.playerId);
-    const total = score ? dec(score.points) + 2 * score.goals + score.passes : 2; // forfait
+    const pos = player?.position ?? "";
+    const total = score
+      ? calcPlayerTotal(dec(score.points), score.goals, score.passes, pos, score.redCard, score.ownGoals, score.penaltySaved)
+      : 2; // forfait
 
     return {
       playerId: l.playerId,
@@ -545,15 +572,18 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
   const scoresByPlayer = new Map<number, { notes: number; goals: number; passes: number; total: number; daysPlayed: number }>();
   allScores.forEach((s) => {
     const days = playerDays.get(s.playerId);
-    if (!days || !days.has(s.day)) return; // Only count if player was in lineup that day
+    if (!days || !days.has(s.day)) return;
 
     const prev = scoresByPlayer.get(s.playerId) ?? { notes: 0, goals: 0, passes: 0, total: 0, daysPlayed: 0 };
     const pts = dec(s.points);
+    const player = playerMap.get(s.playerId);
+    const pos = player?.position ?? "";
+    const dayTotal = calcPlayerTotal(pts, s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
     scoresByPlayer.set(s.playerId, {
       notes: prev.notes + pts,
       goals: prev.goals + s.goals,
       passes: prev.passes + s.passes,
-      total: prev.total + pts + 2 * s.goals + s.passes,
+      total: prev.total + dayTotal,
       daysPlayed: prev.daysPlayed + 1,
     });
   });
@@ -650,8 +680,11 @@ export async function getPlayerStats(limit = 10) {
   const agg = new Map<number, { totalPts: number; goals: number; passes: number; days: number }>();
   scores.forEach((s) => {
     const prev = agg.get(s.playerId) ?? { totalPts: 0, goals: 0, passes: 0, days: 0 };
+    const player = playerMap.get(s.playerId);
+    const pos = player?.position ?? "";
+    const dayTotal = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
     agg.set(s.playerId, {
-      totalPts: prev.totalPts + dec(s.points) + 2 * s.goals + s.passes,
+      totalPts: prev.totalPts + dayTotal,
       goals: prev.goals + s.goals,
       passes: prev.passes + s.passes,
       days: prev.days + 1,

@@ -36,6 +36,9 @@ export async function GET(request: Request) {
       points: score ? Number(score.points) : null,
       goals: score?.goals ?? 0,
       passes: score?.passes ?? 0,
+      redCard: score?.redCard ?? 0,
+      ownGoals: score?.ownGoals ?? 0,
+      penaltySaved: score?.penaltySaved ?? 0,
     };
   });
 
@@ -69,7 +72,7 @@ export async function POST(request: Request) {
   try {
     const { day, scores } = await request.json() as {
       day: number;
-      scores: { playerId: number; used: number; points: number | null; goals: number; passes: number }[];
+      scores: { playerId: number; used: number; points: number | null; goals: number; passes: number; redCard?: number; ownGoals?: number; penaltySaved?: number }[];
     };
 
     if (!day || !scores) {
@@ -87,14 +90,17 @@ export async function POST(request: Request) {
       const points = Number(s.points ?? 0);
       const goals = Math.round(Number(s.goals));
       const passes = Math.round(Number(s.passes));
+      const redCard = Math.round(Number(s.redCard ?? 0));
+      const ownGoals = Math.round(Number(s.ownGoals ?? 0));
+      const penaltySaved = Math.round(Number(s.penaltySaved ?? 0));
 
       if (isNaN(playerId) || isNaN(points)) continue;
 
       await prisma.$executeRawUnsafe(
-        `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE USED=VALUES(USED), POINTS=VALUES(POINTS), GOALS=VALUES(GOALS), PASSES=VALUES(PASSES)`,
-        playerId, day, used, points, goals, passes
+        `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES, RED_CARD, OWN_GOALS, PENALTY_SAVED)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE USED=VALUES(USED), POINTS=VALUES(POINTS), GOALS=VALUES(GOALS), PASSES=VALUES(PASSES), RED_CARD=VALUES(RED_CARD), OWN_GOALS=VALUES(OWN_GOALS), PENALTY_SAVED=VALUES(PENALTY_SAVED)`,
+        playerId, day, used, points, goals, passes, redCard, ownGoals, penaltySaved
       );
     }
 
