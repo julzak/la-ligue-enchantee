@@ -28,21 +28,24 @@ export default async function EquipeParticipantPage({
   const participant = await getUserById(participantId);
   if (!participant) notFound();
 
-  const selectedJournee = j ? Number(j) : null;
+  const currentDay = await getCurrentMatchday();
 
-  const [team, standingsData, interleagueData, currentDay] = await Promise.all([
-    getParticipantTeam(league.dbId, participantId, selectedJournee ?? undefined),
+  // Default to current matchday when no ?j= is provided (show day results, not cumul)
+  const showCumul = j === "cumul";
+  const selectedJournee = showCumul ? currentDay : (j ? Number(j) : currentDay);
+
+  const [team, standingsData, interleagueData] = await Promise.all([
+    getParticipantTeam(league.dbId, participantId, selectedJournee),
     getLeagueStandings(league.dbId),
     getInterleagueStandings(),
-    getCurrentMatchday(),
   ]);
 
   // Fetch day scores or cumulative stats
-  const dayScores = selectedJournee
+  const dayScores = !showCumul
     ? await getParticipantDayScores(league.dbId, participantId, selectedJournee)
     : null;
 
-  const cumulativeStats = !selectedJournee
+  const cumulativeStats = showCumul
     ? await getParticipantCumulativeStats(league.dbId, participantId, currentDay)
     : null;
 
@@ -63,7 +66,7 @@ export default async function EquipeParticipantPage({
       team={team}
       dayScores={dayScores}
       cumulativeStats={cumulativeStats}
-      selectedJournee={selectedJournee}
+      selectedJournee={showCumul ? null : selectedJournee}
       currentMatchday={currentDay}
       leagueRank={leagueRank}
       interleagueRank={interleagueRank}

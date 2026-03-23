@@ -13,7 +13,7 @@ import {
 import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "@/lib/assets";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
-import { ChevronRight, Flame, ThumbsDown } from "lucide-react";
+import { ChevronRight, Flame, ThumbsDown, Skull } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
@@ -302,6 +302,43 @@ export default async function HomePage() {
               <p className="text-xs text-rouge/70 mt-2 group-hover:text-rouge transition-colors">Voir le tableau →</p>
             </div>
           </Link>
+
+          {/* Rock Bottom — bottom 10 interligue */}
+          {interleagueStandings.length > 20 && (
+            <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden mt-4">
+              <div className="bg-rouge/10 px-4 py-3 border-b border-rouge/20 flex items-center gap-2">
+                <Skull className="w-4 h-4 text-rouge" />
+                <h2 className="font-serif text-sm text-rouge font-medium">Rock Bottom</h2>
+              </div>
+              <div className="divide-y divide-white/[0.05]">
+                <div className="grid grid-cols-[2rem_1fr_4.5rem_3.5rem] px-3 py-2 text-[10px] uppercase tracking-wider text-muted">
+                  <span></span>
+                  <span>Joueur</span>
+                  <span>Ligue</span>
+                  <span className="text-right">Points</span>
+                </div>
+                {interleagueStandings.slice(-10).map((s) => (
+                  <Link
+                    key={s.userId}
+                    href={`/ligue/${s.leagueSlug}/equipe/${s.userId}`}
+                    className="grid grid-cols-[2rem_1fr_4.5rem_3.5rem] px-3 py-2 items-center text-xs hover:bg-white/[0.04] transition-colors"
+                  >
+                    <span className="font-bold text-rouge/70">
+                      {s.rank}
+                    </span>
+                    <span className="text-white/60 truncate flex items-center hover:text-white transition-colors">
+                      {s.userName}
+                      <TrophyBadges trophies={s.trophies} />
+                    </span>
+                    <span className="text-[10px] text-muted truncate">{s.leagueName.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")}</span>
+                    <span className="text-right text-white/50 font-medium tabular-nums">
+                      {s.totalPoints.toFixed(1)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
           </div>
         </aside>
       </div>

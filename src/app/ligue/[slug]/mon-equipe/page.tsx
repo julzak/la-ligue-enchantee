@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import {
   getLeagueBySlug,
   getParticipantTeam,
-  getParticipantDayScores,
+  getRosterDayScores,
   getCurrentMatchday,
 } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
@@ -44,12 +44,12 @@ export default async function MonEquipePage({
   const userId = session.user.userId;
   const currentDay = await getCurrentMatchday();
 
-  const [team, lastDayScores] = await Promise.all([
-    getParticipantTeam(league.dbId, userId, currentDay),
-    currentDay > 0
-      ? getParticipantDayScores(league.dbId, userId, currentDay)
-      : Promise.resolve([]),
-  ]);
+  // Fetch team roster first, then scores for ALL roster players (not just lineup)
+  const team = await getParticipantTeam(league.dbId, userId, currentDay);
+  const rosterPlayerIds = team.map((p) => p.playerId);
+  const lastDayScores = currentDay > 0
+    ? await getRosterDayScores(rosterPlayerIds, currentDay)
+    : [];
 
   return (
     <MonEquipeContent

@@ -280,30 +280,36 @@ export async function getInterleagueStandings(day?: number) {
 export async function getDayStats(day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
 
-  // Aggregated SQL instead of loading all rows
-  const [dayRow] = await prisma.$queryRawUnsafe<{ goals: number; pts: number; cnt: number }[]>(
-    "SELECT COALESCE(SUM(GOALS),0) as goals, COALESCE(SUM(POINTS + 2*GOALS + PASSES),0) as pts, COUNT(CASE WHEN USED>0 THEN 1 END) as cnt FROM SCORE WHERE DAY = ?",
-    currentDay
-  );
-  const [seasonRow] = await prisma.$queryRawUnsafe<{ goals: number; pts: number; cnt: number }[]>(
-    "SELECT COALESCE(SUM(GOALS),0) as goals, COALESCE(SUM(POINTS + 2*GOALS + PASSES),0) as pts, COUNT(CASE WHEN USED>0 THEN 1 END) as cnt FROM SCORE"
-  );
+  // Use position-based scoring formula (not flat +2/goal)
+  const players = await prisma.player.findMany();
+  const playerMap = new Map(players.map((p) => [p.id, p]));
 
-  const totalGoals = Number(dayRow.goals);
-  const totalPoints = Number(dayRow.pts);
-  const playerCount = Number(dayRow.cnt);
-  const seasonGoals = Number(seasonRow.goals);
-  const seasonPoints = Number(seasonRow.pts);
-  const seasonPlayerCount = Number(seasonRow.cnt);
+  const dayScores = await prisma.score.findMany({ where: { day: currentDay } });
+  const allScores = await prisma.score.findMany();
+
+  function aggregateScores(scores: typeof dayScores) {
+    let goals = 0, pts = 0, cnt = 0;
+    for (const s of scores) {
+      goals += s.goals;
+      if (s.used > 0) cnt++;
+      const player = playerMap.get(s.playerId);
+      const pos = player?.position ?? "";
+      pts += calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
+    }
+    return { goals, pts, cnt };
+  }
+
+  const dayAgg = aggregateScores(dayScores);
+  const seasonAgg = aggregateScores(allScores);
 
   return {
-    totalGoals,
-    totalPoints: Math.round(totalPoints * 10) / 10,
-    avgPerPlayer: playerCount > 0 ? Math.round(totalPoints / playerCount * 100) / 100 : 0,
+    totalGoals: dayAgg.goals,
+    totalPoints: Math.round(dayAgg.pts * 10) / 10,
+    avgPerPlayer: dayAgg.cnt > 0 ? Math.round(dayAgg.pts / dayAgg.cnt * 100) / 100 : 0,
     currentDay,
-    seasonAvgGoals: currentDay > 0 ? Math.round(seasonGoals / currentDay * 10) / 10 : 0,
-    seasonAvgPoints: currentDay > 0 ? Math.round(seasonPoints / currentDay) : 0,
-    seasonAvgPerPlayer: seasonPlayerCount > 0 ? Math.round(seasonPoints / seasonPlayerCount * 100) / 100 : 0,
+    seasonAvgGoals: currentDay > 0 ? Math.round(seasonAgg.goals / currentDay * 10) / 10 : 0,
+    seasonAvgPoints: currentDay > 0 ? Math.round(seasonAgg.pts / currentDay) : 0,
+    seasonAvgPerPlayer: seasonAgg.cnt > 0 ? Math.round(seasonAgg.pts / seasonAgg.cnt * 100) / 100 : 0,
   };
 }
 
@@ -535,6 +541,48 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
       total: Math.round(total * 10) / 10,
     };
   });
+}
+
+// ── Scores for all roster players on a specific day ──────
+// Unlike getParticipantDayScores (lineup-based), this fetches scores
+// for ALL roster players so bench players also show their L'Equipe rating.
+export async function getRosterDayScores(rosterPlayerIds: number[], day: number) {
+  if (rosterPlayerIds.length === 0) return [];
+
+  const scores = await prisma.score.findMany({
+    where: { day, playerId: { in: rosterPlayerIds } },
+  });
+  const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
+
+  const players = await prisma.player.findMany({ where: { id: { in: rosterPlayerIds } } });
+  const playerMap = new Map(players.map((p) => [p.id, p]));
+
+  const clubs = await prisma.club.findMany();
+  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+
+  return rosterPlayerIds
+    .filter((id) => scoreMap.has(id)) // only players with scores
+    .map((id) => {
+      const player = playerMap.get(id);
+      const score = scoreMap.get(id)!;
+      const pos = player?.position ?? "";
+      const total = calcPlayerTotal(
+        dec(score.points), score.goals, score.passes, pos,
+        score.redCard, score.ownGoals, score.penaltySaved
+      );
+
+      return {
+        playerId: id,
+        playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${id}`,
+        position: player ? mapPosition(player.position) : "MID" as Position,
+        clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
+        indx: 0,
+        rating: dec(score.points),
+        goals: score.goals,
+        passes: score.passes,
+        total: Math.round(total * 10) / 10,
+      };
+    });
 }
 
 // ── Cumulative player stats for a participant ─────────────

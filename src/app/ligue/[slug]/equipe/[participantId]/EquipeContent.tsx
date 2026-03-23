@@ -247,7 +247,7 @@ export function EquipeContent({
           {/* Journee selector */}
           <div className="flex items-center gap-2">
             <Link
-              href={`/ligue/${slug}/equipe/${participantId}`}
+              href={`/ligue/${slug}/equipe/${participantId}?j=cumul`}
               className={`text-xs px-2.5 py-1 rounded transition-colors ${
                 showCumul ? "bg-gold text-night font-medium" : "bg-surface-2 text-muted hover:text-white"
               }`}
@@ -255,18 +255,14 @@ export function EquipeContent({
               Cumulé
             </Link>
             <select
-              value={selectedJournee ?? ""}
+              value={selectedJournee ?? "cumul"}
               onChange={(e) => {
                 const val = e.target.value;
-                if (val) {
-                  window.location.href = `/ligue/${slug}/equipe/${participantId}?j=${val}`;
-                } else {
-                  window.location.href = `/ligue/${slug}/equipe/${participantId}`;
-                }
+                window.location.href = `/ligue/${slug}/equipe/${participantId}?j=${val}`;
               }}
               className="bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-gold"
             >
-              <option value="">Journee...</option>
+              <option value="cumul">Cumulé</option>
               {Array.from({ length: currentMatchday }, (_, i) => i + 1).map((j) => (
                 <option key={j} value={j}>
                   J{j}
