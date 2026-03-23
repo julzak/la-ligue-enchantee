@@ -16,6 +16,7 @@ import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "@/lib/ass
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
 import { ChevronRight, Flame, ThumbsDown, Skull } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
@@ -60,7 +61,8 @@ export default async function HomePage() {
           <span className="text-gold font-serif text-sm">La Ligue Enchantée</span>
         </Link>
         <div className="flex-1" />
-        <span className="text-xs font-medium bg-gold text-night px-2.5 py-1 rounded">
+        <ThemeToggle />
+        <span className="text-xs font-medium bg-gold text-night px-2.5 py-1 rounded ml-2">
           J{currentMatchday}
         </span>
       </nav>

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Logo } from "@/components/ui/Logo";
-import { LogOut, Sun, Moon } from "lucide-react";
-import { useTheme } from "@/components/providers/ThemeProvider";
+import { LogOut } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -29,8 +29,6 @@ export function Navbar() {
         .toUpperCase()
         .slice(0, 2)
     : null;
-
-  const { theme, toggleTheme } = useTheme();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 h-[52px] bg-surface border-b border-white/[0.07] flex items-center px-4 md:px-6">
@@ -70,13 +68,7 @@ export function Navbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-3 shrink-0">
-        <button
-          onClick={toggleTheme}
-          className="p-1.5 text-white/30 hover:text-gold transition-colors"
-          title={theme === "dark" ? "Mode clair" : "Mode sombre"}
-        >
-          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
+        <ThemeToggle />
         <Link href="/" className="text-xs text-white/40 hover:text-white/60">
           Accueil
         </Link>
