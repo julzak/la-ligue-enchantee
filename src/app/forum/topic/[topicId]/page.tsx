@@ -93,9 +93,13 @@ export default function TopicPage() {
   // Close reactions bar on click outside
   useEffect(() => {
     if (showReactions === null) return;
-    function handleClick() { setShowReactions(null); }
-    // Delay to avoid closing immediately on the same click
-    const timer = setTimeout(() => document.addEventListener("click", handleClick), 0);
+    function handleClick(e: MouseEvent) {
+      // Don't close if clicking inside the reaction bar
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-reaction-bar]")) return;
+      setShowReactions(null);
+    }
+    const timer = setTimeout(() => document.addEventListener("click", handleClick), 10);
     return () => { clearTimeout(timer); document.removeEventListener("click", handleClick); };
   }, [showReactions]);
 
@@ -133,7 +137,13 @@ export default function TopicPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ postId, emoji }),
     });
-    fetchTopic();
+    // Refresh without showing loading spinner
+    try {
+      const res = await fetch(`/api/forum/posts?topicId=${topicId}`);
+      const data = await res.json();
+      setTopic(data.topic);
+      setPosts(data.posts ?? []);
+    } catch {}
   }
 
   if (loading) {
@@ -219,11 +229,11 @@ export default function TopicPage() {
                   +
                 </button>
                 {showReactions === post.id && (
-                  <div className="absolute bottom-9 left-0 z-50 bg-surface border border-white/[0.1] rounded-lg shadow-xl p-1.5 flex gap-1">
+                  <div data-reaction-bar className="absolute bottom-9 left-0 z-50 bg-surface border border-white/[0.1] rounded-lg shadow-xl p-1.5 flex gap-1">
                     {QUICK_REACTIONS.map(r => (
                       <button
                         key={r.emoji}
-                        onClick={() => { toggleReaction(post.id, r.emoji); setShowReactions(null); }}
+                        onClick={async (e) => { e.stopPropagation(); await toggleReaction(post.id, r.emoji); setShowReactions(null); }}
                         className="w-8 h-8 rounded hover:bg-white/[0.05] flex items-center justify-center text-lg transition-colors"
                         title={r.label}
                       >
