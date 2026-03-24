@@ -2,10 +2,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { NextResponse } from "next/server";
 
-// Admin user IDs — can be extended or moved to DB later
+// Admin user IDs
 const ADMIN_USER_IDS = new Set<number>([
-  // Add admin user IDs here. For now, any logged-in user can access admin.
-  // TODO: add a proper admin flag to the USER table
+  10,    // Thomas P
+  1429,  // LST
+  1311,  // Jun
+  112,   // Kazu
+  183,   // Zenigata
+  115,   // Shima / Jay
 ]);
 
 /**
