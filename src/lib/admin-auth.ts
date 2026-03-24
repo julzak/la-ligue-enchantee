@@ -10,6 +10,7 @@ const ADMIN_USER_IDS = new Set<number>([
   112,   // Kazu
   183,   // Zenigata
   115,   // Shima / Jay
+  173,   // Duch (temp — remove after handoff)
 ]);
 
 /**

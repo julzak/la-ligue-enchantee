@@ -39,10 +39,6 @@ export default async function HomePage() {
     currentMatchday
   );
 
-  // Sort leagues: L1 → L2 → National
-  const leagueOrder: Record<string, number> = { "ligue-1": 0, "ligue-2": 1, "national-1": 2 };
-  const sortedLeagues = [...leagues].sort((a, b) => (leagueOrder[a.slug] ?? 9) - (leagueOrder[b.slug] ?? 9));
-
   // Fetch league standings for each league in parallel
   const leagueStandingsMap = new Map<string, Awaited<ReturnType<typeof getLeagueStandings>>>();
   const leagueStandingsResults = await Promise.all(
@@ -94,29 +90,31 @@ export default async function HomePage() {
             </div>
             <h1 className="font-serif text-3xl text-gold mb-2">Journée {currentMatchday}</h1>
             <p className="text-xs text-white/30 italic tracking-wide">La fantasy league est une affaire sérieuse</p>
-            {/* Quick links to leagues */}
-            <div className="flex justify-center gap-3 mt-4">
-              {sortedLeagues.map((league) => (
+            {/* Quick links — visual cards with logos */}
+            <div className="flex justify-center gap-3 mt-5 flex-wrap">
+              {[
+                { href: "/ligue/ligue-1/resultats", label: "Ligue 1", img: "/leagues/ligue1.png", bg: "bg-[#0052B4]" },
+                { href: "/ligue/ligue-2/resultats", label: "Ligue 2", img: "/leagues/ligue2.png", bg: "bg-white" },
+                { href: "/ligue/national-1/resultats", label: "National", img: "/leagues/national.jpeg", bg: "bg-[#2BA3D4]" },
+                { href: "/coupe", label: "Coupe", img: "/leagues/coupe.png", bg: "bg-[#1B2A5B]" },
+                { href: "/forum", label: "Forum", img: null, bg: "bg-gold/20" },
+              ].map((item) => (
                 <Link
-                  key={league.id}
-                  href={`/ligue/${league.slug}/resultats`}
-                  className="text-xs bg-surface-2 border border-white/[0.07] hover:border-gold/30 text-white/70 hover:text-gold px-3 py-1.5 rounded transition-colors"
+                  key={item.href}
+                  href={item.href}
+                  className="group flex flex-col items-center gap-1.5 w-16 sm:w-20 transition-transform hover:scale-105"
                 >
-                  {league.name.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")} →
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl ${item.bg} border border-white/[0.1] flex items-center justify-center overflow-hidden shadow-md group-hover:shadow-gold/10 transition-shadow`}>
+                    {item.img ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.img} alt={item.label} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+                    ) : (
+                      <span className="text-gold text-lg">💬</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] sm:text-xs text-muted group-hover:text-gold transition-colors text-center leading-tight">{item.label}</span>
                 </Link>
               ))}
-              <Link
-                href="/coupe"
-                className="text-xs bg-surface-2 border border-white/[0.07] hover:border-gold/30 text-white/70 hover:text-gold px-3 py-1.5 rounded transition-colors"
-              >
-                Coupe →
-              </Link>
-              <Link
-                href="/forum"
-                className="text-xs bg-surface-2 border border-white/[0.07] hover:border-gold/30 text-white/70 hover:text-gold px-3 py-1.5 rounded transition-colors"
-              >
-                Forum →
-              </Link>
             </div>
           </div>
 
@@ -265,7 +263,7 @@ export default async function HomePage() {
             <div className="bg-gold/10 px-4 py-3 border-b border-gold/20">
               <h2 className="font-serif text-sm text-gold font-medium">Classement interligue</h2>
             </div>
-            <div className="divide-y divide-white/[0.05]">
+            <div className="divide-y divide-white/[0.05] zebra">
               <div className="grid grid-cols-[2rem_1fr_4.5rem_3.5rem] px-3 py-2 text-[10px] uppercase tracking-wider text-muted">
                 <span></span>
                 <span>Joueur</span>

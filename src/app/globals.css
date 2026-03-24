@@ -61,6 +61,10 @@
   /* Light mode shadows */
   [data-theme="light"] .bg-surface { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 
+  /* Zebra striping for long lists */
+  .zebra > :nth-child(even) { background-color: rgba(255,255,255,0.015); }
+  [data-theme="light"] .zebra > :nth-child(even) { background-color: rgba(0,0,0,0.02); }
+
   * {
     border-color: var(--border);
   }
