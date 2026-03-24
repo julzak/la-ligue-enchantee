@@ -19,7 +19,8 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
   const slug = params.slug as string;
   const leagueName = leagueNames[slug] ?? slug;
 
-  // Mock: next lock is tomorrow 13h
+  // Fetch current matchday
+  const [currentMatchday, setCurrentMatchday] = useState(27);
   const lockAt = new Date();
   lockAt.setDate(lockAt.getDate() + 1);
   lockAt.setHours(13, 0, 0, 0);
@@ -32,8 +33,15 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
     fetch(`/api/auction?leagueId=0&checkOnly=1`)
       .catch(() => {});
     // Check by fetching the league's auction status
-    async function checkAuction() {
+    async function checkState() {
       try {
+        // Get current matchday
+        const scoresRes = await fetch("/api/admin/scores?day=0");
+        const scoresData = await scoresRes.json();
+        if (scoresData.day) setCurrentMatchday(scoresData.day);
+      } catch {}
+      try {
+        // Check auction
         const leaguesRes = await fetch("/api/admin/jokers/leagues");
         const leaguesData = await leaguesRes.json();
         const league = (leaguesData.leagues ?? []).find((l: { slug: string }) => l.slug === slug);
@@ -47,7 +55,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
         }
       } catch {}
     }
-    checkAuction();
+    checkState();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
@@ -69,7 +77,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
     <>
       <Navbar />
       <div className="pt-[52px]">
-        <LockCountdown matchdayNumber={26} lockAt={lockAt} isLocked={false} />
+        <LockCountdown matchdayNumber={currentMatchday} lockAt={lockAt} isLocked={false} />
 
         {/* Auction banner — hidden on the auction page itself */}
         {auctionOpen && !pathname.includes("/encheres") && (
