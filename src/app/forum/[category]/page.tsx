@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Pin, Loader2, Plus, Send, X, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { EmojiButton } from "@/components/ui/EmojiButton";
 
 const CAT_LABELS: Record<string, string> = {
   general: "Infos Generales",
@@ -145,7 +146,8 @@ export default function CategoryPage() {
             rows={4}
             className="w-full bg-surface-2 border border-white/[0.07] rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted resize-none focus:outline-none focus:border-gold"
           />
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            <EmojiButton onSelect={emoji => setNewContent(prev => prev + emoji)} />
             <button
               onClick={handleNewTopic}
               disabled={submitting || !newTitle.trim() || !newContent.trim()}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Send, ArrowLeft, Pin, Lock } from "lucide-react";
+import { EmojiButton } from "@/components/ui/EmojiButton";
 import Link from "next/link";
 
 interface Post {
@@ -157,7 +158,8 @@ export default function TopicPage() {
             rows={3}
             className="w-full bg-surface-2 border border-white/[0.07] rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted resize-none focus:outline-none focus:border-gold"
           />
-          <div className="flex justify-end mt-3">
+          <div className="flex items-center justify-between mt-3">
+            <EmojiButton onSelect={emoji => setReply(prev => prev + emoji)} />
             <button
               onClick={handleReply}
               disabled={submitting || !reply.trim()}
