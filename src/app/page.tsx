@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { Logo } from "@/components/ui/Logo";
 import {
   getLeagues,
   getInterleagueStandings,
@@ -16,7 +15,7 @@ import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "@/lib/ass
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
 import { ChevronRight, Flame, ThumbsDown, Skull } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Navbar } from "@/components/layout/Navbar";
 import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
@@ -50,18 +49,8 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {/* Top bar */}
-      <nav className="h-[52px] bg-surface border-b border-white/[0.07] flex items-center px-4 md:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
-          <Logo size={28} />
-          <span className="text-gold font-serif text-sm">La Ligue Enchantée</span>
-        </Link>
-        <div className="flex-1" />
-        <ThemeToggle />
-        <span className="text-xs font-medium bg-gold text-night px-2.5 py-1 rounded ml-2">
-          J{currentMatchday}
-        </span>
-      </nav>
+      <Navbar />
+      <div className="pt-[52px]" />
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 flex flex-col lg:flex-row gap-6">
         {/* Main content */}
