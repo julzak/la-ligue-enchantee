@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Logo } from "@/components/ui/Logo";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function Navbar() {
@@ -20,6 +20,10 @@ export function Navbar() {
         { href: `/ligue/${slug}/forum`, label: "Forum" },
       ]
     : [];
+
+  const ADMIN_IDS = new Set([10, 1429, 1311, 112, 183, 115]);
+  const userId = (session?.user as { userId?: number } | undefined)?.userId;
+  const isAdmin = userId ? ADMIN_IDS.has(userId) : false;
 
   const initials = session?.user?.name
     ? session.user.name
@@ -79,6 +83,15 @@ export function Navbar() {
               {initials}
             </div>
             <span className="text-xs text-white/60 hidden sm:block">{session.user.name}</span>
+            {isAdmin && (
+              <Link
+                href="/admin/notes"
+                className="p-1.5 text-white/30 hover:text-gold transition-colors"
+                title="Administration"
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </Link>
+            )}
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="p-1.5 text-white/30 hover:text-white/60 transition-colors"

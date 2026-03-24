@@ -111,6 +111,12 @@ export default async function HomePage() {
               >
                 Coupe →
               </Link>
+              <Link
+                href="/ligue/ligue-1/forum"
+                className="text-xs bg-surface-2 border border-white/[0.07] hover:border-gold/30 text-white/70 hover:text-gold px-3 py-1.5 rounded transition-colors"
+              >
+                Forum →
+              </Link>
             </div>
           </div>
 
