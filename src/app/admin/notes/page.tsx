@@ -73,6 +73,8 @@ export default function AdminNotesPage() {
   const [filter, setFilter] = useState("");
   const [showOnlyFilled, setShowOnlyFilled] = useState(false);
   const [matches, setMatches] = useState<MatchInfo[]>([]);
+  const [deadline, setDeadline] = useState("");
+  const [deadlineSaved, setDeadlineSaved] = useState(false);
 
   // Auto-detect current matchday on mount
   useEffect(() => {
@@ -90,14 +92,22 @@ export default function AdminNotesPage() {
     setLoading(true);
     setMessage("");
     try {
-      const [scoresRes, matchRes] = await Promise.all([
+      const [scoresRes, matchRes, deadlineRes] = await Promise.all([
         fetch(`/api/admin/scores?day=${day}`),
         fetch(`/api/admin/match-schedule?day=${day}`),
+        fetch(`/api/admin/deadline?day=${day}`),
       ]);
       const scoresData = await scoresRes.json();
       const matchData = await matchRes.json();
+      const deadlineData = await deadlineRes.json();
       setScores(scoresData.scores ?? []);
       setMatches(matchData.matches ?? []);
+      if (deadlineData.lockAt) {
+        setDeadline(new Date(deadlineData.lockAt).toISOString().slice(0, 16));
+      } else {
+        setDeadline("");
+      }
+      setDeadlineSaved(false);
     } catch {
       setMessage("Erreur chargement");
     }
@@ -309,6 +319,29 @@ export default function AdminNotesPage() {
                 <option key={d} value={d}>Journée {d}</option>
               ))}
             </select>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <input
+              type="datetime-local"
+              value={deadline}
+              onChange={(e) => { setDeadline(e.target.value); setDeadlineSaved(false); }}
+              className="bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-gold"
+            />
+            <button
+              onClick={async () => {
+                if (!deadline) return;
+                await fetch("/api/admin/deadline", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ day, lockAt: deadline }),
+                });
+                setDeadlineSaved(true);
+              }}
+              className="text-[10px] bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-muted hover:text-gold transition-colors"
+            >
+              {deadlineSaved ? "✓" : "Deadline"}
+            </button>
           </div>
 
           <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">

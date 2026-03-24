@@ -19,16 +19,17 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
   const slug = params.slug as string;
   const leagueName = leagueNames[slug] ?? slug;
 
-  // Fetch current matchday
-  const [currentMatchday, setCurrentMatchday] = useState(27);
-
-  // Lock deadline: next Thursday midnight (00:00 Friday morning)
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun, 4=Thu
-  const daysUntilThursday = (4 - dayOfWeek + 7) % 7 || 7; // days until next Thursday
-  const lockAt = new Date(now);
-  lockAt.setDate(now.getDate() + daysUntilThursday);
-  lockAt.setHours(0, 0, 0, 0); // midnight (= jeudi minuit = vendredi 00:00)
+  // Fetch current matchday + deadline from DB
+  const [currentMatchday, setCurrentMatchday] = useState(28);
+  const [lockAt, setLockAt] = useState<Date>(() => {
+    // Default: next Thursday midnight
+    const now = new Date();
+    const d = (4 - now.getDay() + 7) % 7 || 7;
+    const dt = new Date(now);
+    dt.setDate(now.getDate() + d);
+    dt.setHours(0, 0, 0, 0);
+    return dt;
+  });
 
   // Check if there's an active auction for this league
   const [auctionOpen, setAuctionOpen] = useState(false);
@@ -40,10 +41,11 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
     // Check by fetching the league's auction status
     async function checkState() {
       try {
-        // Get current matchday
-        const scoresRes = await fetch("/api/admin/scores?day=0");
-        const scoresData = await scoresRes.json();
-        if (scoresData.day) setCurrentMatchday(scoresData.day);
+        // Get current matchday + deadline
+        const deadlineRes = await fetch("/api/admin/deadline");
+        const deadlineData = await deadlineRes.json();
+        if (deadlineData.day) setCurrentMatchday(deadlineData.day);
+        if (deadlineData.lockAt) setLockAt(new Date(deadlineData.lockAt));
       } catch {}
       try {
         // Check auction
