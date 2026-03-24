@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -13,12 +14,19 @@ export function Navbar() {
   const { data: session } = useSession();
   const slug = params.slug as string | undefined;
 
-  // Keep league nav even on /forum pages
-  const effectiveSlug = slug ?? (typeof window !== "undefined" ? localStorage.getItem("lastLeagueSlug") : null) ?? undefined;
-  // Remember the last league visited
-  if (slug && typeof window !== "undefined") {
-    localStorage.setItem("lastLeagueSlug", slug);
-  }
+  // Keep league nav on /forum and other non-league pages
+  const [savedSlug, setSavedSlug] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (slug) {
+      localStorage.setItem("lastLeagueSlug", slug);
+      setSavedSlug(slug);
+    } else {
+      const stored = localStorage.getItem("lastLeagueSlug");
+      if (stored) setSavedSlug(stored);
+    }
+  }, [slug]);
+
+  const effectiveSlug = slug ?? savedSlug;
 
   const navLinks = effectiveSlug
     ? [
