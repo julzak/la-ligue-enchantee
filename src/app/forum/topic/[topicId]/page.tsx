@@ -90,6 +90,15 @@ export default function TopicPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showReactions, setShowReactions] = useState<number | null>(null);
 
+  // Close reactions bar on click outside
+  useEffect(() => {
+    if (showReactions === null) return;
+    function handleClick() { setShowReactions(null); }
+    // Delay to avoid closing immediately on the same click
+    const timer = setTimeout(() => document.addEventListener("click", handleClick), 0);
+    return () => { clearTimeout(timer); document.removeEventListener("click", handleClick); };
+  }, [showReactions]);
+
   const fetchTopic = useCallback(async () => {
     setLoading(true);
     try {
