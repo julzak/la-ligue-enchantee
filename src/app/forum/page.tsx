@@ -7,11 +7,10 @@ import { MessageSquare, ChevronRight } from "lucide-react";
 
 const CATEGORIES = [
   { slug: "general", label: "Infos Generales", description: "Annonces, reglement, discussions generales" },
-  { slug: "ligue-1", label: "Ligue 1 (Baudens League)", description: "Discussions de la Baudens League" },
-  { slug: "ligue-2", label: "Ligue 2", description: "Discussions de la Ligue 2" },
-  { slug: "national-1", label: "National 1", description: "Discussions du National 1" },
-  { slug: "coupe", label: "Coupe Enchantee", description: "Coupe interligue, resultats, pronostics" },
-  { slug: "reclamation", label: "Reclamations", description: "Reclamations et litiges" },
+  { slug: "ligue-1", label: "Ligue 1 (Baudens League)", description: "Jokers, reclamations, resultats, chambrages" },
+  { slug: "ligue-2", label: "Ligue 2", description: "Jokers, reclamations, resultats, chambrages" },
+  { slug: "national-1", label: "National 1", description: "Jokers, reclamations, resultats, chambrages" },
+  { slug: "coupe", label: "Coupe Enchantee", description: "Resultats, pronostics, petit poucet" },
 ];
 
 function timeAgo(date: Date): string {
