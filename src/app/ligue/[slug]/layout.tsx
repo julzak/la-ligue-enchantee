@@ -21,9 +21,14 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
 
   // Fetch current matchday
   const [currentMatchday, setCurrentMatchday] = useState(27);
-  const lockAt = new Date();
-  lockAt.setDate(lockAt.getDate() + 1);
-  lockAt.setHours(13, 0, 0, 0);
+
+  // Lock deadline: next Thursday midnight (00:00 Friday morning)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 4=Thu
+  const daysUntilThursday = (4 - dayOfWeek + 7) % 7 || 7; // days until next Thursday
+  const lockAt = new Date(now);
+  lockAt.setDate(now.getDate() + daysUntilThursday);
+  lockAt.setHours(0, 0, 0, 0); // midnight (= jeudi minuit = vendredi 00:00)
 
   // Check if there's an active auction for this league
   const [auctionOpen, setAuctionOpen] = useState(false);
