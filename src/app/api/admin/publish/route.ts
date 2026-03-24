@@ -42,10 +42,13 @@ export async function POST(request: Request) {
         where: { leagueId: league.id },
       });
 
-      // Get lineups for this day in this league
-      const teamDays = await prisma.teamDay.findMany({
-        where: { leagueId: league.id, day },
-      });
+      // Get lineups for this day in this league (raw query to avoid DT_VALID crash)
+      const teamDays = await prisma.$queryRawUnsafe<{
+        userId: number; playerId: number; indx: number;
+      }[]>(
+        "SELECT ID_USER as userId, ID_PLAYER as playerId, INDX as indx FROM TEAM_DAY WHERE ID_LEAGUE = ? AND DAY = ?",
+        league.id, day
+      );
 
       // Group by user
       const userLineups = new Map<number, number[]>();
@@ -58,12 +61,13 @@ export async function POST(request: Request) {
       // If no lineups for this day, use TEAM table to get default squad
       for (const lu of leagueUsers) {
         if (!userLineups.has(lu.userId)) {
-          // Try previous day's lineup first
-          const prevLineup = await prisma.teamDay.findMany({
-            where: { leagueId: league.id, userId: lu.userId, day: day - 1 },
-          });
+          // Try previous day's lineup first (raw query to avoid DT_VALID crash)
+          const prevLineup = await prisma.$queryRawUnsafe<{ playerId: number }[]>(
+            "SELECT ID_PLAYER as playerId FROM TEAM_DAY WHERE ID_LEAGUE = ? AND ID_USER = ? AND DAY = ?",
+            league.id, lu.userId, day - 1
+          );
           if (prevLineup.length > 0) {
-            userLineups.set(lu.userId, prevLineup.map((t) => t.playerId));
+            userLineups.set(lu.userId, prevLineup.map((t) => Number(t.playerId)));
           } else {
             // Fallback to TEAM table (default squad)
             const teamMembers = await prisma.team.findMany({
