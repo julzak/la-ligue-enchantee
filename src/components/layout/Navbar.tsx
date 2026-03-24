@@ -17,7 +17,7 @@ export function Navbar() {
     ? [
         { href: `/ligue/${slug}/classement`, label: "Classement" },
         { href: `/ligue/${slug}/mon-equipe`, label: "Mon équipe" },
-        { href: `/ligue/${slug}/forum`, label: "Forum" },
+        { href: "/forum", label: "Forum" },
       ]
     : [];
 
