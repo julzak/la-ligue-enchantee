@@ -13,10 +13,17 @@ export function Navbar() {
   const { data: session } = useSession();
   const slug = params.slug as string | undefined;
 
-  const navLinks = slug
+  // Keep league nav even on /forum pages
+  const effectiveSlug = slug ?? (typeof window !== "undefined" ? localStorage.getItem("lastLeagueSlug") : null) ?? undefined;
+  // Remember the last league visited
+  if (slug && typeof window !== "undefined") {
+    localStorage.setItem("lastLeagueSlug", slug);
+  }
+
+  const navLinks = effectiveSlug
     ? [
-        { href: `/ligue/${slug}/classement`, label: "Classement" },
-        { href: `/ligue/${slug}/mon-equipe`, label: "Mon équipe" },
+        { href: `/ligue/${effectiveSlug}/classement`, label: "Classement" },
+        { href: `/ligue/${effectiveSlug}/mon-equipe`, label: "Mon équipe" },
         { href: "/forum", label: "Forum" },
       ]
     : [];

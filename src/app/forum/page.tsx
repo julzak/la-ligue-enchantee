@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Navbar } from "@/components/layout/Navbar";
 import { MessageSquare, ChevronRight } from "lucide-react";
 
 const CATEGORIES = [
@@ -69,9 +68,6 @@ export default async function ForumPage() {
   CATEGORIES.forEach(c => { catLabels[c.slug] = c.label; });
 
   return (
-    <>
-      <Navbar />
-      <div className="pt-[52px]">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
           <div className="mb-8">
             <h1 className="font-serif text-2xl text-gold mb-1">Forum</h1>
@@ -151,7 +147,5 @@ export default async function ForumPage() {
             </a>
           </div>
         </div>
-      </div>
-    </>
   );
 }

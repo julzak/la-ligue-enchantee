@@ -41,6 +41,25 @@ export async function GET(request: Request) {
     (u.NAME ?? "").replace(/<[^>]*>/g, "").trim(),
   ]));
 
+  // Get reactions for all posts
+  const postIds = posts.map(p => Number(p.id));
+  const reactions = postIds.length > 0
+    ? await prisma.$queryRawUnsafe<{ post_id: number; emoji: string; user_id: number }[]>(
+        `SELECT post_id, emoji, user_id FROM FORUM_REACTION WHERE post_id IN (${postIds.join(",")})`)
+    : [];
+
+  // Group reactions by post: { postId: { emoji: { count, userIds } } }
+  const reactionsByPost = new Map<number, Map<string, { count: number; userIds: number[] }>>();
+  for (const r of reactions) {
+    const pid = Number(r.post_id);
+    if (!reactionsByPost.has(pid)) reactionsByPost.set(pid, new Map());
+    const postReactions = reactionsByPost.get(pid)!;
+    if (!postReactions.has(r.emoji)) postReactions.set(r.emoji, { count: 0, userIds: [] });
+    const entry = postReactions.get(r.emoji)!;
+    entry.count++;
+    entry.userIds.push(Number(r.user_id));
+  }
+
   return NextResponse.json({
     topic: {
       id: Number(topic.id),
@@ -54,14 +73,20 @@ export async function GET(request: Request) {
       postCount: Number(topic.post_count),
       createdAt: topic.created_at,
     },
-    posts: posts.map(p => ({
-      id: Number(p.id),
-      authorId: Number(p.author_id),
-      authorName: userMap.get(Number(p.author_id)) ?? "?",
-      content: p.content,
-      createdAt: p.created_at,
-      updatedAt: p.updated_at,
-    })),
+    posts: posts.map(p => {
+      const pr = reactionsByPost.get(Number(p.id));
+      const reacts: { emoji: string; count: number; userIds: number[] }[] = [];
+      if (pr) pr.forEach((v, k) => reacts.push({ emoji: k, count: v.count, userIds: v.userIds }));
+      return {
+        id: Number(p.id),
+        authorId: Number(p.author_id),
+        authorName: userMap.get(Number(p.author_id)) ?? "?",
+        content: p.content,
+        createdAt: p.created_at,
+        updatedAt: p.updated_at,
+        reactions: reacts,
+      };
+    }),
   });
 }
 
