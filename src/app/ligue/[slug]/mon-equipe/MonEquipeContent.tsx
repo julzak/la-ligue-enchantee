@@ -260,7 +260,7 @@ export function MonEquipeContent({
   }));
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-3xl mx-auto">
       {/* Header */}
       <div>
         <h2 className="font-serif text-xl text-white mb-1">Mon equipe</h2>
