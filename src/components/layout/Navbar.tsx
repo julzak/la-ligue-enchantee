@@ -91,6 +91,9 @@ export function Navbar() {
         <Link href="/" className="text-xs text-white/40 hover:text-white/60">
           Accueil
         </Link>
+        <Link href="/guide" className="text-xs text-white/40 hover:text-white/60 hidden sm:block">
+          Guide
+        </Link>
 
         {session?.user ? (
           <div className="flex items-center gap-2">

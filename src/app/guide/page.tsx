@@ -1,5 +1,5 @@
 import { Navbar } from "@/components/layout/Navbar";
-import { Trophy, Users, BarChart3, Gavel, Shield, BookOpen } from "lucide-react";
+import { Trophy, Users, BarChart3, Gavel, Shield, BookOpen, Clock } from "lucide-react";
 
 function Section({ icon: Icon, title, children }: { icon: React.ComponentType<{ className?: string }>; title: string; children: React.ReactNode }) {
   return (
@@ -75,7 +75,20 @@ export default function GuidePage() {
             </Section>
 
             <Section icon={BookOpen} title="Jokers">
-              <p>Chaque participant dispose de jokers pour remplacer un joueur de son effectif en cours de saison. Le nombre et la date limite sont définis par les admins.</p>
+              <p>Chaque participant dispose de <strong className="text-white">4 jokers + 2 jokers d&apos;août</strong> par saison pour remplacer un joueur de son effectif.</p>
+              <p>Les jokers sont à poster dans le sujet &quot;Jokers&quot; dédié à chaque ligue sur le forum.</p>
+              <p>Pour être validé pour la journée à venir, le joker doit être pris <strong className="text-white">avant 18h la veille du premier match</strong> de la journée. Un joker pris après 18h sera pris en compte pour la journée suivante.</p>
+            </Section>
+
+            <Section icon={Clock} title="Validation des équipes">
+              <p>Les équipes doivent être validées selon les horaires suivants :</p>
+              <ul className="list-disc list-inside space-y-1 mt-2">
+                <li><strong className="text-white">Match le vendredi</strong> : validation avant 18h le vendredi</li>
+                <li><strong className="text-white">Matchs le week-end</strong> : validation avant 15h le samedi</li>
+                <li><strong className="text-white">Multiplex le dimanche</strong> : équipes bloquées le samedi à 15h</li>
+                <li><strong className="text-white">Match en semaine</strong> : validation 2h avant le coup d&apos;envoi du 1er match du jour, puis entièrement à 15h le jour suivant</li>
+              </ul>
+              <p className="mt-2 text-white/40 text-xs italic">Merci de respecter ces horaires même si le blocage n&apos;a pas encore été effectué par les admins.</p>
             </Section>
 
           </div>
