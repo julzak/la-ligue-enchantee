@@ -457,37 +457,6 @@ export default function AdminNotesPage() {
             })}
           </div>
 
-          {/* Unmatched clubs (not in MATCH_SCHEDULE) */}
-          {unmatchedClubs.length > 0 && (
-            <details className="group">
-              <summary className="text-sm text-muted cursor-pointer hover:text-white transition-colors list-none flex items-center gap-2 py-2">
-                <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                Autres clubs ({unmatchedClubs.length})
-              </summary>
-              <div className="grid gap-4 lg:grid-cols-2 mt-4">
-                {unmatchedClubs.map((clubName) => {
-                  const clubPlayers = unmatchedPlayers.filter((s) => s.clubName === clubName);
-                  return (
-                    <div key={clubName} className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
-                      <div className="bg-surface-2 px-4 py-2 border-b border-white/[0.07]">
-                        <span className="text-sm font-medium text-white">{clubName}</span>
-                      </div>
-                      <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_3rem] gap-1 px-3 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05]">
-                        <span>Joueur</span>
-                        <span className="text-center">Note</span>
-                        <span className="text-center">But</span>
-                        <span className="text-center">Pas</span>
-                        <span className="text-right">Tot.</span>
-                      </div>
-                      {clubPlayers.map((s) => <PlayerRow key={s.playerId} s={s} />)}
-                    </div>
-                  );
-                })}
-              </div>
-            </details>
-          )}
         </>
       )}
     </div>
