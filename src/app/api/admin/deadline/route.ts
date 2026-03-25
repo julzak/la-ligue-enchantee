@@ -3,17 +3,47 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Calculate Thursday midnight before a date
-function thursdayBefore(dateStr: string): Date {
-  const d = new Date(dateStr + "T00:00:00Z");
-  const day = d.getUTCDay(); // 0=Sun
-  // Go back to Thursday (4)
-  let diff = day - 4;
-  if (diff <= 0) diff += 7; // if it's Thu or earlier, go to previous Thu
-  const thu = new Date(d);
-  thu.setUTCDate(d.getUTCDate() - diff);
-  thu.setUTCHours(22, 0, 0, 0); // 22:00 UTC = minuit heure de Paris
-  return thu;
+// Calculate deadline based on match schedule:
+// - Friday match → Friday 18h (Paris)
+// - Saturday/Sunday matches → Saturday 15h (Paris)
+// - Midweek match → 2h before first match
+function calcDeadline(matches: { date: string; time: string }[]): Date {
+  if (matches.length === 0) {
+    // Fallback: next Thursday midnight
+    const now = new Date();
+    const d = (4 - now.getDay() + 7) % 7 || 7;
+    const dt = new Date(now);
+    dt.setDate(now.getDate() + d);
+    dt.setHours(0, 0, 0, 0);
+    return dt;
+  }
+
+  // Sort matches by date+time
+  const sorted = [...matches].sort((a, b) => {
+    const da = a.date + (a.time || "00:00");
+    const db = b.date + (b.time || "00:00");
+    return da.localeCompare(db);
+  });
+
+  const firstMatch = sorted[0];
+  const firstDate = new Date(firstMatch.date + "T" + (firstMatch.time || "20:00") + ":00+02:00"); // Paris time
+  const dayOfWeek = firstDate.getDay(); // 0=Sun, 5=Fri, 6=Sat
+
+  if (dayOfWeek === 5) {
+    // Friday → deadline Friday 18h Paris
+    const deadline = new Date(firstMatch.date + "T16:00:00Z"); // 16:00 UTC = 18:00 Paris
+    return deadline;
+  } else if (dayOfWeek === 6 || dayOfWeek === 0) {
+    // Saturday or Sunday → deadline Saturday 15h Paris
+    const saturday = new Date(firstDate);
+    if (dayOfWeek === 0) saturday.setDate(saturday.getDate() - 1); // go back to Saturday
+    const deadline = new Date(saturday.toISOString().slice(0, 10) + "T13:00:00Z"); // 13:00 UTC = 15:00 Paris
+    return deadline;
+  } else {
+    // Midweek → 2h before first match
+    const deadline = new Date(firstDate.getTime() - 2 * 60 * 60 * 1000);
+    return deadline;
+  }
 }
 
 // GET: get deadline for a matchday (or current)
@@ -34,7 +64,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ day: currentDay, lockAt: config[0].lock_at, source: "manual" });
   }
 
-  // Auto-calculate: fetch first match date from TheSportsDB
+  // Auto-calculate: fetch match dates/times from TheSportsDB
   try {
     const res = await fetch(
       `https://www.thesportsdb.com/api/v1/json/3/eventsround.php?id=4334&r=${currentDay}&s=2025-2026`,
@@ -42,21 +72,19 @@ export async function GET(request: Request) {
     );
     const data = await res.json();
     if (data.events?.length > 0) {
-      const dates = data.events.map((e: { dateEvent: string }) => e.dateEvent).sort();
-      const firstMatch = dates[0];
-      const lockAt = thursdayBefore(firstMatch);
-      return NextResponse.json({ day: currentDay, lockAt, source: "auto", firstMatch });
+      const matches = data.events.map((e: { dateEvent: string; strTime: string }) => ({
+        date: e.dateEvent,
+        time: e.strTime?.slice(0, 5) || "20:00",
+      }));
+      const lockAt = calcDeadline(matches);
+      const firstMatch = matches.sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date))[0];
+      return NextResponse.json({ day: currentDay, lockAt, source: "auto", firstMatch: firstMatch.date });
     }
   } catch {}
 
-  // Fallback: next Thursday midnight
-  const now = new Date();
-  const d = (4 - now.getDay() + 7) % 7 || 7;
-  const fallback = new Date(now);
-  fallback.setDate(now.getDate() + d);
-  fallback.setHours(0, 0, 0, 0);
-
-  return NextResponse.json({ day: currentDay, lockAt: fallback, source: "fallback" });
+  // Fallback
+  const lockAt = calcDeadline([]);
+  return NextResponse.json({ day: currentDay, lockAt, source: "fallback" });
 }
 
 // POST: set deadline for a matchday
