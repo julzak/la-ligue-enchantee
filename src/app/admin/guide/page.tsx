@@ -13,10 +13,10 @@ export default function AdminGuidePage() {
         <p className="text-sm text-muted">Comment utiliser chaque rubrique de l&apos;administration</p>
       </div>
 
-      {/* Scoring */}
-      <Section title="Scoring">
+      {/* Scoring automatique */}
+      <Section title="Scoring automatique">
+        <p className="mb-2">Les bonus/malus suivants sont calculés automatiquement à partir des données saisies :</p>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-          <span className="text-muted">Note L&apos;Équipe</span><span>1-10 pts</span>
           <span className="text-muted">But (ATT/MIL)</span><span>+2 pts</span>
           <span className="text-muted">But (DEF)</span><span>+4 pts</span>
           <span className="text-muted">But (GK)</span><span>+10 pts</span>
@@ -27,18 +27,6 @@ export default function AdminGuidePage() {
           <span className="text-muted">Non noté / forfait</span><span>2 pts</span>
         </div>
         <p className="text-xs text-muted mt-3"><strong className="text-white">Exceptions manuelles :</strong> Penalty raté (-1 pt) → ajuster la note. Carton rouge annulé par la commission → garder 0. Tapis vert → 5 pts gagnant / 4 pts perdant par joueur.</p>
-      </Section>
-
-      {/* Composition des équipes */}
-      <Section title="Composition des équipes">
-        <p>Chaque participant a un effectif de <strong className="text-white">13 joueurs</strong> dont <strong className="text-white">11 titulaires</strong> et 2 remplaçants.</p>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm mt-2">
-          <span className="text-muted">Gardien (GK)</span><span>1 obligatoire</span>
-          <span className="text-muted">Défenseurs (DEF)</span><span>3 à 5</span>
-          <span className="text-muted">Milieux (MIL)</span><span>3 à 5</span>
-          <span className="text-muted">Attaquants (ATT)</span><span>1 à 3</span>
-        </div>
-        <p className="text-xs text-muted mt-2">Si un participant ne valide pas sa composition avant la deadline, la composition de la journée précédente est reconduite automatiquement.</p>
       </Section>
 
       {/* Deadlines de validation */}
