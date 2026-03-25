@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users } from "lucide-react";
+import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users, BookOpen } from "lucide-react";
 
 const mainLinks = [
   { href: "/admin/notes", label: "Notes", icon: ClipboardList },
@@ -10,6 +10,8 @@ const mainLinks = [
   { href: "/admin/equipes", label: "Équipes", icon: Users },
   { href: "/admin/coupe-france", label: "Coupe", icon: Trophy },
 ];
+
+const guideLink = { href: "/admin/guide", label: "Guide admin", icon: BookOpen };
 
 const foireLinks = [
   { href: "/admin/encheres", label: "Mercato d'été", icon: Gavel },
@@ -54,6 +56,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <NavLink key={link.href} {...link} />
             ))}
           </nav>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-white/[0.05]">
+          <NavLink {...guideLink} />
         </div>
       </aside>
 
