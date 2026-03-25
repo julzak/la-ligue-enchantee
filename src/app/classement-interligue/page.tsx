@@ -40,7 +40,7 @@ export default async function ClassementInterliguePage() {
                   <tr
                     key={s.userId}
                     className={`hover:bg-white/[0.02] transition-colors ${
-                      s.rank <= 3 ? "bg-gold/[0.03]" : s.rank === standings.length ? "bg-rouge/[0.03]" : ""
+                      s.rank <= 3 ? "bg-gold/[0.03]" : s.rank === standings.length ? "bg-rouge/[0.03]" : s.rank % 2 === 0 ? "bg-white/[0.02]" : ""
                     }`}
                   >
                     <td className={`px-3 py-2.5 font-bold ${s.rank <= 3 ? "text-gold" : "text-muted"}`}>
