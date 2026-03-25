@@ -8,8 +8,8 @@ import { Megaphone, Trophy, ChevronRight } from "lucide-react";
 const CATEGORIES = [
   {
     slug: "general",
-    label: "Infos Generales",
-    description: "Annonces, reglement, discussions generales",
+    label: "Infos G\u00e9n\u00e9rales",
+    description: "Annonces, r\u00e8glement, discussions g\u00e9n\u00e9rales",
     borderColor: "border-l-amber-400",
     badgeBg: "bg-amber-400/10 text-amber-400",
     icon: "megaphone" as const,
@@ -17,7 +17,7 @@ const CATEGORIES = [
   {
     slug: "ligue-1",
     label: "Ligue 1 (Baudens League)",
-    description: "Jokers, reclamations, resultats, chambrages",
+    description: "Jokers, r\u00e9clamations, r\u00e9sultats, chambrages",
     borderColor: "border-l-blue-400",
     badgeBg: "bg-blue-400/10 text-blue-400",
     icon: "ligue1" as const,
@@ -25,7 +25,7 @@ const CATEGORIES = [
   {
     slug: "ligue-2",
     label: "Ligue 2",
-    description: "Jokers, reclamations, resultats, chambrages",
+    description: "Jokers, r\u00e9clamations, r\u00e9sultats, chambrages",
     borderColor: "border-l-emerald-400",
     badgeBg: "bg-emerald-400/10 text-emerald-400",
     icon: "ligue2" as const,
@@ -33,15 +33,15 @@ const CATEGORIES = [
   {
     slug: "national-1",
     label: "National 1",
-    description: "Jokers, reclamations, resultats, chambrages",
+    description: "Jokers, r\u00e9clamations, r\u00e9sultats, chambrages",
     borderColor: "border-l-purple-400",
     badgeBg: "bg-purple-400/10 text-purple-400",
     icon: "national" as const,
   },
   {
     slug: "coupe",
-    label: "Coupe Enchantee",
-    description: "Resultats, pronostics, petit poucet",
+    label: "Coupe Enchant\u00e9e",
+    description: "R\u00e9sultats, pronostics, petit poucet",
     borderColor: "border-l-gold",
     badgeBg: "bg-gold/10 text-gold",
     icon: "coupe" as const,
@@ -143,7 +143,7 @@ export default async function ForumPage() {
       <div className="mb-10">
         <h1 className="font-serif text-3xl text-gold mb-2">Forum</h1>
         <p className="text-sm text-muted">
-          20 ans de chambrages, reclamations douteuses et mauvaise foi assumee.
+          20 ans de chambrages, r&eacute;clamations douteuses et mauvaise foi assum&eacute;e.
         </p>
       </div>
 
@@ -151,7 +151,7 @@ export default async function ForumPage() {
       {recentTopics.length > 0 && (
         <div className="mb-10">
           <h2 className="text-xs uppercase tracking-wider text-gold/70 font-semibold mb-3 flex items-center gap-2">
-            <span className="text-base">&#128293;</span> Derniere activite
+            <span className="text-base">&#128293;</span> Derni&egrave;re activit&eacute;
           </h2>
           <div className="bg-surface rounded-lg border border-white/[0.07] divide-y divide-white/[0.07]">
             {recentTopics.map(t => {
