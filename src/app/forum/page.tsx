@@ -54,7 +54,7 @@ export default async function ForumPage() {
     SELECT t.id, t.category, t.title, t.post_count, t.last_post_at, t.last_post_by
     FROM FORUM_TOPIC t
     ORDER BY COALESCE(t.last_post_at, t.created_at) DESC
-    LIMIT 5
+    LIMIT 3
   `);
 
   const posterIds = recentTopics.map(t => t.last_post_by).filter(Boolean) as number[];
@@ -77,7 +77,7 @@ export default async function ForumPage() {
           {/* Recent activity */}
           {recentTopics.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-xs uppercase tracking-wider text-muted mb-3">Derniere activite</h2>
+              <h2 className="text-xs uppercase tracking-wider text-muted mb-3">🔥 Derniere activite</h2>
               <div className="bg-surface rounded-lg border border-white/[0.07] divide-y divide-white/[0.07]">
                 {recentTopics.map(t => (
                   <Link
