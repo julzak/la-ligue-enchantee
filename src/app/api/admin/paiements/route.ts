@@ -8,10 +8,14 @@ export async function GET() {
   if (auth.error) return auth.error;
 
   const payments = await prisma.$queryRawUnsafe<{
-    user_id: number; season: string; amount: number; paid: number; paid_at: string | null; notes: string | null; userName: string;
+    user_id: number; season: string; amount: number; paid: number; paid_at: string | null; notes: string | null; userName: string; leagueId: number | null; leagueName: string | null;
   }[]>(
-    `SELECT p.user_id, p.season, p.amount, p.paid, p.paid_at, p.notes, u.NAME as userName
-     FROM PAYMENT p JOIN USER u ON p.user_id = u.ID_USER
+    `SELECT p.user_id, p.season, p.amount, p.paid, p.paid_at, p.notes, u.NAME as userName,
+            l.ID_LEAGUE as leagueId, lg.NAME as leagueName
+     FROM PAYMENT p
+     JOIN USER u ON p.user_id = u.ID_USER
+     LEFT JOIN LEAGUE_USER l ON l.ID_USER = u.ID_USER
+     LEFT JOIN \`LEAGUE\` lg ON lg.ID_LEAGUE = l.ID_LEAGUE
      ORDER BY p.paid ASC, u.NAME ASC`
   );
 
@@ -23,11 +27,11 @@ export async function GET() {
       paid: p.paid === 1,
       paidAt: p.paid_at,
       notes: p.notes,
+      leagueId: p.leagueId ? Number(p.leagueId) : null,
+      leagueName: p.leagueName ?? null,
     })),
     totalPaid: payments.filter((p) => p.paid === 1).length,
     totalDue: payments.length,
-    totalAmount: payments.reduce((sum, p) => sum + Number(p.amount), 0),
-    collectedAmount: payments.filter((p) => p.paid === 1).reduce((sum, p) => sum + Number(p.amount), 0),
   });
 }
 

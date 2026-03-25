@@ -197,11 +197,14 @@ export default function AdminNotesPage() {
     };
   }
 
-  // Players not in any match (unmatched clubs)
-  const matchedClubs = new Set(
-    matches.flatMap((m) => [...teamToClubName(m.home_team), ...teamToClubName(m.away_team)])
+  // Players not in any match — dedup by playerId to avoid showing matched players
+  const matchedPlayerIds = new Set(
+    matches.flatMap((m) => {
+      const { home, away } = getMatchPlayers(m);
+      return [...home, ...away].map((s) => s.playerId);
+    })
   );
-  const unmatchedPlayers = scores.filter((s) => !matchedClubs.has(s.clubName));
+  const unmatchedPlayers = scores.filter((s) => !matchedPlayerIds.has(s.playerId));
   const unmatchedClubs = Array.from(new Set(unmatchedPlayers.map((s) => s.clubName))).sort();
 
   const filledCount = scores.filter((s) => s.points !== null).length;

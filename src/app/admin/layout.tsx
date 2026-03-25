@@ -42,6 +42,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 bg-surface border-r border-white/[0.07] p-4 shrink-0">
+        <Link href="/" className="flex items-center gap-1 text-xs text-muted hover:text-white/70 transition-colors px-2 mb-3">
+          &larr; Retour au site
+        </Link>
         <h2 className="font-serif text-gold text-sm mb-6 px-2">Administration</h2>
         <nav className="space-y-1">
           {mainLinks.map((link) => (
