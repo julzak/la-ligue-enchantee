@@ -68,4 +68,6 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+  // Allow HTTP cookies when not on HTTPS (testing on VPS without SSL)
+  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith("https://") ?? true,
 };

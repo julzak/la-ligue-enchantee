@@ -1,0 +1,71 @@
+{
+  "championnats": {
+    "ligue-1": [
+      { "year": 2024, "winner": "Thib" },
+      { "year": 2023, "winner": "Martial" },
+      { "year": 2022, "winner": "Zenigata" },
+      { "year": 2021, "winner": "Dimitri S" },
+      { "year": 2020, "winner": "Nénéfin" },
+      { "year": 2019, "winner": "ElioMM" },
+      { "year": 2018, "winner": "Martial" },
+      { "year": 2017, "winner": "Zenigata" },
+      { "year": 2016, "winner": "Shima / Jay" },
+      { "year": 2015, "winner": "Remy/Raf" },
+      { "year": 2014, "winner": "Wino" }
+    ],
+    "ligue-2": [
+      { "year": 2024, "winner": "Arnoldo" },
+      { "year": 2023, "winner": "Skippy" },
+      { "year": 2022, "winner": "Bernard Lada" },
+      { "year": 2021, "winner": "Lagolese" },
+      { "year": 2020, "winner": "Skippy" },
+      { "year": 2019, "winner": "Nums" },
+      { "year": 2018, "winner": "Benhijk" },
+      { "year": 2017, "winner": "Benhijk" },
+      { "year": 2016, "winner": "Nums" },
+      { "year": 2015, "winner": "Skaybi" },
+      { "year": 2014, "winner": "Blek le Roc" },
+      { "year": 2013, "winner": "Pili" }
+    ],
+    "national-1": [
+      { "year": 2024, "winner": "Blek le Roc" },
+      { "year": 2023, "winner": "Rom Aulas" },
+      { "year": 2022, "winner": "Gelo 59" },
+      { "year": 2021, "winner": "Vince77" },
+      { "year": 2020, "winner": "Damoki Sakai" },
+      { "year": 2019, "winner": "Troyan" },
+      { "year": 2018, "winner": "Wicket" },
+      { "year": 2017, "winner": "Troyan" },
+      { "year": 2016, "winner": "Benhijk" },
+      { "year": 2015, "winner": "Aelle" },
+      { "year": 2014, "winner": "Nums" },
+      { "year": 2012, "winner": "Douggy" }
+    ],
+    "national-2": [
+      { "year": 2019, "winner": "Vince77" },
+      { "year": 2018, "winner": "Kazu" },
+      { "year": 2017, "winner": "Jun" },
+      { "year": 2016, "winner": "Jo la Skeez" },
+      { "year": 2015, "winner": "La Fripouille" },
+      { "year": 2014, "winner": "Diamantinho" },
+      { "year": 2013, "winner": "Thib" }
+    ],
+    "national-3": [
+      { "year": 2015, "winner": "MadMax" },
+      { "year": 2014, "winner": "Winogradsky" }
+    ]
+  },
+  "coupe": [
+    { "year": 2024, "winner": "GeLo 59" },
+    { "year": 2023, "winner": "Martial" },
+    { "year": 2022, "winner": "Nums" },
+    { "year": 2021, "winner": "GeLo 59" },
+    { "year": 2019, "winner": "Vince77" },
+    { "year": 2018, "winner": "Kazu" },
+    { "year": 2017, "winner": "Kazu" },
+    { "year": 2016, "winner": "Benhijk" },
+    { "year": 2015, "winner": "Zenigata" },
+    { "year": 2014, "winner": "Laplante" },
+    { "year": 2013, "winner": "Thib" }
+  ]
+}
