@@ -197,14 +197,22 @@ export default function AdminNotesPage() {
     };
   }
 
-  // Players not in any match — dedup by playerId to avoid showing matched players
+  // Players not in any match — dedup by playerId AND by last name (for Légion étrangère dupes)
   const matchedPlayerIds = new Set(
     matches.flatMap((m) => {
       const { home, away } = getMatchPlayers(m);
       return [...home, ...away].map((s) => s.playerId);
     })
   );
-  const unmatchedPlayers = scores.filter((s) => !matchedPlayerIds.has(s.playerId));
+  const matchedLastNames = new Set(
+    matches.flatMap((m) => {
+      const { home, away } = getMatchPlayers(m);
+      return [...home, ...away].map((s) => s.lname.toLowerCase());
+    })
+  );
+  const unmatchedPlayers = scores.filter((s) =>
+    !matchedPlayerIds.has(s.playerId) && !matchedLastNames.has(s.lname.toLowerCase())
+  );
   const unmatchedClubs = Array.from(new Set(unmatchedPlayers.map((s) => s.clubName))).sort();
 
   const filledCount = scores.filter((s) => s.points !== null).length;
