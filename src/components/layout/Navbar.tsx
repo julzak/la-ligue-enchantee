@@ -88,10 +88,10 @@ export function Navbar() {
       {/* Right side */}
       <div className="flex items-center gap-3 shrink-0">
         <ThemeToggle />
-        <Link href="/" className="text-xs text-white/40 hover:text-white/60">
+        <Link href="/" className="text-xs text-white/40 hover:text-white/60 hidden sm:block">
           Accueil
         </Link>
-        <Link href="/guide" className="text-xs text-white/40 hover:text-white/60 hidden sm:block">
+        <Link href="/guide" className="text-xs text-white/40 hover:text-white/60 hidden md:block">
           Guide
         </Link>
 
