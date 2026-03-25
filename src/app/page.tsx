@@ -82,9 +82,9 @@ export default async function HomePage() {
             {/* Quick links — visual cards with logos */}
             <div className="flex justify-center gap-3 mt-5 flex-wrap">
               {[
-                { href: "/ligue/ligue-1/resultats", label: "Ligue 1", img: "/leagues/ligue1.svg", bg: "bg-[#0052B4]", invert: false },
-                { href: "/ligue/ligue-2/resultats", label: "Ligue 2", img: "/leagues/ligue2.png", bg: "bg-white", invert: false },
-                { href: "/ligue/national-1/resultats", label: "National", img: "/leagues/national.png", bg: "bg-[#2BA3D4]", invert: false },
+                { href: "/ligue/ligue-1/classement", label: "Ligue 1", img: "/leagues/ligue1.svg", bg: "bg-[#0052B4]", invert: false },
+                { href: "/ligue/ligue-2/classement", label: "Ligue 2", img: "/leagues/ligue2.png", bg: "bg-white", invert: false },
+                { href: "/ligue/national-1/classement", label: "National", img: "/leagues/national.png", bg: "bg-[#2BA3D4]", invert: false },
                 { href: "/coupe", label: "Coupe", img: "/leagues/coupe.png", bg: "bg-[#1B2A5B]", invert: true },
                 { href: "/forum", label: "Forum", img: null, bg: "bg-gold/20", invert: false },
               ].map((item) => (
