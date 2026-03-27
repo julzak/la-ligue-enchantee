@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR: refresh every 5 min
 
 import { prisma } from "@/lib/prisma";
 import { Trophy } from "lucide-react";

@@ -1,6 +1,23 @@
+import { cache } from "react";
 import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
 import { getClubLogoUrl, getClubShortName } from "./assets";
+
+// ── Request-scoped caches (dedup within same render) ────
+const getCachedClubs = cache(async () => {
+  const clubs = await prisma.club.findMany();
+  return new Map(clubs.map((c) => [c.id, c]));
+});
+
+const getCachedClubNames = cache(async () => {
+  const clubs = await prisma.club.findMany();
+  return new Map(clubs.map((c) => [c.id, c.name]));
+});
+
+const getCachedPlayers = cache(async () => {
+  const players = await prisma.player.findMany();
+  return new Map(players.map((p) => [p.id, p]));
+});
 
 // ── Helpers ───────────────────────────────────────────────
 function dec(v: Decimal | number | null): number {
@@ -277,39 +294,48 @@ export async function getInterleagueStandings(day?: number) {
 }
 
 // ── Day stats (homepage) ──────────────────────────────────
+interface AggRow { totalGoals: number; totalPoints: number; playerCount: number; }
+
+async function aggregateScoresSQL(dayFilter?: number): Promise<AggRow> {
+  const whereClause = dayFilter != null ? `WHERE s.DAY = ${Number(dayFilter)}` : "";
+  const rows = await prisma.$queryRawUnsafe<AggRow[]>(`
+    SELECT
+      COALESCE(SUM(s.GOALS), 0) AS totalGoals,
+      COALESCE(SUM(
+        CASE WHEN s.RED_CARD > 0 THEN 0 ELSE s.POINTS END
+        + CASE
+            WHEN p.POSITION LIKE '%gardien%' THEN 10 * s.GOALS
+            WHEN p.POSITION LIKE '%fense%' OR p.POSITION LIKE '%défense%' THEN 4 * s.GOALS
+            ELSE 2 * s.GOALS END
+        + s.PASSES
+        - 2 * s.OWN_GOALS
+        + 2 * s.PENALTY_SAVED
+      ), 0) AS totalPoints,
+      COUNT(CASE WHEN s.USED > 0 THEN 1 END) AS playerCount
+    FROM SCORE s
+    JOIN PLAYER p ON s.ID_PLAYER = p.ID_PLAYER
+    ${whereClause}
+  `);
+  const r = rows[0];
+  return { totalGoals: Number(r.totalGoals), totalPoints: Number(r.totalPoints), playerCount: Number(r.playerCount) };
+}
+
 export async function getDayStats(day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
 
-  // Use position-based scoring formula (not flat +2/goal)
-  const players = await prisma.player.findMany();
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-
-  const dayScores = await prisma.score.findMany({ where: { day: currentDay } });
-  const allScores = await prisma.score.findMany();
-
-  function aggregateScores(scores: typeof dayScores) {
-    let goals = 0, pts = 0, cnt = 0;
-    for (const s of scores) {
-      goals += s.goals;
-      if (s.used > 0) cnt++;
-      const player = playerMap.get(s.playerId);
-      const pos = player?.position ?? "";
-      pts += calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
-    }
-    return { goals, pts, cnt };
-  }
-
-  const dayAgg = aggregateScores(dayScores);
-  const seasonAgg = aggregateScores(allScores);
+  const [dayAgg, seasonAgg] = await Promise.all([
+    aggregateScoresSQL(currentDay),
+    aggregateScoresSQL(),
+  ]);
 
   return {
-    totalGoals: dayAgg.goals,
-    totalPoints: Math.round(dayAgg.pts * 10) / 10,
-    avgPerPlayer: dayAgg.cnt > 0 ? Math.round(dayAgg.pts / dayAgg.cnt * 100) / 100 : 0,
+    totalGoals: dayAgg.totalGoals,
+    totalPoints: Math.round(dayAgg.totalPoints * 10) / 10,
+    avgPerPlayer: dayAgg.playerCount > 0 ? Math.round(dayAgg.totalPoints / dayAgg.playerCount * 100) / 100 : 0,
     currentDay,
-    seasonAvgGoals: currentDay > 0 ? Math.round(seasonAgg.goals / currentDay * 10) / 10 : 0,
-    seasonAvgPoints: currentDay > 0 ? Math.round(seasonAgg.pts / currentDay) : 0,
-    seasonAvgPerPlayer: seasonAgg.cnt > 0 ? Math.round(seasonAgg.pts / seasonAgg.cnt * 100) / 100 : 0,
+    seasonAvgGoals: currentDay > 0 ? Math.round(seasonAgg.totalGoals / currentDay * 10) / 10 : 0,
+    seasonAvgPoints: currentDay > 0 ? Math.round(seasonAgg.totalPoints / currentDay) : 0,
+    seasonAvgPerPlayer: seasonAgg.playerCount > 0 ? Math.round(seasonAgg.totalPoints / seasonAgg.playerCount * 100) / 100 : 0,
   };
 }
 
@@ -324,14 +350,8 @@ export async function getBestPerformances(day?: number, limit = 5) {
   });
 
   // Need player info
-  const playerIds = scores.map((s) => s.playerId);
-  const players = await prisma.player.findMany({
-    where: { id: { in: playerIds } },
-  });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubNames();
 
   // Sort by total points (POINTS + 2*GOALS + PASSES)
   const ranked = scores
@@ -369,11 +389,8 @@ export async function getWorstPerformances(day?: number, limit = 5) {
     take: 500,
   });
 
-  const playerIds = scores.map((s) => s.playerId);
-  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubNames();
 
   const ranked = scores
     .filter((s) => {
@@ -426,12 +443,8 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
   const lineupPlayerIds = new Set(lineup.map((l) => l.playerId));
 
   // Get player details
-  const playerIds = teamMembers.map((t) => t.playerId);
-  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubs();
 
   // Deduplicate by playerId (a player can have multiple periods, e.g., J3-J7 + J21-J34)
   const seenPlayers = new Set<number>();
@@ -479,11 +492,8 @@ export async function getFormerPlayers(leagueDbId: number, userId: number, day?:
 
   if (former.length === 0) return [];
 
-  const playerIds = former.map((t) => t.playerId);
-  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubs();
 
   return former.map((t) => {
     const player = playerMap.get(t.playerId);
@@ -513,11 +523,8 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
   });
   const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
 
-  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubNames();
 
   return lineup.map((l) => {
     const player = playerMap.get(l.playerId);
@@ -554,11 +561,8 @@ export async function getRosterDayScores(rosterPlayerIds: number[], day: number)
   });
   const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
 
-  const players = await prisma.player.findMany({ where: { id: { in: rosterPlayerIds } } });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubNames();
 
   return rosterPlayerIds
     .filter((id) => scoreMap.has(id)) // only players with scores
@@ -603,10 +607,8 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
   });
 
   // Get player details
-  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubNames();
 
   // Build per-player: which days were they in the lineup?
   const playerDays = new Map<number, Set<number>>();
@@ -662,10 +664,12 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
 // ── Clubs with player counts ──────────────────────────────
 export async function getClubsWithStats(leagueDbId: number, day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
-  const clubs = await prisma.club.findMany({ orderBy: { name: "asc" } });
+  const allClubs = await getCachedClubs();
+  const clubs = Array.from(allClubs.values()).sort((a, b) => a.name.localeCompare(b.name));
 
   // Get all players per club
-  const players = await prisma.player.findMany();
+  const allPlayers = await getCachedPlayers();
+  const players = Array.from(allPlayers.values());
   const playersByClub = new Map<number, typeof players>();
   players.forEach((p) => {
     const arr = playersByClub.get(p.clubId) || [];
@@ -719,10 +723,8 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
 // ── Player stats (cumulative across all matchdays) ────────
 export async function getPlayerStats(limit = 10) {
   const scores = await prisma.score.findMany({ where: { used: { gt: 0 } } });
-  const players = await prisma.player.findMany();
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-  const clubs = await prisma.club.findMany();
-  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+  const playerMap = await getCachedPlayers();
+  const clubMap = await getCachedClubNames();
 
   // Aggregate per player
   const agg = new Map<number, { totalPts: number; goals: number; passes: number; days: number }>();
@@ -784,9 +786,7 @@ export async function getMatchPlayerRatings(day: number): Promise<Map<number, Ma
     where: { day, used: { gt: 0 } },
   });
 
-  const playerIds = scores.map((s) => s.playerId);
-  const players = await prisma.player.findMany({ where: { id: { in: playerIds } } });
-  const playerMap = new Map(players.map((p) => [p.id, p]));
+  const playerMap = await getCachedPlayers();
 
   const byClub = new Map<number, MatchPlayerRating[]>();
 

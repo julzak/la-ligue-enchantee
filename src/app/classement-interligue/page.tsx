@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // ISR: refresh every 5 min
 
 import Link from "next/link";
 import { getInterleagueStandings, getCurrentMatchday } from "@/lib/db";
