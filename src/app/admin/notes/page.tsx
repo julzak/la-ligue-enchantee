@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Save, Send, Loader2, ChevronDown, Image as ImageIcon } from "lucide-react";
 
 interface PlayerScore {
@@ -17,6 +17,7 @@ interface PlayerScore {
   redCard: number;
   ownGoals: number;
   penaltySaved: number;
+  isTaken?: boolean;
 }
 
 interface MatchInfo {
@@ -62,6 +63,93 @@ function teamToClubName(team: string): string[] {
   return map[team] ?? [team];
 }
 
+function getPositionGoalBonus(position: string): number {
+  const lower = position.toLowerCase();
+  if (lower.includes("gardien")) return 10;
+  if (lower.includes("fense")) return 4;
+  return 2; // MID + ATT
+}
+
+function calcTotal(s: PlayerScore): number {
+  const base = s.redCard ? 0 : (s.points ?? 0);
+  const goalBonus = getPositionGoalBonus(s.position) * s.goals;
+  return base + goalBonus + s.passes - 2 * s.ownGoals + 2 * s.penaltySaved;
+}
+
+const isGK = (position: string) => position.toLowerCase().includes("gardien");
+
+// Memoized PlayerRow to prevent re-renders of all rows when one input changes
+const PlayerRow = memo(function PlayerRow({ s, onUpdate }: { s: PlayerScore; onUpdate: (playerId: number, field: keyof PlayerScore, value: number | null) => void }) {
+  const total = calcTotal(s);
+  const hasData = s.points !== null;
+  return (
+    <div className={`grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
+      <span className="text-xs text-white truncate flex items-center gap-1" title={`${s.fname} ${s.lname} (${s.position})`}>
+        {CLUB_LOGOS[s.clubId] && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={CLUB_LOGOS[s.clubId]} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
+        )}
+        {s.lname}
+      </span>
+      <input
+        type="number"
+        value={s.points ?? ""}
+        onChange={(e) => onUpdate(s.playerId, "points", e.target.value ? Number(e.target.value) : null)}
+        placeholder="—"
+        className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        min={0} max={10} step={1}
+      />
+      <input
+        type="number"
+        value={s.goals || ""}
+        onChange={(e) => onUpdate(s.playerId, "goals", Number(e.target.value) || 0)}
+        className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        min={0}
+      />
+      <input
+        type="number"
+        value={s.passes || ""}
+        onChange={(e) => onUpdate(s.playerId, "passes", Number(e.target.value) || 0)}
+        className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        min={0}
+      />
+      {/* CSC */}
+      <input
+        type="number"
+        value={s.ownGoals || ""}
+        onChange={(e) => onUpdate(s.playerId, "ownGoals", Number(e.target.value) || 0)}
+        className="w-full bg-surface-2 border border-rouge/20 rounded px-1 py-0.5 text-xs text-center text-rouge focus:outline-none focus:border-rouge [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        min={0}
+      />
+      {/* Red card */}
+      <div className="flex justify-center">
+        <input
+          type="checkbox"
+          checked={s.redCard > 0}
+          onChange={(e) => onUpdate(s.playerId, "redCard", e.target.checked ? 1 : 0)}
+          className="accent-red-600 w-3.5 h-3.5"
+          title="Carton rouge"
+        />
+      </div>
+      {/* Penalty saved — only for GK */}
+      {isGK(s.position) ? (
+        <input
+          type="number"
+          value={s.penaltySaved || ""}
+          onChange={(e) => onUpdate(s.playerId, "penaltySaved", Number(e.target.value) || 0)}
+          className="w-full bg-surface-2 border border-vert/20 rounded px-1 py-0.5 text-xs text-center text-vert focus:outline-none focus:border-vert [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          min={0}
+        />
+      ) : (
+        <span />
+      )}
+      <span className={`text-xs text-right tabular-nums ${hasData ? "text-white font-medium" : "text-muted"}`}>
+        {hasData ? total.toFixed(1) : ""}
+      </span>
+    </div>
+  );
+});
+
 export default function AdminNotesPage() {
   const [day, setDay] = useState(0);
   const [scores, setScores] = useState<PlayerScore[]>([]);
@@ -72,6 +160,7 @@ export default function AdminNotesPage() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [showOnlyFilled, setShowOnlyFilled] = useState(false);
+  const [showOnlyTaken, setShowOnlyTaken] = useState(true);
   const [matches, setMatches] = useState<MatchInfo[]>([]);
   const [deadline, setDeadline] = useState("");
   const [deadlineSaved, setDeadlineSaved] = useState(false);
@@ -118,7 +207,7 @@ export default function AdminNotesPage() {
     fetchScores();
   }, [fetchScores]);
 
-  function updateScore(playerId: number, field: keyof PlayerScore, value: number | null) {
+  const updateScore = useCallback((playerId: number, field: keyof PlayerScore, value: number | null) => {
     setScores((prev) =>
       prev.map((s) => {
         if (s.playerId !== playerId) return s;
@@ -130,7 +219,7 @@ export default function AdminNotesPage() {
         return updated;
       })
     );
-  }
+  }, []);
 
   async function handleSave() {
     setSaving(true);
@@ -191,103 +280,26 @@ export default function AdminNotesPage() {
   function getMatchPlayers(match: MatchInfo): { home: PlayerScore[]; away: PlayerScore[] } {
     const homeClubs = teamToClubName(match.home_team);
     const awayClubs = teamToClubName(match.away_team);
+
+    function filterPlayers(clubNames: string[]) {
+      return scores.filter((s) => {
+        if (!clubNames.includes(s.clubName)) return false;
+        if (filter && !`${s.fname} ${s.lname}`.toLowerCase().includes(filter.toLowerCase())) return false;
+        if (showOnlyFilled && s.points === null && s.goals === 0 && s.passes === 0) return false;
+        if (showOnlyTaken && !s.isTaken && s.points === null && s.goals === 0) return false;
+        return true;
+      });
+    }
+
     return {
-      home: scores.filter((s) => homeClubs.includes(s.clubName)),
-      away: scores.filter((s) => awayClubs.includes(s.clubName)),
+      home: filterPlayers(homeClubs),
+      away: filterPlayers(awayClubs),
     };
   }
 
-
   const filledCount = scores.filter((s) => s.points !== null).length;
   const totalWithGoals = scores.filter((s) => s.goals > 0).reduce((sum, s) => sum + s.goals, 0);
-
-  function getPositionGoalBonus(position: string): number {
-    const lower = position.toLowerCase();
-    if (lower.includes("gardien")) return 10;
-    if (lower.includes("fense")) return 4;
-    return 2; // MID + ATT
-  }
-
-  function calcTotal(s: PlayerScore): number {
-    const base = s.redCard ? 0 : (s.points ?? 0);
-    const goalBonus = getPositionGoalBonus(s.position) * s.goals;
-    return base + goalBonus + s.passes - 2 * s.ownGoals + 2 * s.penaltySaved;
-  }
-
-  const isGK = (position: string) => position.toLowerCase().includes("gardien");
-
-  function PlayerRow({ s }: { s: PlayerScore }) {
-    if (filter && !`${s.fname} ${s.lname}`.toLowerCase().includes(filter.toLowerCase())) return null;
-    if (showOnlyFilled && s.points === null && s.goals === 0 && s.passes === 0) return null;
-    const total = calcTotal(s);
-    const hasData = s.points !== null;
-    return (
-      <div className={`grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
-        <span className="text-xs text-white truncate flex items-center gap-1" title={`${s.fname} ${s.lname} (${s.position})`}>
-          {CLUB_LOGOS[s.clubId] && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={CLUB_LOGOS[s.clubId]} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
-          )}
-          {s.lname}
-        </span>
-        <input
-          type="number"
-          value={s.points ?? ""}
-          onChange={(e) => updateScore(s.playerId, "points", e.target.value ? Number(e.target.value) : null)}
-          placeholder="—"
-          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          min={0} max={10} step={1}
-        />
-        <input
-          type="number"
-          value={s.goals || ""}
-          onChange={(e) => updateScore(s.playerId, "goals", Number(e.target.value) || 0)}
-          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          min={0}
-        />
-        <input
-          type="number"
-          value={s.passes || ""}
-          onChange={(e) => updateScore(s.playerId, "passes", Number(e.target.value) || 0)}
-          className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          min={0}
-        />
-        {/* CSC */}
-        <input
-          type="number"
-          value={s.ownGoals || ""}
-          onChange={(e) => updateScore(s.playerId, "ownGoals", Number(e.target.value) || 0)}
-          className="w-full bg-surface-2 border border-rouge/20 rounded px-1 py-0.5 text-xs text-center text-rouge focus:outline-none focus:border-rouge [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          min={0}
-        />
-        {/* Red card */}
-        <div className="flex justify-center">
-          <input
-            type="checkbox"
-            checked={s.redCard > 0}
-            onChange={(e) => updateScore(s.playerId, "redCard", e.target.checked ? 1 : 0)}
-            className="accent-red-600 w-3.5 h-3.5"
-            title="Carton rouge"
-          />
-        </div>
-        {/* Penalty saved — only for GK */}
-        {isGK(s.position) ? (
-          <input
-            type="number"
-            value={s.penaltySaved || ""}
-            onChange={(e) => updateScore(s.playerId, "penaltySaved", Number(e.target.value) || 0)}
-            className="w-full bg-surface-2 border border-vert/20 rounded px-1 py-0.5 text-xs text-center text-vert focus:outline-none focus:border-vert [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            min={0}
-          />
-        ) : (
-          <span />
-        )}
-        <span className={`text-xs text-right tabular-nums ${hasData ? "text-white font-medium" : "text-muted"}`}>
-          {hasData ? total.toFixed(1) : ""}
-        </span>
-      </div>
-    );
-  }
+  const takenCount = scores.filter((s) => s.isTaken).length;
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -297,6 +309,7 @@ export default function AdminNotesPage() {
           <h1 className="font-serif text-2xl text-white mb-1">Saisie des notes</h1>
           <p className="text-sm text-muted">
             {filledCount} joueurs notés · {totalWithGoals} buts
+            {showOnlyTaken && <span className="ml-1">· {takenCount} joueurs pris</span>}
             {lastSaved && <span className="ml-2 text-white/30">· Sauvé {lastSaved}</span>}
           </p>
         </div>
@@ -337,6 +350,16 @@ export default function AdminNotesPage() {
               {deadlineSaved ? "✓" : "Deadline"}
             </button>
           </div>
+
+          <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showOnlyTaken}
+              onChange={(e) => setShowOnlyTaken(e.target.checked)}
+              className="accent-gold"
+            />
+            Pris
+          </label>
 
           <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
             <input
@@ -414,8 +437,8 @@ export default function AdminNotesPage() {
                     )}
                   </div>
 
-                  {/* Column headers */}
-                  <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05]">
+                  {/* Sticky column headers */}
+                  <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05] sticky top-0 bg-surface z-10">
                     <span>Joueur</span>
                     <span className="text-center">Note</span>
                     <span className="text-center">But</span>
@@ -428,12 +451,12 @@ export default function AdminNotesPage() {
 
                   {/* Home team */}
                   <div className="border-b border-white/[0.05]">
-                    {home.map((s) => <PlayerRow key={s.playerId} s={s} />)}
+                    {home.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} />)}
                   </div>
 
                   {/* Away team — subtle separator */}
                   <div className="border-t border-gold/10">
-                    {away.map((s) => <PlayerRow key={s.playerId} s={s} />)}
+                    {away.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} />)}
                   </div>
                 </div>
               );

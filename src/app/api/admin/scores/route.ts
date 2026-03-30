@@ -18,11 +18,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ day: currentDay });
   }
 
-  const scores = await prisma.score.findMany({ where: { day } });
-  const players = await prisma.player.findMany();
-  const clubs = await prisma.club.findMany();
+  const [scores, players, clubs, takenTeams] = await Promise.all([
+    prisma.score.findMany({ where: { day } }),
+    prisma.player.findMany(),
+    prisma.club.findMany(),
+    // Players taken by at least one participant (in their 13-man squad)
+    prisma.team.findMany({
+      where: { dayFirst: { lte: day }, dayLast: { gte: day } },
+      select: { playerId: true },
+    }),
+  ]);
   const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
   const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
+  const takenPlayerIds = new Set(takenTeams.map((t) => t.playerId));
 
   const data = players.map((p) => {
     const score = scoreMap.get(p.id);
@@ -40,6 +48,7 @@ export async function GET(request: Request) {
       redCard: score?.redCard ?? 0,
       ownGoals: score?.ownGoals ?? 0,
       penaltySaved: score?.penaltySaved ?? 0,
+      isTaken: takenPlayerIds.has(p.id),
     };
   });
 
