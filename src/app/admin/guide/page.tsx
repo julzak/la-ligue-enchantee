@@ -32,9 +32,9 @@ export default function AdminGuidePage() {
       {/* Deadlines de validation */}
       <Section title="Deadlines de validation des équipes">
         <ul className="list-disc list-inside space-y-1">
-          <li><strong className="text-white">Match le vendredi</strong> : validation avant 18h le vendredi</li>
-          <li><strong className="text-white">Matchs le week-end</strong> : validation avant 15h le samedi</li>
-          <li><strong className="text-white">Multiplex le dimanche</strong> : équipes bloquées le samedi à 15h</li>
+          <li><strong className="text-white">Match le vendredi</strong> : validation avant 15h le vendredi</li>
+          <li><strong className="text-white">Matchs le samedi</strong> : validation avant 15h le samedi</li>
+          <li><strong className="text-white">Matchs le dimanche</strong> : validation avant 15h le dimanche</li>
           <li><strong className="text-white">Match en semaine</strong> : validation 2h avant le coup d&apos;envoi du 1er match du jour, puis entièrement à 15h le jour suivant</li>
         </ul>
         <p className="text-xs text-muted mt-2">La deadline est calculée automatiquement à partir du calendrier TheSportsDB. Elle peut être modifiée manuellement dans la page Notes (champ date/heure à côté du sélecteur de journée).</p>
