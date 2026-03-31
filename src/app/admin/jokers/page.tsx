@@ -144,7 +144,7 @@ export default function JokersPage() {
           <Zap className="w-6 h-6 text-gold" />
           Jokers
         </h1>
-        <p className="text-sm text-muted">Remplacer un joueur de l&apos;effectif par un joueur libre (2 par saison)</p>
+        <p className="text-sm text-muted">Remplacer un joueur de l&apos;effectif par un joueur libre (4 jokers + 2 jokers d&apos;août par saison). Deadline : 18h la veille du 1er match de la journée.</p>
       </div>
 
       {/* Selectors */}
