@@ -942,3 +942,14 @@ export async function getLeagueJokersRemaining(leagueDbId: number): Promise<Map<
   result.set(-1, maxJokers); // sentinel: default value
   return result;
 }
+
+// ── Payment status per user in a league ─────────────────
+export async function getLeaguePayments(leagueDbId: number): Promise<Map<number, boolean>> {
+  const rows = await prisma.$queryRawUnsafe<{ user_id: number; paid: number }[]>(
+    `SELECT p.user_id, p.paid FROM PAYMENT p
+     JOIN LEAGUE_USER lu ON lu.ID_USER = p.user_id AND lu.ID_LEAGUE = ?
+     WHERE p.season = '2025-2026'`,
+    leagueDbId
+  );
+  return new Map(rows.map(r => [Number(r.user_id), r.paid === 1]));
+}

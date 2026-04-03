@@ -1,7 +1,7 @@
 import { ClassementTable } from "@/components/classement/ClassementTable";
-import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
-import { Crown, TrendingUp, TrendingDown, Target, Zap } from "lucide-react";
+import { Crown, TrendingUp, TrendingDown, Target, Zap, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { TopoJournee } from "@/components/classement/TopoJournee";
 import { notFound } from "next/navigation";
@@ -20,9 +20,10 @@ export default async function ClassementPage({ params }: { params: { slug: strin
     notFound();
   }
 
-  const [standings, jokersMap] = await Promise.all([
+  const [standings, jokersMap, paymentsMap] = await Promise.all([
     getLeagueStandings(league.dbId),
     getLeagueJokersRemaining(league.dbId),
+    getLeaguePayments(league.dbId),
   ]);
   const currentMatchday = standings.currentDay;
   const defaultJokers = jokersMap.get(-1) ?? 6; // sentinel for max
@@ -206,6 +207,27 @@ export default async function ClassementPage({ params }: { params: { slug: strin
                   <span className="flex-1 text-white truncate">{s.userName}</span>
                   <span className={`font-medium tabular-nums ${remaining === 0 ? "text-rouge" : remaining <= 2 ? "text-orange-400" : "text-gold"}`}>
                     {remaining}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Cotisations */}
+        <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+          <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07] flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-gold" />
+            <h3 className="font-serif text-sm text-gold">Cotisations</h3>
+          </div>
+          <div className="divide-y divide-white/[0.05]">
+            {standings.standings.map((s) => {
+              const paid = paymentsMap.get(s.userId);
+              return (
+                <div key={s.userId} className="flex items-center px-3 py-1.5 text-xs">
+                  <span className="flex-1 text-white truncate">{s.userName}</span>
+                  <span className={`text-[10px] font-medium ${paid === true ? "text-vert" : paid === false ? "text-rouge" : "text-muted"}`}>
+                    {paid === true ? "Paye" : paid === false ? "En attente" : "—"}
                   </span>
                 </div>
               );

@@ -83,10 +83,8 @@ export default function GuidePage() {
             <Section icon={Clock} title="Validation des équipes">
               <p>Les équipes doivent être validées selon les horaires suivants :</p>
               <ul className="list-disc list-inside space-y-1 mt-2">
-                <li><strong className="text-white">Match le vendredi</strong> : validation avant 15h le vendredi</li>
-                <li><strong className="text-white">Matchs le samedi</strong> : validation avant 15h le samedi</li>
-                <li><strong className="text-white">Matchs le dimanche</strong> : validation avant 15h le dimanche</li>
-                <li><strong className="text-white">Match en semaine</strong> : validation 2h avant le coup d&apos;envoi du 1er match du jour, puis entièrement à 15h le jour suivant</li>
+                <li><strong className="text-white">Tous les jours</strong> : validation avant 15h le jour du match</li>
+                <li><strong className="text-white">Match avant 17h</strong> : validation 2h avant le coup d&apos;envoi du 1er match</li>
               </ul>
               <p className="mt-2 text-white/40 text-xs italic">Merci de respecter ces horaires même si le blocage n&apos;a pas encore été effectué par les admins.</p>
             </Section>
