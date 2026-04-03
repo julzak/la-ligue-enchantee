@@ -26,11 +26,11 @@ export async function GET() {
   const clean = (n: string) => n.replace(/<[^>]*>/g, "").trim();
 
   const result = leagues.map((l) => ({
-    id: l.id,
+    id: Number(l.id),
     name: l.name,
     participants: participants
-      .filter((p) => p.leagueId === l.id)
-      .map((p) => ({ userId: p.userId, name: clean(p.userName) }))
+      .filter((p) => Number(p.leagueId) === Number(l.id))
+      .map((p) => ({ userId: Number(p.userId), name: clean(p.userName) }))
       .sort((a, b) => a.name.localeCompare(b.name, "fr")),
   }));
 
