@@ -36,9 +36,14 @@ export function Navbar() {
       ]
     : [];
 
-  const ADMIN_IDS = new Set([10, 1429, 1311, 112, 183, 115]);
-  const userId = (session?.user as { userId?: number } | undefined)?.userId;
-  const isAdmin = userId ? ADMIN_IDS.has(userId) : false;
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!session?.user) { setIsAdmin(false); return; }
+    fetch("/api/is-admin")
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin === true))
+      .catch(() => setIsAdmin(false));
+  }, [session]);
 
   const initials = session?.user?.name
     ? session.user.name

@@ -77,15 +77,21 @@ function renderEmoji(emoji: string) {
   return <span>{emoji}</span>;
 }
 
-const ADMIN_IDS = new Set([10, 1429, 1311, 112, 183, 115]);
-
 export default function TopicPage() {
   const params = useParams();
   const router = useRouter();
   const topicId = Number(params.topicId);
   const { data: session } = useSession();
   const myUserId = (session?.user as { userId?: number } | undefined)?.userId;
-  const isAdmin = myUserId ? ADMIN_IDS.has(myUserId) : false;
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user) { setIsAdmin(false); return; }
+    fetch("/api/is-admin")
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin === true))
+      .catch(() => setIsAdmin(false));
+  }, [session]);
 
   const [topic, setTopic] = useState<TopicInfo | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);

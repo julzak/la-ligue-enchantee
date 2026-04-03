@@ -54,6 +54,21 @@ export default async function CoupePage() {
   const leagueMap = new Map(leagueUsers.map((lu) => [Number(lu.ID_USER), Number(lu.ID_LEAGUE)]));
   const leagueLabels: Record<number, string> = { 19: "L2", 20: "L1", 22: "Nat." };
 
+  // Get interligue ranks for petit poucet bonus display
+  const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
+    `SELECT s.ID_USER as userId, SUM(s.PTS_TOT) as total
+     FROM STATS_USER s WHERE s.ID_LEAGUE > 0
+     GROUP BY s.ID_USER ORDER BY total DESC`
+  );
+  const rankMap = new Map<number, number>();
+  allStats.forEach((s, i) => rankMap.set(Number(s.userId), i + 1));
+
+  // Check if petit poucet is enabled
+  const [cupMeta] = await prisma.$queryRawUnsafe<{ petit_poucet: number }[]>(
+    "SELECT petit_poucet FROM CUP WHERE id = ?", cup.id
+  );
+  const petitPoucet = cupMeta?.petit_poucet === 1;
+
   const rounds = Array.from(new Set(matches.map((m) => m.round)));
 
   return (
@@ -101,6 +116,18 @@ export default async function CoupePage() {
                       const u1Won = Number(m.winner_id) === Number(m.user1_id);
                       const u2Won = Number(m.winner_id) === Number(m.user2_id);
 
+                      // Petit poucet bonus calculation
+                      let u1Bonus = 0;
+                      let u2Bonus = 0;
+                      if (petitPoucet && m.user1_id && m.user2_id) {
+                        const rank1 = rankMap.get(Number(m.user1_id)) ?? 99;
+                        const rank2 = rankMap.get(Number(m.user2_id)) ?? 99;
+                        const diff = Math.abs(rank1 - rank2);
+                        const bonus = Math.floor(diff / 2);
+                        if (rank1 > rank2) u1Bonus = bonus;
+                        else if (rank2 > rank1) u2Bonus = bonus;
+                      }
+
                       return (
                         <div
                           key={m.id}
@@ -111,6 +138,7 @@ export default async function CoupePage() {
                             <span className={`text-xs flex-1 truncate ${u1Won ? "text-white font-medium" : "text-white/70"}`}>
                               {u1Name}
                               {u1League && <span className="text-[9px] text-muted ml-1">({u1League})</span>}
+                              {u1Bonus > 0 && <span className="text-[9px] text-vert ml-1">+{u1Bonus}</span>}
                             </span>
                             {m.score1 !== null && (
                               <span className={`text-xs tabular-nums font-bold ${u1Won ? "text-rouge" : "text-muted"}`}>
@@ -127,6 +155,7 @@ export default async function CoupePage() {
                             <span className={`text-xs flex-1 truncate ${u2Won ? "text-white font-medium" : "text-white/70"}`}>
                               {u2Name}
                               {u2League && <span className="text-[9px] text-muted ml-1">({u2League})</span>}
+                              {u2Bonus > 0 && <span className="text-[9px] text-vert ml-1">+{u2Bonus}</span>}
                             </span>
                             {m.score2 !== null && (
                               <span className={`text-xs tabular-nums font-bold ${u2Won ? "text-rouge" : "text-muted"}`}>

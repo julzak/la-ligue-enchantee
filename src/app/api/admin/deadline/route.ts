@@ -4,10 +4,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // Calculate deadline based on match schedule:
-// - Friday match → Friday 15h (Paris)
-// - Saturday match → Saturday 15h (Paris)
-// - Sunday match → Sunday 15h (Paris)
-// - Midweek match → 2h before first match kickoff, then 15h the next day
+// - Default: 15h Paris time (13:00 UTC) on the day of the first match
+// - If the first match kicks off before 17h Paris (15:00 UTC), deadline is 2h before kickoff instead
 function calcDeadline(matches: { date: string; time: string }[]): Date {
   if (matches.length === 0) {
     // Fallback: next Thursday midnight
@@ -28,17 +26,17 @@ function calcDeadline(matches: { date: string; time: string }[]): Date {
 
   const firstMatch = sorted[0];
   const firstDate = new Date(firstMatch.date + "T" + (firstMatch.time || "20:00") + ":00+02:00"); // Paris time
-  const dayOfWeek = firstDate.getDay(); // 0=Sun, 5=Fri, 6=Sat
 
-  if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
-    // Friday / Saturday / Sunday → deadline 15h Paris same day as first match
-    const deadline = new Date(firstMatch.date + "T13:00:00Z"); // 13:00 UTC = 15:00 Paris
-    return deadline;
-  } else {
-    // Midweek → 2h before first match kickoff
-    const deadline = new Date(firstDate.getTime() - 2 * 60 * 60 * 1000);
-    return deadline;
+  // Default deadline: 15h Paris (13:00 UTC) on the day of the first match
+  const default15h = new Date(firstMatch.date + "T13:00:00Z"); // 13:00 UTC = 15:00 Paris
+  const kickoffBefore17h = new Date(firstMatch.date + "T15:00:00Z"); // 15:00 UTC = 17:00 Paris
+
+  if (firstDate < kickoffBefore17h) {
+    // First match before 17h Paris: deadline is 2h before kickoff
+    return new Date(firstDate.getTime() - 2 * 60 * 60 * 1000);
   }
+
+  return default15h;
 }
 
 // GET: get deadline for a matchday (or current)

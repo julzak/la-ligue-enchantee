@@ -95,6 +95,17 @@ export async function POST(request: Request) {
       season?: string;
     };
 
+    // Check if an active cup already exists
+    const activeCups = await prisma.$queryRawUnsafe<{ id: number }[]>(
+      "SELECT id FROM CUP WHERE status = 'active' LIMIT 1"
+    );
+    if (activeCups.length > 0) {
+      return NextResponse.json(
+        { error: "Une coupe active existe déjà. Supprimez-la d'abord." },
+        { status: 400 }
+      );
+    }
+
     // Get participants: either from selection or all
     let userIds: number[];
     if (participantIds && participantIds.length > 0) {
@@ -219,16 +230,14 @@ export async function POST(request: Request) {
     );
     const petitPoucet = cupRow?.petit_poucet === 1;
 
-    // Get interleague ranks for petit poucet calculation
+    // Get interleague ranks (used for petit poucet AND 2nd tiebreak)
     const rankMap = new Map<number, number>();
-    if (petitPoucet) {
-      const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
-        `SELECT s.ID_USER as userId, SUM(s.PTS_TOT) as total
-         FROM STATS_USER s WHERE s.ID_LEAGUE > 0
-         GROUP BY s.ID_USER ORDER BY total DESC`
-      );
-      allStats.forEach((s, i) => rankMap.set(Number(s.userId), i + 1));
-    }
+    const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
+      `SELECT s.ID_USER as userId, SUM(s.PTS_TOT) as total
+       FROM STATS_USER s WHERE s.ID_LEAGUE > 0
+       GROUP BY s.ID_USER ORDER BY total DESC`
+    );
+    allStats.forEach((s, i) => rankMap.set(Number(s.userId), i + 1));
 
     // Get matches for this round
     const matches = await prisma.$queryRawUnsafe<{
@@ -274,9 +283,14 @@ export async function POST(request: Request) {
       let winnerId: number;
       if (pts1 !== pts2) {
         winnerId = pts1 > pts2 ? Number(match.user1_id) : Number(match.user2_id);
+      } else if (avg1 !== avg2) {
+        // 1st tiebreak: avg points per player
+        winnerId = avg1 > avg2 ? Number(match.user1_id) : Number(match.user2_id);
       } else {
-        // Tiebreak: avg points per player
-        winnerId = avg1 >= avg2 ? Number(match.user1_id) : Number(match.user2_id);
+        // 2nd tiebreak: better interligue rank wins (lower rank = better)
+        const rank1 = rankMap.get(Number(match.user1_id)) ?? 99;
+        const rank2 = rankMap.get(Number(match.user2_id)) ?? 99;
+        winnerId = rank1 <= rank2 ? Number(match.user1_id) : Number(match.user2_id);
       }
 
       await prisma.$executeRawUnsafe(
@@ -311,6 +325,61 @@ export async function POST(request: Request) {
       matchday, cupId, round
     );
     return NextResponse.json({ ok: true });
+  }
+
+  if (action === "reset-round") {
+    const { cupId, round } = body as { action: string; cupId: number; round: string };
+
+    // Get the winners from this round before resetting
+    const roundMatches = await prisma.$queryRawUnsafe<{
+      id: number; winner_id: number | null;
+    }[]>(
+      "SELECT id, winner_id FROM CUP_MATCH WHERE cup_id = ? AND round = ?",
+      cupId, round
+    );
+
+    const winnerIds = roundMatches.map((m) => m.winner_id).filter(Boolean) as number[];
+
+    // Reset scores and winners for this round
+    await prisma.$executeRawUnsafe(
+      "UPDATE CUP_MATCH SET score1 = NULL, score2 = NULL, avg1 = NULL, avg2 = NULL, winner_id = NULL WHERE cup_id = ? AND round = ?",
+      cupId, round
+    );
+
+    // Remove these winners from the next round slots
+    if (winnerIds.length > 0) {
+      // Get all rounds in order
+      const allRounds = await prisma.$queryRawUnsafe<{ round: string; min_pos: number }[]>(
+        "SELECT round, MIN(position) as min_pos FROM CUP_MATCH WHERE cup_id = ? GROUP BY round ORDER BY min_pos",
+        cupId
+      );
+      const roundNames = allRounds.map((r) => r.round);
+      const currentIdx = roundNames.indexOf(round);
+      if (currentIdx >= 0 && currentIdx < roundNames.length - 1) {
+        const nextRound = roundNames[currentIdx + 1];
+        for (const wId of winnerIds) {
+          await prisma.$executeRawUnsafe(
+            "UPDATE CUP_MATCH SET user1_id = NULL WHERE cup_id = ? AND round = ? AND user1_id = ?",
+            cupId, nextRound, wId
+          );
+          await prisma.$executeRawUnsafe(
+            "UPDATE CUP_MATCH SET user2_id = NULL WHERE cup_id = ? AND round = ? AND user2_id = ?",
+            cupId, nextRound, wId
+          );
+        }
+      }
+    }
+
+    return NextResponse.json({ ok: true, message: `Tour "${round}" réinitialisé` });
+  }
+
+  if (action === "delete-cup") {
+    const { cupId } = body as { action: string; cupId: number };
+
+    await prisma.$executeRawUnsafe("DELETE FROM CUP_MATCH WHERE cup_id = ?", cupId);
+    await prisma.$executeRawUnsafe("DELETE FROM CUP WHERE id = ?", cupId);
+
+    return NextResponse.json({ ok: true, message: "Coupe supprimée" });
   }
 
   return NextResponse.json({ error: "Action inconnue" }, { status: 400 });

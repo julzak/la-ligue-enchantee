@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, Loader2, Plus, Shuffle, Play, ChevronDown, Check } from "lucide-react";
+import { Trophy, Loader2, Plus, Shuffle, Play, ChevronDown, Check, RotateCcw, Trash2 } from "lucide-react";
 
 interface CupInfo { id: number; name: string; status: string; season: string }
 interface CupMatch {
@@ -133,6 +133,38 @@ export default function CoupeFrancePage() {
       body: JSON.stringify({ action: "set-matchday", cupId: selectedCup, round, matchday }),
     });
     fetchCup();
+  }
+
+  async function resetRound(round: string) {
+    if (!confirm(`Annuler le tour "${round}" ? Les scores seront réinitialisés et les vainqueurs retirés du tour suivant.`)) return;
+    setMessage("");
+    const res = await fetch("/api/admin/cup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reset-round", cupId: selectedCup, round }),
+    });
+    const data = await res.json();
+    setMessage(data.message ?? data.error);
+    fetchCup();
+  }
+
+  async function deleteCup() {
+    if (!confirm("Supprimer cette coupe ? Cette action est irréversible.")) return;
+    setMessage("");
+    const res = await fetch("/api/admin/cup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete-cup", cupId: selectedCup }),
+    });
+    const data = await res.json();
+    setMessage(data.message ?? data.error);
+    if (data.ok) {
+      setSelectedCup(0);
+      setMatches([]);
+      const cupsRes = await fetch("/api/admin/cup");
+      const cupsData = await cupsRes.json();
+      setCups(cupsData.cups ?? []);
+    }
   }
 
   const rounds = Array.from(new Set(matches.map((m) => m.round)));
@@ -286,6 +318,14 @@ export default function CoupeFrancePage() {
                         <Play className="w-3 h-3" /> Résoudre
                       </button>
                     )}
+                    {allResolved && (
+                      <button
+                        onClick={() => resetRound(round)}
+                        className="h-7 px-3 bg-white/5 text-muted rounded text-[10px] flex items-center gap-1 hover:bg-white/10 hover:text-white"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Annuler le tour
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -311,6 +351,16 @@ export default function CoupeFrancePage() {
               </div>
             );
           })}
+
+          {/* Delete cup */}
+          <div className="pt-4 border-t border-white/[0.07]">
+            <button
+              onClick={deleteCup}
+              className="h-9 px-4 bg-rouge/10 text-rouge border border-rouge/20 rounded text-sm font-medium flex items-center gap-2 hover:bg-rouge/20"
+            >
+              <Trash2 className="w-4 h-4" /> Supprimer cette coupe
+            </button>
+          </div>
         </div>
       )}
     </div>

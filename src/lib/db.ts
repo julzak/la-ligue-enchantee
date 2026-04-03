@@ -2,6 +2,7 @@ import { cache } from "react";
 import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
 import { getClubLogoUrl, getClubShortName } from "./assets";
+import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
 
 // ── Request-scoped caches (dedup within same render) ────
 const getCachedClubs = cache(async () => {
@@ -25,23 +26,25 @@ function dec(v: Decimal | number | null): number {
   return typeof v === "number" ? v : Number(v);
 }
 
-// ── Scoring formula ─────────────────────────────────────
-// GK +10/goal, DEF +4/goal, MID/ATT +2/goal
-// Red card: note → 0 (bonuses kept)
-// CSC: -2, Penalty saved: +2
-function goalBonus(position: string): number {
+// ── Scoring formula (config-driven) ─────────────────────
+function calcPlayerTotal(
+  points: number, goals: number, passes: number, position: string,
+  redCard = 0, ownGoals = 0, penaltySaved = 0,
+  cfg?: ScoringConfig
+): number {
+  const base = redCard ? 0 : points;
+  const gb = cfg ? goalBonusForPosition(position, cfg) : goalBonusForPositionDefault(position);
+  const cscPenalty = cfg ? cfg.cscMalus : -2;
+  const penBonus = cfg ? cfg.penaltySavedBonus : 2;
+  return base + gb * goals + passes + cscPenalty * ownGoals + penBonus * penaltySaved;
+}
+
+// Fallback for when config isn't loaded yet (should not happen in practice)
+function goalBonusForPositionDefault(position: string): number {
   const p = position.toLowerCase();
   if (p.includes("gardien")) return 10;
   if (p.includes("fense")) return 4;
   return 2;
-}
-
-function calcPlayerTotal(
-  points: number, goals: number, passes: number, position: string,
-  redCard = 0, ownGoals = 0, penaltySaved = 0
-): number {
-  const base = redCard ? 0 : points;
-  return base + goalBonus(position) * goals + passes - 2 * ownGoals + 2 * penaltySaved;
 }
 
 // Trophy types from the img tags in USER.NAME
@@ -342,6 +345,7 @@ export async function getDayStats(day?: number) {
 // ── Best performances of the day ──────────────────────────
 export async function getBestPerformances(day?: number, limit = 5) {
   const currentDay = day ?? await getCurrentMatchday();
+  const scoringCfg = await getScoringConfig();
 
   const scores = await prisma.score.findMany({
     where: { day: currentDay, used: { gt: 0 } },
@@ -358,7 +362,7 @@ export async function getBestPerformances(day?: number, limit = 5) {
     .map((s) => {
       const player = playerMap.get(s.playerId);
       const pos = player?.position ?? "";
-      const total = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
+      const total = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved, scoringCfg);
       const details: string[] = [];
       if (s.goals > 0) details.push(`${s.goals} but${s.goals > 1 ? "s" : ""}`);
       if (s.passes > 0) details.push(`${s.passes} passe${s.passes > 1 ? "s" : ""}`);
@@ -383,6 +387,7 @@ export async function getBestPerformances(day?: number, limit = 5) {
 // ── Worst performances (Onze des Saucisses) ───────────────
 export async function getWorstPerformances(day?: number, limit = 5) {
   const currentDay = day ?? await getCurrentMatchday();
+  const scoringCfg = await getScoringConfig();
 
   const scores = await prisma.score.findMany({
     where: { day: currentDay, used: { gt: 0 } },
@@ -402,7 +407,7 @@ export async function getWorstPerformances(day?: number, limit = 5) {
     .map((s) => {
       const player = playerMap.get(s.playerId);
       const pos = player?.position ?? "";
-      const total = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
+      const total = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved, scoringCfg);
       return {
         playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${s.playerId}`,
         club: player ? (clubMap.get(player.clubId) ?? "") : "",
@@ -512,6 +517,7 @@ export async function getFormerPlayers(leagueDbId: number, userId: number, day?:
 
 // ── Player scores for a participant on a specific day ─────
 export async function getParticipantDayScores(leagueDbId: number, userId: number, day: number) {
+  const scoringCfg = await getScoringConfig();
   const lineup = await prisma.teamDay.findMany({
     where: { leagueId: leagueDbId, userId, day },
     orderBy: { indx: "asc" },
@@ -531,7 +537,7 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
     const score = scoreMap.get(l.playerId);
     const pos = player?.position ?? "";
     const total = score
-      ? calcPlayerTotal(dec(score.points), score.goals, score.passes, pos, score.redCard, score.ownGoals, score.penaltySaved)
+      ? calcPlayerTotal(dec(score.points), score.goals, score.passes, pos, score.redCard, score.ownGoals, score.penaltySaved, scoringCfg)
       : 2; // forfait
 
     return {
@@ -556,6 +562,7 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
 // for ALL roster players so bench players also show their L'Equipe rating.
 export async function getRosterDayScores(rosterPlayerIds: number[], day: number) {
   if (rosterPlayerIds.length === 0) return [];
+  const scoringCfg = await getScoringConfig();
 
   const scores = await prisma.score.findMany({
     where: { day, playerId: { in: rosterPlayerIds } },
@@ -573,7 +580,7 @@ export async function getRosterDayScores(rosterPlayerIds: number[], day: number)
       const pos = player?.position ?? "";
       const total = calcPlayerTotal(
         dec(score.points), score.goals, score.passes, pos,
-        score.redCard, score.ownGoals, score.penaltySaved
+        score.redCard, score.ownGoals, score.penaltySaved, scoringCfg
       );
 
       return {
@@ -593,6 +600,7 @@ export async function getRosterDayScores(rosterPlayerIds: number[], day: number)
 // ── Cumulative player stats for a participant ─────────────
 export async function getParticipantCumulativeStats(leagueDbId: number, userId: number, upToDay?: number) {
   const currentDay = upToDay ?? await getCurrentMatchday();
+  const scoringCfg = await getScoringConfig();
 
   // Get all days this participant had a lineup
   const allLineups = await prisma.teamDay.findMany({
@@ -629,7 +637,7 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
     const pts = dec(s.points);
     const player = playerMap.get(s.playerId);
     const pos = player?.position ?? "";
-    const dayTotal = calcPlayerTotal(pts, s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
+    const dayTotal = calcPlayerTotal(pts, s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved, scoringCfg);
     scoresByPlayer.set(s.playerId, {
       notes: prev.notes + pts,
       goals: prev.goals + s.goals,
@@ -723,6 +731,7 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
 
 // ── Player stats (cumulative across all matchdays) ────────
 export async function getPlayerStats(limit = 10) {
+  const scoringCfg = await getScoringConfig();
   const scores = await prisma.score.findMany({ where: { used: { gt: 0 } } });
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
@@ -733,7 +742,7 @@ export async function getPlayerStats(limit = 10) {
     const prev = agg.get(s.playerId) ?? { totalPts: 0, goals: 0, passes: 0, days: 0 };
     const player = playerMap.get(s.playerId);
     const pos = player?.position ?? "";
-    const dayTotal = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved);
+    const dayTotal = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved, scoringCfg);
     agg.set(s.playerId, {
       totalPts: prev.totalPts + dayTotal,
       goals: prev.goals + s.goals,

@@ -88,7 +88,12 @@ export default function JokersPage() {
     if (!selectedLeague) return;
     fetch(`/api/admin/jokers/participants?leagueId=${selectedLeague}`)
       .then((r) => r.json())
-      .then((d) => setParticipants(d.participants ?? []))
+      .then((d) => {
+        const sorted = (d.participants ?? []).sort((a: Participant, b: Participant) =>
+          a.cleanName.localeCompare(b.cleanName, "fr")
+        );
+        setParticipants(sorted);
+      })
       .catch(() => {});
     setSelectedUser(0);
     setSquad([]);

@@ -11,11 +11,22 @@ export default function AdminEquipesPage() {
   const [selectedLeague, setSelectedLeague] = useState(0);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [selectedSlug, setSelectedSlug] = useState("");
+  const [currentDay, setCurrentDay] = useState(0);
+  const [selectedDay, setSelectedDay] = useState(0);
 
   useEffect(() => {
     fetch("/api/admin/jokers/leagues")
       .then((r) => r.json())
       .then((d) => setLeagues(d.leagues ?? []))
+      .catch(() => {});
+    // Fetch current matchday
+    fetch("/api/admin/deadline")
+      .then((r) => r.json())
+      .then((d) => {
+        const day = d.day ?? 27;
+        setCurrentDay(day);
+        setSelectedDay(day);
+      })
       .catch(() => {});
   }, []);
 
@@ -29,6 +40,8 @@ export default function AdminEquipesPage() {
       .catch(() => {});
   }, [selectedLeague, leagues]);
 
+  const dayOptions = Array.from({ length: 38 }, (_, i) => i + 1);
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
@@ -39,7 +52,7 @@ export default function AdminEquipesPage() {
         <p className="text-sm text-muted">Modifier la composition de n&apos;importe quel participant</p>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <select
           value={selectedLeague}
           onChange={(e) => setSelectedLeague(Number(e.target.value))}
@@ -48,6 +61,18 @@ export default function AdminEquipesPage() {
           <option value={0}>Sélectionner une ligue</option>
           {leagues.map((l) => (
             <option key={l.dbId} value={l.dbId}>{l.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedDay}
+          onChange={(e) => setSelectedDay(Number(e.target.value))}
+          className="bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+        >
+          {dayOptions.map((d) => (
+            <option key={d} value={d}>
+              Journée {d}{d === currentDay ? " (en cours)" : d === currentDay + 1 ? " (prochaine)" : ""}
+            </option>
           ))}
         </select>
       </div>
@@ -71,10 +96,10 @@ export default function AdminEquipesPage() {
                     Voir <ExternalLink className="w-3 h-3" />
                   </a>
                   <a
-                    href={`/admin/equipes/${p.id}?league=${selectedSlug}&leagueId=${selectedLeague}`}
+                    href={`/admin/equipes/${p.id}?league=${selectedSlug}&leagueId=${selectedLeague}&day=${selectedDay}`}
                     className="text-xs bg-gold/10 text-gold px-2 py-1 rounded hover:bg-gold/20 transition-colors"
                   >
-                    Modifier le 11
+                    Modifier le 11 (J{selectedDay})
                   </a>
                 </div>
               </div>
