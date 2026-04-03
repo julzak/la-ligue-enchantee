@@ -43,12 +43,35 @@ export async function GET(request: Request) {
     };
   });
 
-  // Count jokers from JOKER_LOG
-  const jokerLogs = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-    "SELECT COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? AND user_id = ?",
+  // Get joker log entries (full history for this user in this league)
+  const jokerLogEntries = await prisma.$queryRawUnsafe<{
+    id: number; league_id: number; user_id: number;
+    player_out_id: number; player_in_id: number; day: number;
+  }[]>(
+    "SELECT id, league_id, user_id, player_out_id, player_in_id, day FROM JOKER_LOG WHERE league_id = ? AND user_id = ? ORDER BY id DESC",
     leagueId, userId
   );
-  const jokerUsed = Number(jokerLogs[0]?.cnt ?? 0);
+  const jokerUsed = jokerLogEntries.length;
+
+  // Resolve player names for joker history
+  const jokerPlayerIds = new Set<number>();
+  jokerLogEntries.forEach((j) => {
+    jokerPlayerIds.add(Number(j.player_out_id));
+    jokerPlayerIds.add(Number(j.player_in_id));
+  });
+  const jokerPlayers = jokerPlayerIds.size > 0
+    ? await prisma.player.findMany({ where: { id: { in: Array.from(jokerPlayerIds) } } })
+    : [];
+  const jokerPlayerMap = new Map(jokerPlayers.map((p) => [p.id, `${p.fname} ${p.lname}`.trim()]));
+
+  const jokerHistory = jokerLogEntries.map((j) => ({
+    id: Number(j.id),
+    playerOutId: Number(j.player_out_id),
+    playerOutName: jokerPlayerMap.get(Number(j.player_out_id)) ?? `#${j.player_out_id}`,
+    playerInId: Number(j.player_in_id),
+    playerInName: jokerPlayerMap.get(Number(j.player_in_id)) ?? `#${j.player_in_id}`,
+    day: Number(j.day),
+  }));
 
   // Get joker config (max allowed)
   const configs = await prisma.$queryRawUnsafe<{ type: string; max_count: number; deadline: string | null; is_active: number }[]>(
@@ -64,8 +87,79 @@ export async function GET(request: Request) {
     squad: squadData,
     jokersUsed: jokerUsed,
     jokersRemaining: totalMax - jokerUsed,
+    jokerHistory,
     currentDay,
   });
+}
+
+// DELETE: cancel/undo a joker
+export async function DELETE(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  try {
+    const { jokerLogId } = await request.json() as { jokerLogId: number };
+
+    if (!jokerLogId) {
+      return NextResponse.json({ error: "jokerLogId required" }, { status: 400 });
+    }
+
+    // Get the joker log entry
+    const entries = await prisma.$queryRawUnsafe<{
+      id: number; league_id: number; user_id: number;
+      player_out_id: number; player_in_id: number; day: number;
+    }[]>(
+      "SELECT id, league_id, user_id, player_out_id, player_in_id, day FROM JOKER_LOG WHERE id = ?",
+      jokerLogId
+    );
+
+    if (entries.length === 0) {
+      return NextResponse.json({ error: "Joker log entry not found" }, { status: 404 });
+    }
+
+    const entry = entries[0];
+    const leagueId = Number(entry.league_id);
+    const userId = Number(entry.user_id);
+    const playerOutId = Number(entry.player_out_id);
+    const playerInId = Number(entry.player_in_id);
+    const jokerDay = Number(entry.day);
+
+    // 1. Restore the old player: set DAY_LAST back to 38
+    //    The old player's stint was ended at jokerDay, so we restore it
+    await prisma.$executeRawUnsafe(
+      "UPDATE TEAM SET DAY_LAST = 38 WHERE ID_LEAGUE = ? AND ID_USER = ? AND ID_PLAYER = ? AND DAY_LAST = ?",
+      leagueId, userId, playerOutId, jokerDay
+    );
+
+    // 2. Remove the new player entry (was inserted with DAY_FIRST = jokerDay + 1)
+    await prisma.$executeRawUnsafe(
+      "DELETE FROM TEAM WHERE ID_LEAGUE = ? AND ID_USER = ? AND ID_PLAYER = ? AND DAY_FIRST = ?",
+      leagueId, userId, playerInId, jokerDay + 1
+    );
+
+    // 3. Delete the JOKER_LOG entry
+    await prisma.$executeRawUnsafe(
+      "DELETE FROM JOKER_LOG WHERE id = ?",
+      jokerLogId
+    );
+
+    // Get player names for confirmation
+    const [playerOut, playerIn] = await Promise.all([
+      prisma.player.findUnique({ where: { id: playerOutId } }),
+      prisma.player.findUnique({ where: { id: playerInId } }),
+    ]);
+
+    const outName = playerOut ? `${playerOut.fname} ${playerOut.lname}`.trim() : `#${playerOutId}`;
+    const inName = playerIn ? `${playerIn.fname} ${playerIn.lname}`.trim() : `#${playerInId}`;
+
+    return NextResponse.json({
+      ok: true,
+      message: `Joker annule : ${outName} revient, ${inName} retire de l'effectif`,
+    });
+  } catch (error) {
+    console.error("Joker cancel error:", error);
+    return NextResponse.json({ error: "Erreur lors de l'annulation" }, { status: 500 });
+  }
 }
 
 // POST: execute joker swap

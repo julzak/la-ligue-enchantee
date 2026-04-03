@@ -277,6 +277,12 @@ export async function POST(request: Request) {
       }
     }
 
+    // Transition auction status to 'resolved' so buttons can proceed to next round
+    await prisma.$executeRawUnsafe(
+      "UPDATE AUCTION SET status = 'resolved' WHERE id = ?",
+      aId
+    );
+
     return NextResponse.json({
       ok: true,
       message: `Tour ${round} resolu : ${wonCount} joueurs attribues, ${tiedCount} egalites, ${lostCount} encheres perdues`,
@@ -318,6 +324,18 @@ export async function POST(request: Request) {
         );
       }
       resolved++;
+    }
+
+    // Check if there are still pending/tie bids remaining; if not, mark as resolved
+    const remaining = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+      "SELECT COUNT(*) as cnt FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status IN ('pending', 'tie')",
+      aId, round
+    );
+    if (Number(remaining[0]?.cnt ?? 0) === 0) {
+      await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET status = 'resolved' WHERE id = ?",
+        aId
+      );
     }
 
     return NextResponse.json({

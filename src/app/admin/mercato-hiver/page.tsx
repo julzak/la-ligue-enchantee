@@ -167,11 +167,11 @@ export default function MercatoHiverPage() {
                 <Snowflake className="w-4 h-4" /> Ouvrir le mercato d&apos;hiver
               </button>
             )}
-            {auction?.status === "resolved" || auction?.status === "closed" ? (
+            {(auction?.status === "resolved" || auction?.status === "closed") && (
               <button onClick={() => handleAction("open")} className="h-9 px-4 bg-vert text-white rounded text-sm flex items-center gap-2 hover:bg-vert/80">
                 <Play className="w-4 h-4" /> Ouvrir tour suivant
               </button>
-            ) : null}
+            )}
             {auction?.status === "open" && (
               <button onClick={() => handleAction("close-round")} className="h-9 px-4 bg-blue-400 text-night rounded text-sm flex items-center gap-2 hover:bg-blue-400/80">
                 <Square className="w-4 h-4" /> Fermer le tour
@@ -185,10 +185,12 @@ export default function MercatoHiverPage() {
                 <button onClick={() => handleAction("resolve-tiebreak")} className="h-9 px-4 bg-surface-2 border border-blue-400/30 text-blue-400 rounded text-sm flex items-center gap-2 hover:bg-blue-400/10">
                   Tirage au sort (egalites)
                 </button>
-                <button onClick={() => handleAction("close-auction")} className="h-9 px-4 bg-rouge text-white rounded text-sm flex items-center gap-2 hover:bg-rouge/80">
-                  <XCircle className="w-4 h-4" /> Terminer le mercato
-                </button>
               </>
+            )}
+            {(auction?.status === "closed" || auction?.status === "resolved") && (
+              <button onClick={() => handleAction("close-auction")} className="h-9 px-4 bg-rouge text-white rounded text-sm flex items-center gap-2 hover:bg-rouge/80">
+                <XCircle className="w-4 h-4" /> Terminer le mercato
+              </button>
             )}
           </div>
 

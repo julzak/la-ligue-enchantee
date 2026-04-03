@@ -9,8 +9,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
   const search = searchParams.get("search") ?? "";
+  const clubId = Number(searchParams.get("clubId") ?? 0);
 
-  if (!leagueId || search.length < 2) {
+  // If clubId is set, return all free players from that club (no search needed)
+  // Otherwise require a name search of at least 2 chars
+  if (!leagueId || (!clubId && search.length < 2)) {
     return NextResponse.json({ players: [] });
   }
 
@@ -27,16 +30,24 @@ export async function GET(request: Request) {
   });
   const takenIds = new Set(taken.map((t) => t.playerId));
 
-  // Search players by name
+  // Build query conditions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = { clubId: { gt: 0 } };
+  if (clubId) {
+    where.clubId = clubId;
+  }
+  if (search.length >= 2) {
+    where.OR = [
+      { lname: { contains: search } },
+      { fname: { contains: search } },
+    ];
+  }
+
+  // Search players
   const players = await prisma.player.findMany({
-    where: {
-      clubId: { gt: 0 },
-      OR: [
-        { lname: { contains: search } },
-        { fname: { contains: search } },
-      ],
-    },
-    take: 20,
+    where,
+    take: 50,
+    orderBy: { lname: "asc" },
   });
 
   const clubs = await prisma.club.findMany();
@@ -51,5 +62,11 @@ export async function GET(request: Request) {
       clubName: clubMap.get(p.clubId) ?? "",
     }));
 
-  return NextResponse.json({ players: free });
+  // Also return the clubs list for the filter dropdown (only clubs with players)
+  const clubList = Array.from(clubMap.entries())
+    .map(([id, name]) => ({ id, name }))
+    .filter((c) => c.id > 0)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return NextResponse.json({ players: free, clubs: clubList });
 }

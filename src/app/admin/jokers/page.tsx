@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Zap, Loader2, Search, ArrowRight } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Zap, Loader2, Search, ArrowRight, Undo2 } from "lucide-react";
 
 interface LeagueInfo {
   id: number;
@@ -30,6 +30,29 @@ interface FreePlayer {
   clubName: string;
 }
 
+interface JokerLogEntry {
+  id: number;
+  playerOutId: number;
+  playerOutName: string;
+  playerInId: number;
+  playerInName: string;
+  day: number;
+}
+
+interface ClubOption {
+  id: number;
+  name: string;
+}
+
+function posLabel(position: string): string {
+  const lower = position.toLowerCase();
+  if (lower.includes("gardien")) return "GK";
+  if (lower.includes("fense") || lower.includes("défense")) return "DEF";
+  if (lower.includes("milieu")) return "MIL";
+  if (lower.includes("attaq")) return "ATT";
+  return position.slice(0, 3).toUpperCase();
+}
+
 export default function JokersPage() {
   const [leagues, setLeagues] = useState<LeagueInfo[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -37,13 +60,17 @@ export default function JokersPage() {
   const [selectedUser, setSelectedUser] = useState<number>(0);
   const [squad, setSquad] = useState<SquadPlayer[]>([]);
   const [jokersRemaining, setJokersRemaining] = useState(2);
+  const [jokerHistory, setJokerHistory] = useState<JokerLogEntry[]>([]);
   const [playerOut, setPlayerOut] = useState<number>(0);
   const [freePlayers, setFreePlayers] = useState<FreePlayer[]>([]);
+  const [clubs, setClubs] = useState<ClubOption[]>([]);
+  const [selectedClub, setSelectedClub] = useState<number>(0);
   const [freeSearch, setFreeSearch] = useState("");
   const [playerIn, setPlayerIn] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [executing, setExecuting] = useState(false);
+  const [canceling, setCanceling] = useState<number>(0);
 
   // Load leagues
   useEffect(() => {
@@ -65,38 +92,62 @@ export default function JokersPage() {
       .catch(() => {});
     setSelectedUser(0);
     setSquad([]);
+    setJokerHistory([]);
   }, [selectedLeague]);
+
+  // Load clubs list for filter
+  useEffect(() => {
+    if (!selectedLeague) return;
+    fetch(`/api/admin/jokers/free?leagueId=${selectedLeague}&clubId=1`)
+      .then((r) => r.json())
+      .then((d) => setClubs(d.clubs ?? []))
+      .catch(() => {});
+  }, [selectedLeague]);
+
+  const loadSquadData = useCallback(async () => {
+    if (!selectedLeague || !selectedUser) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/jokers?leagueId=${selectedLeague}&userId=${selectedUser}`);
+      const d = await res.json();
+      setSquad(d.squad ?? []);
+      setJokersRemaining(d.jokersRemaining ?? 2);
+      setJokerHistory(d.jokerHistory ?? []);
+    } catch {
+      // ignore
+    }
+    setLoading(false);
+  }, [selectedLeague, selectedUser]);
 
   // Load squad when user changes
   useEffect(() => {
-    if (!selectedLeague || !selectedUser) return;
-    setLoading(true);
-    fetch(`/api/admin/jokers?leagueId=${selectedLeague}&userId=${selectedUser}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setSquad(d.squad ?? []);
-        setJokersRemaining(d.jokersRemaining ?? 2);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    loadSquadData();
     setPlayerOut(0);
     setPlayerIn(0);
-  }, [selectedLeague, selectedUser]);
+  }, [loadSquadData]);
 
   // Search free players
   useEffect(() => {
-    if (!selectedLeague || freeSearch.length < 2) {
+    if (!selectedLeague) {
+      setFreePlayers([]);
+      return;
+    }
+    // Need either a club filter or a search term of >= 2 chars
+    if (!selectedClub && freeSearch.length < 2) {
       setFreePlayers([]);
       return;
     }
     const timer = setTimeout(() => {
-      fetch(`/api/admin/jokers/free?leagueId=${selectedLeague}&search=${encodeURIComponent(freeSearch)}`)
+      const params = new URLSearchParams({ leagueId: String(selectedLeague) });
+      if (freeSearch.length >= 2) params.set("search", freeSearch);
+      if (selectedClub) params.set("clubId", String(selectedClub));
+      fetch(`/api/admin/jokers/free?${params}`)
         .then((r) => r.json())
         .then((d) => setFreePlayers(d.players ?? []))
         .catch(() => {});
     }, 300);
     return () => clearTimeout(timer);
-  }, [selectedLeague, freeSearch]);
+  }, [selectedLeague, freeSearch, selectedClub]);
 
   async function executeJoker() {
     if (!playerOut || !playerIn) return;
@@ -120,11 +171,8 @@ export default function JokersPage() {
         setPlayerOut(0);
         setPlayerIn(0);
         setFreeSearch("");
-        // Reload squad
-        const squadRes = await fetch(`/api/admin/jokers?leagueId=${selectedLeague}&userId=${selectedUser}`);
-        const squadData = await squadRes.json();
-        setSquad(squadData.squad ?? []);
-        setJokersRemaining(squadData.jokersRemaining ?? 2);
+        setSelectedClub(0);
+        await loadSquadData();
       } else {
         setMessage("Erreur: " + data.error);
       }
@@ -132,6 +180,29 @@ export default function JokersPage() {
       setMessage("Erreur réseau");
     }
     setExecuting(false);
+  }
+
+  async function cancelJoker(jokerLogId: number) {
+    if (!confirm("Annuler ce joker ? Le joueur sorti reviendra dans l'effectif.")) return;
+    setCanceling(jokerLogId);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/jokers", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jokerLogId }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessage(data.message);
+        await loadSquadData();
+      } else {
+        setMessage("Erreur: " + data.error);
+      }
+    } catch {
+      setMessage("Erreur réseau");
+    }
+    setCanceling(0);
   }
 
   const outPlayer = squad.find((s) => s.playerId === playerOut);
@@ -207,7 +278,7 @@ export default function JokersPage() {
                       : "hover:bg-white/[0.02]"
                   }`}
                 >
-                  <span className="text-[10px] text-muted w-7">{s.position.slice(0, 3)}</span>
+                  <span className="text-[10px] text-muted w-7">{posLabel(s.position)}</span>
                   <span className="text-sm text-white flex-1 truncate">{s.name}</span>
                   <span className="text-[10px] text-muted">{s.clubName.split(" ")[0]}</span>
                   {s.isSubs && <span className="text-[9px] bg-surface-2 px-1 rounded text-muted">REM</span>}
@@ -219,6 +290,22 @@ export default function JokersPage() {
           {/* Right: search free player IN */}
           <div>
             <h3 className="text-sm font-medium text-white mb-3">Joueur à entrer</h3>
+
+            {/* Club filter */}
+            <select
+              value={selectedClub}
+              onChange={(e) => {
+                setSelectedClub(Number(e.target.value));
+                setPlayerIn(0);
+              }}
+              className="w-full bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold mb-2"
+            >
+              <option value={0}>Tous les clubs</option>
+              {clubs.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
               <input
@@ -242,7 +329,7 @@ export default function JokersPage() {
                         : "hover:bg-white/[0.02]"
                     }`}
                   >
-                    <span className="text-[10px] text-muted w-7">{p.position.slice(0, 3)}</span>
+                    <span className="text-[10px] text-muted w-7">{posLabel(p.position)}</span>
                     <span className="text-sm text-white flex-1 truncate">{p.name}</span>
                     <span className="text-[10px] text-muted">{p.clubName.split(" ")[0]}</span>
                   </button>
@@ -269,6 +356,46 @@ export default function JokersPage() {
             {executing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             Utiliser le joker
           </button>
+        </div>
+      )}
+
+      {/* Joker history */}
+      {jokerHistory.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-white mb-3">Historique des jokers</h3>
+          <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+            <div className="grid grid-cols-[3rem_1fr_1fr_5rem] gap-1 px-4 py-2 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.07]">
+              <span>Jour</span>
+              <span>Sortant</span>
+              <span>Entrant</span>
+              <span className="text-right">Action</span>
+            </div>
+            {jokerHistory.map((j) => (
+              <div
+                key={j.id}
+                className="grid grid-cols-[3rem_1fr_1fr_5rem] gap-1 px-4 py-2 items-center border-b border-white/[0.04] text-sm"
+              >
+                <span className="text-xs text-muted tabular-nums">J{j.day}</span>
+                <span className="text-rouge text-xs truncate">{j.playerOutName}</span>
+                <span className="text-vert text-xs truncate">{j.playerInName}</span>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => cancelJoker(j.id)}
+                    disabled={canceling === j.id}
+                    className="h-7 px-2 text-xs text-muted hover:text-rouge hover:bg-rouge/10 rounded transition-colors flex items-center gap-1 disabled:opacity-50"
+                    title="Annuler ce joker"
+                  >
+                    {canceling === j.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Undo2 className="w-3 h-3" />
+                    )}
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

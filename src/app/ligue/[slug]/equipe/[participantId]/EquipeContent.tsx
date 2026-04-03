@@ -32,6 +32,7 @@ interface DayScore {
   rating: number | null;
   goals: number;
   passes: number;
+  redCard: boolean;
   total: number;
 }
 
@@ -207,7 +208,10 @@ export function EquipeContent({
         <span className="text-muted text-xs">{isStarter ? index : ""}</span>
         <PlayerAvatar playerId={player.playerId} name={player.playerName} size={28} clubLogoUrl={player.clubLogo} />
         <div className="min-w-0">
-          <span className="text-white font-medium">{player.playerName}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-white font-medium">{player.playerName}</span>
+            {score.redCard && <span className="text-xs" title="Carton rouge">🟥</span>}
+          </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-xs text-muted">{player.clubName}</span>
           </div>

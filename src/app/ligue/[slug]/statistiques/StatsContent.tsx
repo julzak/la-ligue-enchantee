@@ -44,10 +44,12 @@ export function StatsContent({ playerStats, leagueStats }: Props) {
   const [limit, setLimit] = useState(20);
   const [posFilter, setPosFilter] = useState("");
 
-  function filterEntries(entries: StatEntry[]): StatEntry[] {
+  function filterEntries(entries: StatEntry[], excludeGK = false): StatEntry[] {
     let filtered = entries;
     if (posFilter) {
       filtered = filtered.filter((e) => e.position === posFilter);
+    } else if (excludeGK) {
+      filtered = filtered.filter((e) => e.position !== "GK");
     }
     return filtered.slice(0, limit).map((e, i) => ({ ...e, rank: i + 1 }));
   }
@@ -92,7 +94,7 @@ export function StatsContent({ playerStats, leagueStats }: Props) {
         {/* Left column */}
         <div className="space-y-6">
           <h3 className="font-serif text-base text-gold border-b border-gold/20 pb-2">Stats du championnat</h3>
-          <StatCard title="Meilleurs joueurs" unit="pts" entries={filterEntries(playerStats.meilleursJoueurs)} formatValue={(v) => v.toFixed(1)} />
+          <StatCard title="Meilleurs joueurs" unit="pts" entries={filterEntries(playerStats.meilleursJoueurs, true)} formatValue={(v) => v.toFixed(1)} />
           <StatCard title="Meilleurs buteurs" unit="buts" entries={filterEntries(playerStats.meilleursButeurs)} formatValue={(v) => String(v)} />
           <StatCard title="Meilleurs passeurs" unit="passes" entries={filterEntries(playerStats.meilleursPasseurs)} formatValue={(v) => String(v)} />
           <StatCard title="Plus mauvais joueurs" unit="pts" entries={filterEntries(playerStats.piresJoueurs)} formatValue={(v) => v.toFixed(1)} />
@@ -106,7 +108,7 @@ export function StatsContent({ playerStats, leagueStats }: Props) {
             <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07]">
               <h4 className="font-serif text-sm text-gold">Vainqueurs par journée</h4>
             </div>
-            <div className="divide-y divide-white/[0.05]">
+            <div className="divide-y divide-white/[0.05] max-h-80 overflow-y-auto">
               {leagueStats.vainqueursParJournee.map((v) => (
                 <div key={v.journee} className="flex items-center justify-between px-4 py-2 text-sm">
                   <span className="text-muted">J{v.journee}</span>
@@ -121,7 +123,7 @@ export function StatsContent({ playerStats, leagueStats }: Props) {
             <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07]">
               <h4 className="font-serif text-sm text-gold">Meilleures journées</h4>
             </div>
-            <div className="divide-y divide-white/[0.05]">
+            <div className="divide-y divide-white/[0.05] max-h-80 overflow-y-auto">
               {leagueStats.meilleuresJournees.map((m, i) => (
                 <div key={i} className="flex items-center justify-between px-4 py-2 text-sm">
                   <span className="text-muted w-6">{i + 1}</span>
@@ -133,21 +135,6 @@ export function StatsContent({ playerStats, leagueStats }: Props) {
             </div>
           </div>
 
-          <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
-            <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07]">
-              <h4 className="font-serif text-sm text-gold">Progression par journée</h4>
-            </div>
-            <div className="divide-y divide-white/[0.05]">
-              {leagueStats.topProgressions.map((p, i) => (
-                <div key={i} className="flex items-center justify-between px-4 py-2 text-sm">
-                  <span className="text-muted w-6">{i + 1}</span>
-                  <span className="text-white font-medium flex-1">{p.name}</span>
-                  <span className="text-muted text-xs mr-3">J{p.journee}</span>
-                  <span className="text-vert font-medium tabular-nums">+{p.delta}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

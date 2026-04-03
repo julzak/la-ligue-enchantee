@@ -62,7 +62,9 @@ export default function PaiementsPage() {
     return acc;
   }, {});
 
-  const sortedGroups = Object.values(grouped).sort((a, b) => leagueSortKey(a.leagueId) - leagueSortKey(b.leagueId));
+  const sortedGroups = Object.values(grouped)
+    .filter((g) => g.leagueId !== null && LEAGUE_ORDER[g.leagueId] !== undefined)
+    .sort((a, b) => leagueSortKey(a.leagueId) - leagueSortKey(b.leagueId));
 
   return (
     <div className="space-y-6 max-w-3xl">

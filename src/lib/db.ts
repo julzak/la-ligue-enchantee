@@ -545,6 +545,7 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
       rating: score ? dec(score.points) : null,
       goals: score?.goals ?? 0,
       passes: score?.passes ?? 0,
+      redCard: (score?.redCard ?? 0) > 0,
       total: Math.round(total * 10) / 10,
     };
   });
@@ -778,6 +779,7 @@ export interface MatchPlayerRating {
   rating: number | null;
   goals: number;
   passes: number;
+  redCard: boolean;
   clubId: number;
 }
 
@@ -802,6 +804,7 @@ export async function getMatchPlayerRatings(day: number): Promise<Map<number, Ma
       rating: s.points !== null ? dec(s.points) : null,
       goals: s.goals,
       passes: s.passes,
+      redCard: s.redCard > 0,
       clubId,
     });
     byClub.set(clubId, arr);

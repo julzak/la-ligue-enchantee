@@ -36,6 +36,9 @@ function PlayerRatingRow({ p }: { p: MatchPlayerRating }) {
             {"🅰️".repeat(p.passes)}
           </span>
         )}
+        {p.redCard && (
+          <span className="ml-1">🟥</span>
+        )}
       </span>
       <span
         className={`text-xs font-bold tabular-nums w-7 text-right ${ratingColor(p.rating)}`}
