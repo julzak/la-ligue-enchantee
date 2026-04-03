@@ -97,10 +97,10 @@ export function Navbar() {
 
         {session?.user ? (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center text-[10px] font-semibold text-gold">
+            <Link href="/mon-compte" className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center text-[10px] font-semibold text-gold hover:bg-gold/25 transition-colors" title="Mon compte">
               {initials}
-            </div>
-            <span className="text-xs text-white/60 hidden sm:block">{session.user.name}</span>
+            </Link>
+            <Link href="/mon-compte" className="text-xs text-white/60 hover:text-white transition-colors hidden sm:block">{session.user.name}</Link>
             {isAdmin && (
               <Link
                 href="/admin/notes"

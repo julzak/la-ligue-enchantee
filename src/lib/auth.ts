@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 
 // Parse trophies from USER.NAME HTML
@@ -28,14 +29,28 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) return null;
 
-        // Password stored in plain text. Some users have it as their name,
-        // others as name without spaces, others as something custom.
-        const inputPwd = credentials.password.toLowerCase();
-        const storedPwd = user.password.toLowerCase();
-        const inputNoSpaces = inputPwd.replace(/\s+/g, "");
+        const inputPwd = credentials.password;
+        const storedPwd = user.password;
 
-        if (storedPwd !== inputPwd && storedPwd !== inputNoSpaces) {
-          return null;
+        // Check if stored password is a bcrypt hash
+        if (storedPwd.startsWith("$2a$") || storedPwd.startsWith("$2b$")) {
+          // Compare with bcrypt
+          const match = await bcrypt.compare(inputPwd, storedPwd);
+          if (!match) return null;
+        } else {
+          // Legacy plain text comparison (case-insensitive)
+          const inputLower = inputPwd.toLowerCase();
+          const storedLower = storedPwd.toLowerCase();
+          const inputNoSpaces = inputLower.replace(/\s+/g, "");
+          if (storedLower !== inputLower && storedLower !== inputNoSpaces) {
+            return null;
+          }
+          // Auto-migrate: hash the plain text password on successful login
+          const hashed = await bcrypt.hash(inputPwd, 10);
+          await prisma.$executeRawUnsafe(
+            "UPDATE USER SET PASSWORD = ? WHERE ID_USER = ?",
+            hashed, user.id
+          );
         }
 
         const { cleanName } = parseUserName(user.name);
