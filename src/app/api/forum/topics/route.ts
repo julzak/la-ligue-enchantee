@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET: list topics for a league (or all if leagueId=0)
 export async function GET(request: Request) {
@@ -109,4 +110,34 @@ export async function POST(request: Request) {
   );
 
   return NextResponse.json({ ok: true, topicId });
+}
+
+// DELETE: delete a topic and all its posts (admin only)
+export async function DELETE(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { topicId } = await request.json() as { topicId: number };
+  if (!topicId) return NextResponse.json({ error: "topicId requis" }, { status: 400 });
+
+  // Get all post IDs for this topic (to clean reactions)
+  const posts = await prisma.$queryRawUnsafe<{ id: number }[]>(
+    "SELECT id FROM FORUM_POST WHERE topic_id = ?", topicId
+  );
+  const postIds = posts.map(p => Number(p.id));
+
+  // Delete reactions
+  if (postIds.length > 0) {
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM FORUM_REACTION WHERE post_id IN (${postIds.join(",")})`
+    );
+  }
+
+  // Delete posts
+  await prisma.$executeRawUnsafe("DELETE FROM FORUM_POST WHERE topic_id = ?", topicId);
+
+  // Delete topic
+  await prisma.$executeRawUnsafe("DELETE FROM FORUM_TOPIC WHERE id = ?", topicId);
+
+  return NextResponse.json({ ok: true, message: "Sujet et posts supprimés" });
 }

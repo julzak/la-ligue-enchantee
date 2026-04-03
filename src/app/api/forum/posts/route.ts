@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET: list posts for a topic
 export async function GET(request: Request) {
@@ -123,4 +124,33 @@ export async function POST(request: Request) {
   );
 
   return NextResponse.json({ ok: true });
+}
+
+// DELETE: delete a post (admin only)
+export async function DELETE(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { postId } = await request.json() as { postId: number };
+  if (!postId) return NextResponse.json({ error: "postId requis" }, { status: 400 });
+
+  // Get post info to update topic stats
+  const [post] = await prisma.$queryRawUnsafe<{ id: number; topic_id: number }[]>(
+    "SELECT id, topic_id FROM FORUM_POST WHERE id = ?", postId
+  );
+  if (!post) return NextResponse.json({ error: "Post introuvable" }, { status: 404 });
+
+  // Delete reactions for this post
+  await prisma.$executeRawUnsafe("DELETE FROM FORUM_REACTION WHERE post_id = ?", postId);
+
+  // Delete the post
+  await prisma.$executeRawUnsafe("DELETE FROM FORUM_POST WHERE id = ?", postId);
+
+  // Update topic post count
+  await prisma.$executeRawUnsafe(
+    "UPDATE FORUM_TOPIC SET post_count = GREATEST(post_count - 1, 0) WHERE id = ?",
+    Number(post.topic_id)
+  );
+
+  return NextResponse.json({ ok: true, message: "Post supprimé" });
 }

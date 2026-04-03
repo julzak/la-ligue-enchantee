@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
-import { Loader2, Send, ArrowLeft, Pin, Lock } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2, Send, ArrowLeft, Pin, Lock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { EmojiButton } from "@/components/ui/EmojiButton";
 import { useSession } from "next-auth/react";
@@ -77,11 +77,15 @@ function renderEmoji(emoji: string) {
   return <span>{emoji}</span>;
 }
 
+const ADMIN_IDS = new Set([10, 1429, 1311, 112, 183, 115]);
+
 export default function TopicPage() {
   const params = useParams();
+  const router = useRouter();
   const topicId = Number(params.topicId);
   const { data: session } = useSession();
   const myUserId = (session?.user as { userId?: number } | undefined)?.userId;
+  const isAdmin = myUserId ? ADMIN_IDS.has(myUserId) : false;
 
   const [topic, setTopic] = useState<TopicInfo | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -146,6 +150,26 @@ export default function TopicPage() {
     } catch {}
   }
 
+  async function deletePost(postId: number) {
+    if (!confirm("Supprimer ce message ?")) return;
+    await fetch("/api/forum/posts", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId }),
+    });
+    fetchTopic();
+  }
+
+  async function deleteTopic() {
+    if (!confirm("Supprimer ce sujet et tous ses messages ?")) return;
+    await fetch("/api/forum/topics", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topicId }),
+    });
+    router.push("/forum");
+  }
+
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-gold" /></div>;
   }
@@ -171,9 +195,21 @@ export default function TopicPage() {
           {topic.locked && <Lock className="w-4 h-4 text-muted shrink-0" />}
           <h1 className="font-serif text-xl text-white">{topic.title}</h1>
         </div>
-        <p className="text-xs text-muted mt-1">
-          Par {topic.authorName} · {formatDate(topic.createdAt)} · {topic.postCount} message{topic.postCount > 1 ? "s" : ""}
-        </p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-xs text-muted">
+            Par {topic.authorName} · {formatDate(topic.createdAt)} · {topic.postCount} message{topic.postCount > 1 ? "s" : ""}
+          </p>
+          {isAdmin && (
+            <button
+              onClick={deleteTopic}
+              className="text-[10px] text-rouge/60 hover:text-rouge flex items-center gap-1 transition-colors"
+              title="Supprimer le sujet"
+            >
+              <Trash2 className="w-3 h-3" />
+              Supprimer
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Posts */}
@@ -194,6 +230,15 @@ export default function TopicPage() {
                 {isOP && <span className="text-[9px] ml-1.5 text-gold bg-gold/10 px-1.5 py-0.5 rounded-full font-medium">OP</span>}
               </div>
               <span className="text-[11px] text-muted">{formatDate(post.createdAt)}</span>
+              {isAdmin && (
+                <button
+                  onClick={() => deletePost(post.id)}
+                  className="p-1 text-white/20 hover:text-rouge transition-colors"
+                  title="Supprimer ce message"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Content */}
