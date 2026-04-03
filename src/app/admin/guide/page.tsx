@@ -17,11 +17,17 @@ interface Config {
     summerCount: number;
     summerDeadline: string;
   };
+  deadlines: {
+    defaultHour: number;
+    earlyMatchHour: number;
+    earlyMatchOffsetHours: number;
+  };
 }
 
 const DEFAULTS: Config = {
   scoring: { goalBonusGk: 10, goalBonusDef: 4, goalBonusMid: 2, goalBonusAtt: 2, cscMalus: -2, penaltySavedBonus: 2 },
   jokers: { regularCount: 4, summerCount: 2, summerDeadline: "2025-09-15" },
+  deadlines: { defaultHour: 15, earlyMatchHour: 17, earlyMatchOffsetHours: 2 },
 };
 
 export default function AdminGuidePage() {
@@ -37,6 +43,7 @@ export default function AdminGuidePage() {
           setConfig({
             scoring: data.scoring ?? DEFAULTS.scoring,
             jokers: data.jokers ?? DEFAULTS.jokers,
+            deadlines: data.deadlines ?? DEFAULTS.deadlines,
           });
         }
       } catch {}
@@ -53,7 +60,7 @@ export default function AdminGuidePage() {
     );
   }
 
-  const { scoring, jokers } = config;
+  const { scoring, jokers, deadlines } = config;
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -84,8 +91,8 @@ export default function AdminGuidePage() {
       {/* Deadlines de validation */}
       <Section title="Deadlines de validation des equipes">
         <ul className="list-disc list-inside space-y-1">
-          <li><strong className="text-white">Tous les jours</strong> : validation avant 15h le jour du match</li>
-          <li><strong className="text-white">Match avant 17h</strong> : validation 2h avant le coup d&apos;envoi du 1er match</li>
+          <li><strong className="text-white">Tous les jours</strong> : validation avant {deadlines.defaultHour}h le jour du match</li>
+          <li><strong className="text-white">Match avant {deadlines.earlyMatchHour}h</strong> : validation {deadlines.earlyMatchOffsetHours}h avant le coup d&apos;envoi du 1er match</li>
         </ul>
         <p className="text-xs text-muted mt-2">La deadline est calculee automatiquement a partir du calendrier TheSportsDB. Elle peut etre modifiee manuellement dans la page Notes (champ date/heure a cote du selecteur de journee).</p>
       </Section>

@@ -13,6 +13,9 @@ interface ScoringConfigRow {
   penalty_saved_bonus: number;
   red_card_note_zero: number;
   min_note: number;
+  deadline_hour: number;
+  early_match_hour: number;
+  early_match_offset_hours: number;
 }
 
 interface JokerConfigRow {
@@ -37,7 +40,7 @@ export async function GET() {
 
   const [scoringRows, jokerRows, mercatoRows] = await Promise.all([
     prisma.$queryRawUnsafe<ScoringConfigRow[]>(
-      "SELECT goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att, csc_malus, penalty_saved_bonus, red_card_note_zero, min_note FROM SCORING_CONFIG WHERE season = ?",
+      "SELECT goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att, csc_malus, penalty_saved_bonus, red_card_note_zero, min_note, deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = ?",
       CURRENT_SEASON
     ),
     prisma.$queryRawUnsafe<JokerConfigRow[]>(
@@ -60,6 +63,9 @@ export async function GET() {
     penalty_saved_bonus: 2,
     red_card_note_zero: 1,
     min_note: 0,
+    deadline_hour: 15,
+    early_match_hour: 17,
+    early_match_offset_hours: 2,
   };
 
   // Jokers
@@ -92,6 +98,11 @@ export async function GET() {
     },
     jokers,
     mercatoHiver,
+    deadlines: {
+      defaultHour: Number(scoring.deadline_hour),
+      earlyMatchHour: Number(scoring.early_match_hour),
+      earlyMatchOffsetHours: Number(scoring.early_match_offset_hours),
+    },
   });
 }
 
@@ -132,6 +143,13 @@ export async function POST(request: Request) {
         await prisma.$executeRawUnsafe(
           "UPDATE JOKER_CONFIG SET max_count = ?, deadline = ? WHERE season = ? AND type = 'summer'",
           data.summerCount, data.summerDeadline, CURRENT_SEASON
+        );
+        break;
+
+      case "deadlines":
+        await prisma.$executeRawUnsafe(
+          `UPDATE SCORING_CONFIG SET deadline_hour = ?, early_match_hour = ?, early_match_offset_hours = ? WHERE season = ?`,
+          data.defaultHour ?? 15, data.earlyMatchHour ?? 17, data.earlyMatchOffsetHours ?? 2, CURRENT_SEASON
         );
         break;
 

@@ -26,6 +26,12 @@ interface MercatoHiverConfig {
   treveEnd: string | null;
 }
 
+interface DeadlinesConfig {
+  defaultHour: number;
+  earlyMatchHour: number;
+  earlyMatchOffsetHours: number;
+}
+
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export default function AdminConfigPage() {
@@ -39,6 +45,9 @@ export default function AdminConfigPage() {
   const [mercato, setMercato] = useState<MercatoHiverConfig>({
     rankingMatchday: null, treveStart: null, treveEnd: null,
   });
+  const [deadlines, setDeadlines] = useState<DeadlinesConfig>({
+    defaultHour: 15, earlyMatchHour: 17, earlyMatchOffsetHours: 2,
+  });
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({});
 
@@ -50,6 +59,7 @@ export default function AdminConfigPage() {
         if (data.scoring) setScoring(data.scoring);
         if (data.jokers) setJokers(data.jokers);
         if (data.mercatoHiver) setMercato(data.mercatoHiver);
+        if (data.deadlines) setDeadlines(data.deadlines);
       } catch {}
       setLoading(false);
     }
@@ -224,16 +234,38 @@ export default function AdminConfigPage() {
         </div>
       </section>
 
-      {/* Section 4: Deadlines (read-only) */}
+      {/* Section 4: Deadlines */}
       <section className="bg-surface rounded-lg border border-white/[0.07] p-5">
-        <h2 className="font-serif text-base text-gold mb-4">Deadlines</h2>
-        <div className="text-sm text-white/70 space-y-2">
-          <p>15h tous les jours (lundi au dimanche)</p>
-          <p>2h avant le coup d&apos;envoi si match avant 17h</p>
-          <p className="text-xs text-muted mt-2">
-            Modifiable manuellement dans la page Notes (champ date/heure a cote du selecteur de journee).
-          </p>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-serif text-base text-gold">Deadlines</h2>
+          <SaveButton section="deadlines" data={deadlines} />
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field
+            label="Heure de cloture par defaut"
+            type="number"
+            value={deadlines.defaultHour}
+            onChange={(v) => setDeadlines({ ...deadlines, defaultHour: Number(v) })}
+            prefix="h"
+          />
+          <Field
+            label="Seuil match anticipe"
+            type="number"
+            value={deadlines.earlyMatchHour}
+            onChange={(v) => setDeadlines({ ...deadlines, earlyMatchHour: Number(v) })}
+            prefix="h"
+          />
+          <Field
+            label="Heures avant coup d'envoi"
+            type="number"
+            value={deadlines.earlyMatchOffsetHours}
+            onChange={(v) => setDeadlines({ ...deadlines, earlyMatchOffsetHours: Number(v) })}
+            prefix="h"
+          />
+        </div>
+        <p className="text-xs text-muted mt-3">
+          Cloture a {deadlines.defaultHour}h le jour du match. Si match avant {deadlines.earlyMatchHour}h, cloture {deadlines.earlyMatchOffsetHours}h avant le coup d&apos;envoi. Override ponctuel dans la page Notes.
+        </p>
       </section>
     </div>
   );
