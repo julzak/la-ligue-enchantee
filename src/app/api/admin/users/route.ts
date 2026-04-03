@@ -25,8 +25,8 @@ export async function GET() {
   const clean = (n: string) => n.replace(/<[^>]*>/g, "").trim();
 
   return NextResponse.json({
-    admins: admins.map((a) => ({ userId: a.user_id, name: clean(a.name) })),
-    allUsers: allUsers.map((u) => ({ id: u.id, name: clean(u.name) })),
+    admins: admins.map((a) => ({ userId: Number(a.user_id), name: clean(a.name) })),
+    allUsers: allUsers.map((u) => ({ id: Number(u.id), name: clean(u.name) })),
   });
 }
 

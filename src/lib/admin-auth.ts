@@ -16,7 +16,7 @@ async function getAdminIds(): Promise<Set<number>> {
   const rows = await prisma.$queryRawUnsafe<{ user_id: number }[]>(
     "SELECT user_id FROM ADMIN_USER"
   );
-  cachedAdminIds = new Set(rows.map((r) => r.user_id));
+  cachedAdminIds = new Set(rows.map((r) => Number(r.user_id)));
   cacheTime = now;
   return cachedAdminIds;
 }
