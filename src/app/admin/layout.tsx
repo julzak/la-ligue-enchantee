@@ -12,7 +12,7 @@ const mainLinks = [
 ];
 
 const utilLinks = [
-  { href: "/admin/promotions", label: "Promotions", icon: ArrowUpDown },
+  { href: "/admin/promotions", label: "Mouvements", icon: ArrowUpDown },
   { href: "/admin/utilisateurs", label: "Admins", icon: Shield },
   { href: "/admin/config", label: "Configuration", icon: Settings },
   { href: "/admin/guide", label: "Guide admin", icon: BookOpen },

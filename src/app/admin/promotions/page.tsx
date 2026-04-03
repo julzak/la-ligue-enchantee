@@ -93,9 +93,9 @@ export default function PromotionsPage() {
       <div>
         <h1 className="font-serif text-2xl text-white mb-1 flex items-center gap-2">
           <ArrowUpDown className="w-6 h-6 text-gold" />
-          Promotions / Relégations
+          Mouvements Equipes
         </h1>
-        <p className="text-sm text-muted">Déplacer des participants entre les ligues</p>
+        <p className="text-sm text-muted">Déplacer, renommer des participants entre les ligues</p>
       </div>
 
       {message && (
