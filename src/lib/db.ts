@@ -905,3 +905,31 @@ export async function getLeagueStats(leagueDbId: number) {
 
   return { vainqueursParJournee, meilleuresJournees, topProgressions };
 }
+
+// ── Jokers remaining per participant in a league ────────
+export async function getLeagueJokersRemaining(leagueDbId: number): Promise<Map<number, number>> {
+  // Get max jokers from config
+  const configs = await prisma.$queryRawUnsafe<{ max_count: number; deadline: string | null }[]>(
+    "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = '2025-2026' AND is_active = 1"
+  );
+  const maxJokers = configs.reduce((sum, c) => {
+    if (c.deadline && new Date(c.deadline) < new Date()) return sum;
+    return sum + Number(c.max_count);
+  }, 0);
+
+  // Count jokers used per user in this league
+  const logs = await prisma.$queryRawUnsafe<{ user_id: number; cnt: bigint }[]>(
+    "SELECT user_id, COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? GROUP BY user_id",
+    leagueDbId
+  );
+
+  const result = new Map<number, number>();
+  for (const log of logs) {
+    result.set(Number(log.user_id), maxJokers - Number(log.cnt));
+  }
+
+  // Participants with no jokers used get full allowance
+  // (we return the map, caller fills in defaults)
+  result.set(-1, maxJokers); // sentinel: default value
+  return result;
+}

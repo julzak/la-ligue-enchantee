@@ -1,7 +1,7 @@
 import { ClassementTable } from "@/components/classement/ClassementTable";
-import { getLeagueBySlug, getLeagueStandings } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
-import { Crown, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { Crown, TrendingUp, TrendingDown, Target, Zap } from "lucide-react";
 import Link from "next/link";
 import { TopoJournee } from "@/components/classement/TopoJournee";
 import { notFound } from "next/navigation";
@@ -20,8 +20,12 @@ export default async function ClassementPage({ params }: { params: { slug: strin
     notFound();
   }
 
-  const standings = await getLeagueStandings(league.dbId);
+  const [standings, jokersMap] = await Promise.all([
+    getLeagueStandings(league.dbId),
+    getLeagueJokersRemaining(league.dbId),
+  ]);
   const currentMatchday = standings.currentDay;
+  const defaultJokers = jokersMap.get(-1) ?? 6; // sentinel for max
 
   // ClassementTable = "Classement de la journée" -> sorted by day score, no delta (delta is for general)
   const dayRanked = [...standings.standings]
@@ -186,6 +190,27 @@ export default async function ClassementPage({ params }: { params: { slug: strin
           >
             Classement général complet →
           </Link>
+        </div>
+
+        {/* Jokers restants */}
+        <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+          <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07] flex items-center gap-2">
+            <Zap className="w-4 h-4 text-gold" />
+            <h3 className="font-serif text-sm text-gold">Jokers restants</h3>
+          </div>
+          <div className="divide-y divide-white/[0.05]">
+            {standings.standings.map((s) => {
+              const remaining = jokersMap.has(s.userId) ? jokersMap.get(s.userId)! : defaultJokers;
+              return (
+                <div key={s.userId} className="flex items-center px-3 py-1.5 text-xs">
+                  <span className="flex-1 text-white truncate">{s.userName}</span>
+                  <span className={`font-medium tabular-nums ${remaining === 0 ? "text-rouge" : remaining <= 2 ? "text-orange-400" : "text-gold"}`}>
+                    {remaining}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Perles du forum - bigger */}
