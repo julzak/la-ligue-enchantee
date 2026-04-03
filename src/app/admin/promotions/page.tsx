@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowUpDown, Loader2 } from "lucide-react";
+import { ArrowUpDown, Loader2, Pencil } from "lucide-react";
 
 interface Participant {
   userId: number;
@@ -64,6 +64,30 @@ export default function PromotionsPage() {
     setSaving(false);
   }
 
+  async function renameParticipant(userId: number, currentName: string) {
+    const newName = prompt("Nouveau pseudo :", currentName);
+    if (!newName || newName.trim() === currentName) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/promotions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, newName: newName.trim() }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessage(`Pseudo modifie : ${currentName} → ${newName.trim()}`);
+        await loadData();
+      } else {
+        setMessage("Erreur: " + data.error);
+      }
+    } catch {
+      setMessage("Erreur reseau");
+    }
+    setSaving(false);
+  }
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
@@ -95,7 +119,17 @@ export default function PromotionsPage() {
               <div className="divide-y divide-white/[0.04]">
                 {league.participants.map((p) => (
                   <div key={p.userId} className="flex items-center justify-between px-3 py-2 gap-2">
-                    <span className="text-sm text-white truncate flex-1">{p.name}</span>
+                    <span className="text-sm text-white truncate flex-1 flex items-center gap-1">
+                      {p.name}
+                      <button
+                        onClick={() => renameParticipant(p.userId, p.name)}
+                        disabled={saving}
+                        className="p-0.5 text-white/20 hover:text-gold transition-colors disabled:opacity-50"
+                        title="Renommer"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </span>
                     <select
                       defaultValue=""
                       onChange={(e) => {

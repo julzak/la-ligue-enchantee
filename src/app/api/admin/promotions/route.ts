@@ -70,3 +70,33 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+// PATCH: rename a participant (preserves trophy HTML tags)
+export async function PATCH(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { userId, newName } = await request.json() as { userId: number; newName: string };
+  if (!userId || !newName?.trim()) {
+    return NextResponse.json({ error: "userId et newName requis" }, { status: 400 });
+  }
+
+  // Get current NAME (may contain trophy HTML tags like <img src="...">)
+  const [user] = await prisma.$queryRawUnsafe<{ NAME: string }[]>(
+    "SELECT NAME FROM USER WHERE ID_USER = ?", userId
+  );
+  if (!user) {
+    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+  }
+
+  // Extract trophy tags, replace the text part with newName
+  const trophyTags = user.NAME.match(/<img[^>]*>/g) ?? [];
+  const updatedName = newName.trim() + (trophyTags.length > 0 ? " " + trophyTags.join("") : "");
+
+  await prisma.$executeRawUnsafe(
+    "UPDATE USER SET NAME = ? WHERE ID_USER = ?",
+    updatedName, userId
+  );
+
+  return NextResponse.json({ ok: true });
+}
