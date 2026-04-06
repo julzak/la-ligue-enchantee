@@ -46,11 +46,15 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
           // Auto-migrate: hash the plain text password on successful login
-          const hashed = await bcrypt.hash(inputPwd, 10);
-          await prisma.$executeRawUnsafe(
-            "UPDATE USER SET PASSWORD = ? WHERE ID_USER = ?",
-            hashed, user.id
-          );
+          try {
+            const hashed = await bcrypt.hash(inputPwd, 10);
+            await prisma.$executeRawUnsafe(
+              "UPDATE USER SET PASSWORD = ? WHERE ID_USER = ?",
+              hashed, user.id
+            );
+          } catch {
+            // Migration failed (e.g. column too short) — login still valid
+          }
         }
 
         const { cleanName } = parseUserName(user.name);

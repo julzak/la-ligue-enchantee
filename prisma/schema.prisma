@@ -160,7 +160,7 @@ model TeamDay {
 model User {
   id       Int    @id @default(autoincrement()) @map("ID_USER") @db.UnsignedInt
   name     String @default("") @map("NAME") @db.VarChar(150)
-  password String @default("") @map("PASSWORD") @db.VarChar(50)
+  password String @default("") @map("PASSWORD") @db.VarChar(255)
   email    String @default("") @map("EMAIL") @db.VarChar(50)
 
   @@index([email], map: "EMAIL")
