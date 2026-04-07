@@ -15,6 +15,12 @@ const CAT_LABELS: Record<string, string> = {
   reclamation: "R\u00e9clamations",
 };
 
+const CAT_LEAGUE_ID: Record<string, number> = {
+  "ligue-1": 20,
+  "ligue-2": 19,
+  "national-1": 22,
+};
+
 interface Topic {
   id: number;
   category: string;
@@ -134,7 +140,8 @@ export default function CategoryPage() {
   const fetchTopics = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/forum/topics?category=${category}`);
+      const leagueId = CAT_LEAGUE_ID[category] ?? 0;
+      const res = await fetch(`/api/forum/topics?category=${category}${leagueId ? `&leagueId=${leagueId}` : ""}`);
       const data = await res.json();
       setTopics(data.topics ?? []);
     } catch { /* ignore */ }
@@ -150,7 +157,7 @@ export default function CategoryPage() {
       const res = await fetch("/api/forum/topics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leagueId: 0, title: newTitle, content: newContent, category }),
+        body: JSON.stringify({ leagueId: CAT_LEAGUE_ID[category] ?? 0, title: newTitle, content: newContent, category }),
       });
       const data = await res.json();
       if (data.ok) {
