@@ -32,7 +32,6 @@ export function Navbar() {
     ? [
         { href: `/ligue/${effectiveSlug}/classement`, label: "Classement" },
         { href: `/ligue/${effectiveSlug}/mon-equipe`, label: "Mon équipe" },
-        { href: `/ligue/${effectiveSlug}/jokers`, label: "Jokers" },
         { href: "/forum", label: "Forum" },
       ]
     : [];

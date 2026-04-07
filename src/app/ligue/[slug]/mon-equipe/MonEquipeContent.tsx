@@ -4,7 +4,9 @@ import { useState, useMemo, useCallback } from "react";
 import { PositionBadge } from "@/components/ui/PositionBadge";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { FormBadge } from "@/components/ui/FormBadge";
-import { Check, AlertTriangle, Loader2 } from "lucide-react";
+import { Check, AlertTriangle, Loader2, Zap } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import type { Position, FormIndicator } from "@/lib/types";
 
 // ── Types matching db.ts returns ──────────────────────────
@@ -87,6 +89,9 @@ export function MonEquipeContent({
   userName,
   adminOverrideUserId,
 }: MonEquipeContentProps) {
+  const params = useParams();
+  const slug = params.slug as string;
+
   // Track which players are starters locally
   const [starterIds, setStarterIds] = useState<Set<number>>(() => {
     const ids = new Set<number>();
@@ -262,11 +267,20 @@ export function MonEquipeContent({
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       {/* Header */}
-      <div>
-        <h2 className="font-serif text-xl text-white mb-1">Mon equipe</h2>
-        <p className="text-sm text-muted">
-          {userName} - Composition pour la journee {currentDay + 1}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="font-serif text-xl text-white mb-1">Mon equipe</h2>
+          <p className="text-sm text-muted">
+            {userName} - Composition pour la journee {currentDay + 1}
+          </p>
+        </div>
+        <Link
+          href={`/ligue/${slug}/jokers`}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted hover:text-gold bg-surface border border-white/[0.07] rounded-lg transition-colors"
+        >
+          <Zap className="w-3.5 h-3.5" />
+          Jokers
+        </Link>
       </div>
 
       {/* Summary last matchday */}
