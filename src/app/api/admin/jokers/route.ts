@@ -168,18 +168,20 @@ export async function POST(request: Request) {
   if (auth.error) return auth.error;
 
   try {
-    const { leagueId, userId, playerOutId, playerInId } = await request.json() as {
+    const { leagueId, userId, playerOutId, playerInId, day: overrideDay } = await request.json() as {
       leagueId: number;
       userId: number;
       playerOutId: number;
       playerInId: number;
+      day?: number;
     };
 
     if (!leagueId || !userId || !playerOutId || !playerInId) {
       return NextResponse.json({ error: "All fields required" }, { status: 400 });
     }
 
-    const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
+    const latestDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
+    const currentDay = overrideDay && overrideDay > 0 && overrideDay <= latestDay ? overrideDay : latestDay;
     const nextDay = currentDay + 1;
 
     // Check joker limit from config

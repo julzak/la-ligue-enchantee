@@ -71,6 +71,7 @@ export default function JokersPage() {
   const [message, setMessage] = useState("");
   const [executing, setExecuting] = useState(false);
   const [canceling, setCanceling] = useState<number>(0);
+  const [overrideDay, setOverrideDay] = useState<number>(0);
 
   // Load leagues
   useEffect(() => {
@@ -168,6 +169,7 @@ export default function JokersPage() {
           userId: selectedUser,
           playerOutId: playerOut,
           playerInId: playerIn,
+          ...(overrideDay > 0 ? { day: overrideDay } : {}),
         }),
       });
       const data = await res.json();
@@ -249,10 +251,25 @@ export default function JokersPage() {
         </select>
 
         {selectedUser > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-surface rounded border border-white/[0.07]">
-            <Zap className="w-4 h-4 text-gold" />
-            <span className="text-sm text-white">{jokersRemaining} joker{jokersRemaining !== 1 ? "s" : ""} restant{jokersRemaining !== 1 ? "s" : ""}</span>
-          </div>
+          <>
+            <div className="flex items-center gap-2 px-3 py-2 bg-surface rounded border border-white/[0.07]">
+              <Zap className="w-4 h-4 text-gold" />
+              <span className="text-sm text-white">{jokersRemaining} joker{jokersRemaining !== 1 ? "s" : ""} restant{jokersRemaining !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-muted">Journee :</label>
+              <select
+                value={overrideDay}
+                onChange={(e) => setOverrideDay(Number(e.target.value))}
+                className="bg-surface-2 border border-white/[0.07] rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-gold"
+              >
+                <option value={0}>Actuelle</option>
+                {Array.from({ length: 38 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>J{d}</option>
+                ))}
+              </select>
+            </div>
+          </>
         )}
       </div>
 
