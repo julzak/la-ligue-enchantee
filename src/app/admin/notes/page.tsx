@@ -79,7 +79,7 @@ function calcTotal(s: PlayerScore): number {
 const isGK = (position: string) => position.toLowerCase().includes("gardien");
 
 // Memoized PlayerRow to prevent re-renders of all rows when one input changes
-const PlayerRow = memo(function PlayerRow({ s, onUpdate }: { s: PlayerScore; onUpdate: (playerId: number, field: keyof PlayerScore, value: number | null) => void }) {
+const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: PlayerScore; onUpdate: (playerId: number, field: keyof PlayerScore, value: number | null) => void; showInitials: boolean }) {
   const total = calcTotal(s);
   const hasData = s.points !== null;
   return (
@@ -89,7 +89,7 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate }: { s: PlayerScore; onU
           // eslint-disable-next-line @next/next/no-img-element
           <img src={CLUB_LOGOS[s.clubId]} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
         )}
-        {s.lname}
+        {showInitials && s.fname ? `${s.fname.charAt(0)}. ${s.lname}` : s.lname}
       </span>
       <input
         type="number"
@@ -164,6 +164,7 @@ export default function AdminNotesPage() {
   const [matches, setMatches] = useState<MatchInfo[]>([]);
   const [deadline, setDeadline] = useState("");
   const [deadlineSaved, setDeadlineSaved] = useState(false);
+  const [showInitials, setShowInitials] = useState(false);
 
   // Auto-detect current matchday on mount
   useEffect(() => {
@@ -371,6 +372,16 @@ export default function AdminNotesPage() {
             Notés
           </label>
 
+          <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showInitials}
+              onChange={(e) => setShowInitials(e.target.checked)}
+              className="accent-gold"
+            />
+            Prénoms
+          </label>
+
           <input
             type="text"
             placeholder="Filtrer..."
@@ -451,12 +462,12 @@ export default function AdminNotesPage() {
 
                   {/* Home team */}
                   <div className="border-b border-white/[0.05]">
-                    {home.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} />)}
+                    {home.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
                   </div>
 
                   {/* Away team — subtle separator */}
                   <div className="border-t border-gold/10">
-                    {away.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} />)}
+                    {away.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
                   </div>
                 </div>
               );
