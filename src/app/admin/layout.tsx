@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users, BookOpen, Settings, Shield, ArrowUpDown } from "lucide-react";
+import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users, UserPlus, BookOpen, Settings, Shield, ArrowUpDown } from "lucide-react";
 
 const mainLinks = [
   { href: "/admin/notes", label: "Notes", icon: ClipboardList },
@@ -12,6 +12,7 @@ const mainLinks = [
 ];
 
 const utilLinks = [
+  { href: "/admin/joueurs", label: "Joueurs", icon: UserPlus },
   { href: "/admin/promotions", label: "Mouvements", icon: ArrowUpDown },
   { href: "/admin/utilisateurs", label: "Admins", icon: Shield },
   { href: "/admin/config", label: "Configuration", icon: Settings },
