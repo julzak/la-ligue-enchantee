@@ -37,7 +37,6 @@ export default async function JokersPage({
   return (
     <JokersContent
       leagueId={league.dbId}
-      leagueSlug={slug}
     />
   );
 }

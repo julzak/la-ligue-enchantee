@@ -39,7 +39,7 @@ function posLabel(position: string): string {
   return position.slice(0, 3).toUpperCase();
 }
 
-export function JokersContent({ leagueId, leagueSlug }: { leagueId: number; leagueSlug: string }) {
+export function JokersContent({ leagueId }: { leagueId: number }) {
   const [squad, setSquad] = useState<SquadPlayer[]>([]);
   const [jokersRemaining, setJokersRemaining] = useState(0);
   const [jokerHistory, setJokerHistory] = useState<JokerLogEntry[]>([]);
