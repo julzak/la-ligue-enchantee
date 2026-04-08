@@ -187,7 +187,7 @@ export function EquipeContent({
           <span className="text-center">-</span>
           <span className="text-center">-</span>
           <span className="text-center">-</span>
-          <span className="text-center">2.0</span>
+          <span className="text-center">-</span>
           <span className="text-right">-</span>
         </div>
       );
