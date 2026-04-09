@@ -54,14 +54,26 @@ export default async function CoupePage() {
   const leagueMap = new Map(leagueUsers.map((lu) => [Number(lu.ID_USER), Number(lu.ID_LEAGUE)]));
   const leagueLabels: Record<number, string> = { 19: "L2", 20: "L1", 22: "Nat." };
 
-  // Get interligue ranks for petit poucet bonus display
-  const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
-    `SELECT s.ID_USER as userId, SUM(s.PTS_TOT) as total
+  // Get intra-league cumulative ranks for petit poucet bonus
+  // Each user has a rank within their own league (1-18), not across all leagues
+  const leagueStats = await prisma.$queryRawUnsafe<{ userId: number; leagueId: number; total: number }[]>(
+    `SELECT s.ID_USER as userId, s.ID_LEAGUE as leagueId, SUM(s.PTS_TOT) as total
      FROM STATS_USER s WHERE s.ID_LEAGUE > 0
-     GROUP BY s.ID_USER ORDER BY total DESC`
+     GROUP BY s.ID_USER, s.ID_LEAGUE
+     ORDER BY s.ID_LEAGUE, total DESC`
   );
+  // Build rankMap: userId -> rank within their own league
   const rankMap = new Map<number, number>();
-  allStats.forEach((s, i) => rankMap.set(Number(s.userId), i + 1));
+  const byLeague = new Map<number, { userId: number; total: number }[]>();
+  leagueStats.forEach((s) => {
+    const lid = Number(s.leagueId);
+    if (!byLeague.has(lid)) byLeague.set(lid, []);
+    byLeague.get(lid)!.push({ userId: Number(s.userId), total: Number(s.total) });
+  });
+  byLeague.forEach((users) => {
+    users.sort((a, b) => b.total - a.total);
+    users.forEach((u, i) => rankMap.set(u.userId, i + 1));
+  });
 
   // Check if petit poucet is enabled
   const [cupMeta] = await prisma.$queryRawUnsafe<{ petit_poucet: number }[]>(
@@ -116,16 +128,20 @@ export default async function CoupePage() {
                       const u1Won = Number(m.winner_id) === Number(m.user1_id);
                       const u2Won = Number(m.winner_id) === Number(m.user2_id);
 
-                      // Petit poucet bonus calculation
+                      // Petit poucet bonus: difference of intra-league ranks / 2,
+                      // attributed to the lesser-ranked player (higher rank number).
+                      // No bonus if either user has no rank (not in stats yet).
                       let u1Bonus = 0;
                       let u2Bonus = 0;
                       if (petitPoucet && m.user1_id && m.user2_id) {
-                        const rank1 = rankMap.get(Number(m.user1_id)) ?? 99;
-                        const rank2 = rankMap.get(Number(m.user2_id)) ?? 99;
-                        const diff = Math.abs(rank1 - rank2);
-                        const bonus = Math.floor(diff / 2);
-                        if (rank1 > rank2) u1Bonus = bonus;
-                        else if (rank2 > rank1) u2Bonus = bonus;
+                        const rank1 = rankMap.get(Number(m.user1_id));
+                        const rank2 = rankMap.get(Number(m.user2_id));
+                        if (rank1 !== undefined && rank2 !== undefined) {
+                          const diff = Math.abs(rank1 - rank2);
+                          const bonus = Math.floor(diff / 2);
+                          if (rank1 > rank2) u1Bonus = bonus;
+                          else if (rank2 > rank1) u2Bonus = bonus;
+                        }
                       }
 
                       return (
