@@ -230,14 +230,33 @@ export async function POST(request: Request) {
     );
     const petitPoucet = cupRow?.petit_poucet === 1;
 
-    // Get interleague ranks (used for petit poucet AND 2nd tiebreak)
-    const rankMap = new Map<number, number>();
+    // Two rank maps:
+    //  - intraLeagueRank: rank within each user's own league (1-18) -> used for petit poucet bonus
+    //  - interLeagueRank: rank across all leagues (1-54) -> used as 2nd tiebreak when scores AND avg are equal
+    const intraLeagueRank = new Map<number, number>();
+    const leagueStats = await prisma.$queryRawUnsafe<{ userId: number; leagueId: number; total: number }[]>(
+      `SELECT s.ID_USER as userId, s.ID_LEAGUE as leagueId, SUM(s.PTS_TOT) as total
+       FROM STATS_USER s WHERE s.ID_LEAGUE > 0
+       GROUP BY s.ID_USER, s.ID_LEAGUE`
+    );
+    const byLeague = new Map<number, { userId: number; total: number }[]>();
+    leagueStats.forEach((s) => {
+      const lid = Number(s.leagueId);
+      if (!byLeague.has(lid)) byLeague.set(lid, []);
+      byLeague.get(lid)!.push({ userId: Number(s.userId), total: Number(s.total) });
+    });
+    byLeague.forEach((users) => {
+      users.sort((a, b) => b.total - a.total);
+      users.forEach((u, i) => intraLeagueRank.set(u.userId, i + 1));
+    });
+
+    const interLeagueRank = new Map<number, number>();
     const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
       `SELECT s.ID_USER as userId, SUM(s.PTS_TOT) as total
        FROM STATS_USER s WHERE s.ID_LEAGUE > 0
        GROUP BY s.ID_USER ORDER BY total DESC`
     );
-    allStats.forEach((s, i) => rankMap.set(Number(s.userId), i + 1));
+    allStats.forEach((s, i) => interLeagueRank.set(Number(s.userId), i + 1));
 
     // Get matches for this round
     const matches = await prisma.$queryRawUnsafe<{
@@ -266,15 +285,17 @@ export async function POST(request: Request) {
       const used1 = Number(s1.player_used) || 11;
       const used2 = Number(s2.player_used) || 11;
 
-      // Petit Poucet: bonus for the lower-ranked team
-      // Bonus = floor(rank difference / 2)
+      // Petit Poucet: bonus for the player with the worse intra-league rank.
+      // Bonus = floor(|rank1 - rank2| / 2). No bonus if a user has no rank yet.
       if (petitPoucet) {
-        const rank1 = rankMap.get(Number(match.user1_id)) ?? 99;
-        const rank2 = rankMap.get(Number(match.user2_id)) ?? 99;
-        const diff = Math.abs(rank1 - rank2);
-        const bonus = Math.floor(diff / 2);
-        if (rank1 > rank2) pts1 += bonus; // user1 is lower ranked
-        else if (rank2 > rank1) pts2 += bonus; // user2 is lower ranked
+        const rank1 = intraLeagueRank.get(Number(match.user1_id));
+        const rank2 = intraLeagueRank.get(Number(match.user2_id));
+        if (rank1 !== undefined && rank2 !== undefined) {
+          const diff = Math.abs(rank1 - rank2);
+          const bonus = Math.floor(diff / 2);
+          if (rank1 > rank2) pts1 += bonus; // user1 is lower ranked
+          else if (rank2 > rank1) pts2 += bonus; // user2 is lower ranked
+        }
       }
 
       const avg1 = pts1 / used1;
@@ -288,8 +309,8 @@ export async function POST(request: Request) {
         winnerId = avg1 > avg2 ? Number(match.user1_id) : Number(match.user2_id);
       } else {
         // 2nd tiebreak: better interligue rank wins (lower rank = better)
-        const rank1 = rankMap.get(Number(match.user1_id)) ?? 99;
-        const rank2 = rankMap.get(Number(match.user2_id)) ?? 99;
+        const rank1 = interLeagueRank.get(Number(match.user1_id)) ?? 99;
+        const rank2 = interLeagueRank.get(Number(match.user2_id)) ?? 99;
         winnerId = rank1 <= rank2 ? Number(match.user1_id) : Number(match.user2_id);
       }
 
