@@ -518,10 +518,18 @@ export async function getFormerPlayers(leagueDbId: number, userId: number, day?:
 // ── Player scores for a participant on a specific day ─────
 export async function getParticipantDayScores(leagueDbId: number, userId: number, day: number) {
   const scoringCfg = await getScoringConfig();
-  const lineup = await prisma.teamDay.findMany({
+  let lineup = await prisma.teamDay.findMany({
     where: { leagueId: leagueDbId, userId, day },
     orderBy: { indx: "asc" },
   });
+
+  // Fallback: if no lineup for this day, try previous day (same logic as publish)
+  if (lineup.length === 0 && day > 1) {
+    lineup = await prisma.teamDay.findMany({
+      where: { leagueId: leagueDbId, userId, day: day - 1 },
+      orderBy: { indx: "asc" },
+    });
+  }
 
   const playerIds = lineup.map((l) => l.playerId);
   const scores = await prisma.score.findMany({
