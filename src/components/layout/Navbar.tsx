@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Logo } from "@/components/ui/Logo";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Home, BookOpen, Trophy } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function Navbar() {
@@ -93,11 +93,14 @@ export function Navbar() {
       {/* Right side */}
       <div className="flex items-center gap-3 shrink-0">
         <ThemeToggle />
-        <Link href="/" className="text-xs text-white/40 hover:text-white/60 hidden sm:block">
-          Accueil
+        <Link href="/" className="p-1.5 text-white/30 hover:text-white/60 transition-colors hidden sm:block" title="Accueil">
+          <Home className="w-3.5 h-3.5" />
         </Link>
-        <Link href="/guide" className="text-xs text-white/40 hover:text-white/60 hidden md:block">
-          Guide
+        <Link href="/palmares" className="p-1.5 text-white/30 hover:text-gold transition-colors hidden sm:block" title="Palmarès">
+          <Trophy className="w-3.5 h-3.5" />
+        </Link>
+        <Link href="/guide" className="p-1.5 text-white/30 hover:text-white/60 transition-colors hidden md:block" title="Guide">
+          <BookOpen className="w-3.5 h-3.5" />
         </Link>
 
         {session?.user ? (
