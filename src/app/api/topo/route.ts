@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
-import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores, getCupContextForDay } from "@/lib/db";
 
 const anthropic = new Anthropic();
 
@@ -45,6 +45,8 @@ export async function POST(request: Request) {
       getCurrentMatchday(),
     ]);
 
+    const cupContext = await getCupContextForDay(currentDay);
+
     // Check if already generated for this matchday
     const existing = await prisma.$queryRawUnsafe<{ content: string }[]>(
       "SELECT content FROM TOPO WHERE matchday = ? AND league_slug = ? LIMIT 1",
@@ -80,9 +82,46 @@ export async function POST(request: Request) {
       participantDetails.push(`${p.userName} (${p.lastMatchdayPoints} pts, ${p.rank}e) :\n  Meilleurs : ${topPlayers.join(", ")}\n  Pires : ${worstPlayers.join(", ")}`);
     }
 
+    // Build cup section if this day had a cup round
+    let cupSection = "";
+    if (cupContext && cupContext.matches.length > 0) {
+      const participantIds = new Set(standings.standings.map((s) => s.userId));
+      const cupUserIds = Array.from(new Set(
+        cupContext.matches.flatMap((m) => [m.user1Id, m.user2Id].filter((id): id is number => id !== null))
+      ));
+      const cupUsers = cupUserIds.length > 0
+        ? await prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
+            `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${cupUserIds.join(",")})`
+          )
+        : [];
+      const nameOf = new Map(cupUsers.map((u) => [
+        Number(u.ID_USER),
+        (u.NAME ?? "").replace(/<[^>]*>/g, "").trim(),
+      ]));
+
+      // Only include matches involving at least one participant from this league
+      const relevantMatches = cupContext.matches.filter((m) =>
+        (m.user1Id && participantIds.has(m.user1Id)) ||
+        (m.user2Id && participantIds.has(m.user2Id))
+      );
+
+      if (relevantMatches.length > 0) {
+        const lines = relevantMatches.map((m) => {
+          const n1 = m.user1Id ? nameOf.get(m.user1Id) ?? `#${m.user1Id}` : "—";
+          const n2 = m.user2Id ? nameOf.get(m.user2Id) ?? `#${m.user2Id}` : "—";
+          const s1 = m.score1 !== null ? m.score1.toFixed(1) : "?";
+          const s2 = m.score2 !== null ? m.score2.toFixed(1) : "?";
+          const winner = m.winnerId ? nameOf.get(m.winnerId) ?? `#${m.winnerId}` : null;
+          return `${n1} ${s1} - ${s2} ${n2}${winner ? ` → ${winner} qualifié` : ""}`;
+        });
+        cupSection = `\n🏆 Coupe Enchantée - ${cupContext.round} (J${cupContext.matchday}) :\n${lines.join("\n")}\n`;
+      }
+    }
+
     const context = `
 Ligue : ${league.name}
 Journée : ${currentDay}
+${cupSection}
 
 Classement général (top 5) :
 ${top5.map((s) => `${s.rank}. ${s.userName} - ${s.totalPoints} pts (J${currentDay}: ${s.lastMatchdayPoints} pts)`).join("\n")}
@@ -131,6 +170,7 @@ Ton style :
 - 1-2 emojis max, bien placés.
 - 3e personne uniquement (pas de "tu" ni "vous").
 - Pas de formules de politesse, pas d'intro. Attaque direct.
+- Si une section "Coupe Enchantée" est présente dans les données, consacre-lui 1 phrase dédiée : cite les qualifiés/éliminés marquants parmi les participants de la ligue et place une punchline. N'invente rien.
 
 Voici les données de la journée :
 ${context}

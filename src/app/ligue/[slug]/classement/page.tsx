@@ -1,7 +1,7 @@
 import { ClassementTable } from "@/components/classement/ClassementTable";
-import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments, getCupContextForDay } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
-import { Crown, TrendingUp, TrendingDown, Target, Zap, CreditCard } from "lucide-react";
+import { Crown, TrendingUp, TrendingDown, Target, Zap, CreditCard, Trophy } from "lucide-react";
 import Link from "next/link";
 import { TopoJournee } from "@/components/classement/TopoJournee";
 import { notFound } from "next/navigation";
@@ -26,6 +26,12 @@ export default async function ClassementPage({ params }: { params: { slug: strin
     getLeaguePayments(league.dbId),
   ]);
   const currentMatchday = standings.currentDay;
+
+  // Cup context: upcoming round (next matchday) + last played round (current matchday)
+  const [cupUpcoming, cupLast] = await Promise.all([
+    getCupContextForDay(currentMatchday + 1),
+    getCupContextForDay(currentMatchday),
+  ]);
   const defaultJokers = jokersMap.get(-1) ?? 6; // sentinel for max
 
   // ClassementTable = "Classement de la journée" -> sorted by day score, no delta (delta is for general)
@@ -75,6 +81,40 @@ export default async function ClassementPage({ params }: { params: { slug: strin
 
       {/* Center */}
       <div className="flex-1 space-y-6 min-w-0">
+        {/* Cup announcements */}
+        {cupUpcoming && (
+          <Link
+            href="/coupe"
+            className="block bg-gradient-to-r from-gold/[0.12] to-gold/[0.04] rounded-lg border border-gold/40 px-4 py-3 hover:border-gold/60 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Trophy className="w-5 h-5 text-gold shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white">
+                  <span className="font-semibold">{cupUpcoming.round}</span> de la {cupUpcoming.cupName} — <span className="text-gold">J{cupUpcoming.matchday}</span>
+                </p>
+                <p className="text-[11px] text-muted">Voir le tableau de la coupe →</p>
+              </div>
+            </div>
+          </Link>
+        )}
+        {cupLast && (
+          <Link
+            href="/coupe"
+            className="block bg-surface rounded-lg border border-gold/20 px-4 py-3 hover:border-gold/40 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Trophy className="w-5 h-5 text-gold shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white">
+                  Résultats des <span className="font-semibold">{cupLast.round}</span> — J{cupLast.matchday}
+                </p>
+                <p className="text-[11px] text-muted">Voir le tableau de la coupe →</p>
+              </div>
+            </div>
+          </Link>
+        )}
+
         {/* L'homme a abattre */}
         <div className="bg-gradient-to-r from-gold/[0.08] to-transparent rounded-lg border border-gold/20 p-5">
           <div className="flex items-center gap-4">

@@ -739,6 +739,64 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
   }).filter((c) => c.effectif > 0);
 }
 
+// ── Cup context for a given matchday ─────────────────────
+export interface CupMatchRow {
+  id: number;
+  round: string;
+  position: number;
+  matchday: number;
+  user1Id: number | null;
+  user2Id: number | null;
+  score1: number | null;
+  score2: number | null;
+  winnerId: number | null;
+}
+
+export interface CupContext {
+  cupId: number;
+  cupName: string;
+  round: string;
+  matchday: number;
+  matches: CupMatchRow[];
+}
+
+export async function getCupContextForDay(day: number): Promise<CupContext | null> {
+  const cups = await prisma.$queryRawUnsafe<{ id: number; name: string }[]>(
+    "SELECT id, name FROM CUP WHERE status = 'active' ORDER BY id DESC LIMIT 1"
+  );
+  if (cups.length === 0) return null;
+  const cup = cups[0];
+
+  const matches = await prisma.$queryRawUnsafe<{
+    id: number; round: string; position: number; matchday: number;
+    user1_id: number | null; user2_id: number | null;
+    score1: number | null; score2: number | null; winner_id: number | null;
+  }[]>(
+    "SELECT id, round, position, matchday, user1_id, user2_id, score1, score2, winner_id FROM CUP_MATCH WHERE cup_id = ? AND matchday = ? ORDER BY position",
+    cup.id, day
+  );
+
+  if (matches.length === 0) return null;
+
+  return {
+    cupId: Number(cup.id),
+    cupName: cup.name,
+    round: matches[0].round,
+    matchday: day,
+    matches: matches.map((m) => ({
+      id: Number(m.id),
+      round: m.round,
+      position: Number(m.position),
+      matchday: Number(m.matchday),
+      user1Id: m.user1_id ? Number(m.user1_id) : null,
+      user2Id: m.user2_id ? Number(m.user2_id) : null,
+      score1: m.score1 !== null ? Number(m.score1) : null,
+      score2: m.score2 !== null ? Number(m.score2) : null,
+      winnerId: m.winner_id ? Number(m.winner_id) : null,
+    })),
+  };
+}
+
 // ── Player stats (cumulative across all matchdays) ────────
 export async function getPlayerStats(limit = 10) {
   const scoringCfg = await getScoringConfig();
