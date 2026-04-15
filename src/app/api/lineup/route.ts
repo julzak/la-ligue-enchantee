@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isUserAdmin } from "@/lib/admin-auth";
 import type { Position } from "@/lib/types";
 
 interface StarterEntry {
@@ -13,6 +14,7 @@ interface LineupPayload {
   leagueId: number;
   day: number;
   starters: StarterEntry[];
+  userId?: number; // admin override: target user whose team is being edited
 }
 
 // Position constraints for a valid lineup
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as LineupPayload;
-    const { leagueId, day, starters } = body;
+    const { leagueId, day, starters, userId: overrideUserId } = body;
 
     if (!leagueId || !day || !starters) {
       return NextResponse.json({ error: "Donnees manquantes" }, { status: 400 });
@@ -61,9 +63,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Exactement 11 titulaires requis" }, { status: 400 });
     }
 
-    const userId = session.user.userId;
+    const sessionUserId = session.user.userId;
 
-    // Verify user belongs to this league
+    // Admin override: edit another user's team (past matchdays, etc.)
+    let userId = sessionUserId;
+    if (overrideUserId && overrideUserId !== sessionUserId) {
+      if (!(await isUserAdmin(sessionUserId))) {
+        return NextResponse.json({ error: "Acces admin requis" }, { status: 403 });
+      }
+      userId = overrideUserId;
+    }
+
+    // Verify target user belongs to this league
     const leagueUser = await prisma.leagueUser.findUnique({
       where: { leagueId_userId: { leagueId, userId } },
     });
