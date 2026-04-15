@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { PositionBadge } from "@/components/ui/PositionBadge";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { FormBadge } from "@/components/ui/FormBadge";
-import { Check, AlertTriangle, Loader2, Zap } from "lucide-react";
+import { Check, AlertTriangle, Loader2, Zap, Search } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { Position, FormIndicator } from "@/lib/types";
@@ -274,13 +274,22 @@ export function MonEquipeContent({
             {userName} - Composition pour la journee {currentDay + 1}
           </p>
         </div>
-        <Link
-          href={`/ligue/${slug}/jokers`}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted hover:text-gold bg-surface border border-white/[0.07] rounded-lg transition-colors"
-        >
-          <Zap className="w-3.5 h-3.5" />
-          Jokers
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/ligue/${slug}/explorateur`}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted hover:text-gold bg-surface border border-white/[0.07] rounded-lg transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+            Explorateur
+          </Link>
+          <Link
+            href={`/ligue/${slug}/jokers`}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted hover:text-gold bg-surface border border-white/[0.07] rounded-lg transition-colors"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            Jokers
+          </Link>
+        </div>
       </div>
 
       {/* Summary last matchday */}
