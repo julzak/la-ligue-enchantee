@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     id: number; topic_id: number; author_id: number; content: string;
     created_at: Date; updated_at: Date | null;
   }[]>(
-    "SELECT * FROM FORUM_POST WHERE topic_id = ? ORDER BY created_at ASC",
+    "SELECT * FROM FORUM_POST WHERE topic_id = ? ORDER BY created_at DESC",
     topicId
   );
 
