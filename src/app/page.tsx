@@ -11,11 +11,12 @@ import {
   getCurrentMatchday,
   getLeagueStandings,
   getMatchPlayerRatings,
+  getCupContextForDay,
 } from "@/lib/db";
 import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "@/lib/assets";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
-import { ChevronRight, Flame, ThumbsDown, Skull } from "lucide-react";
+import { ChevronRight, Flame, ThumbsDown, Skull, Trophy } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { prisma } from "@/lib/prisma";
 
@@ -46,6 +47,53 @@ function SidebarSkeleton() {
 }
 
 // ── Async sections ──────────────────────────────────────
+async function CupBadgesSection() {
+  const currentDay = await getCurrentMatchday();
+  const [upcoming, last] = await Promise.all([
+    getCupContextForDay(currentDay + 1),
+    getCupContextForDay(currentDay),
+  ]);
+
+  if (!upcoming && !last) return null;
+
+  return (
+    <div className="space-y-3">
+      {upcoming && (
+        <Link
+          href="/coupe"
+          className="block bg-gradient-to-r from-gold/[0.12] to-gold/[0.04] rounded-lg border border-gold/40 px-4 py-3 hover:border-gold/60 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Trophy className="w-5 h-5 text-gold shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-white">
+                <span className="font-semibold">{upcoming.round}</span> de la {upcoming.cupName} — <span className="text-gold">J{upcoming.matchday}</span>
+              </p>
+              <p className="text-[11px] text-muted">Voir le tableau de la coupe →</p>
+            </div>
+          </div>
+        </Link>
+      )}
+      {last && (
+        <Link
+          href="/coupe"
+          className="block bg-surface rounded-lg border border-gold/20 px-4 py-3 hover:border-gold/40 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Trophy className="w-5 h-5 text-gold shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-white">
+                Résultats des <span className="font-semibold">{last.round}</span> — J{last.matchday}
+              </p>
+              <p className="text-[11px] text-muted">Voir le tableau de la coupe →</p>
+            </div>
+          </div>
+        </Link>
+      )}
+    </div>
+  );
+}
+
 async function DayStatsSection() {
   const dayStats = await getDayStats();
   return (
@@ -221,7 +269,19 @@ async function LeagueSummariesSection() {
 }
 
 async function SidebarContent() {
-  const interleagueStandings = await getInterleagueStandings();
+  const [interleagueStandings, currentDay] = await Promise.all([
+    getInterleagueStandings(),
+    getCurrentMatchday(),
+  ]);
+  const [cupUpcoming, cupLast] = await Promise.all([
+    getCupContextForDay(currentDay + 1),
+    getCupContextForDay(currentDay),
+  ]);
+  const cupStatus = cupUpcoming
+    ? { label: `${cupUpcoming.round} à venir`, sub: `J${cupUpcoming.matchday}` }
+    : cupLast
+    ? { label: `Résultats ${cupLast.round}`, sub: `J${cupLast.matchday}` }
+    : null;
   return (
     <>
       <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
@@ -270,8 +330,14 @@ async function SidebarContent() {
           </h2>
         </div>
         <div className="px-4 py-3">
-          <p className="text-sm text-white/70">Huitièmes de finale</p>
-          <p className="text-xs text-muted mt-1">16 matchs joués - Quarts à venir</p>
+          {cupStatus ? (
+            <>
+              <p className="text-sm text-white/70">{cupStatus.label}</p>
+              <p className="text-xs text-muted mt-1">{cupStatus.sub}</p>
+            </>
+          ) : (
+            <p className="text-sm text-white/70">Tableau complet</p>
+          )}
           <p className="text-xs text-rouge/70 mt-2 group-hover:text-rouge transition-colors">Voir le tableau →</p>
         </div>
       </Link>
@@ -379,6 +445,10 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
+
+          <Suspense fallback={null}>
+            <CupBadgesSection />
+          </Suspense>
 
           <Suspense fallback={<CardSkeleton cols={3} />}>
             <DayStatsSection />
