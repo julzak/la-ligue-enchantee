@@ -12,6 +12,7 @@ import {
   getLeagueStandings,
   getMatchPlayerRatings,
   getCupContextForDay,
+  getCupChampion,
 } from "@/lib/db";
 import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "@/lib/assets";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
@@ -49,10 +50,30 @@ function SidebarSkeleton() {
 // ── Async sections ──────────────────────────────────────
 async function CupBadgesSection() {
   const currentDay = await getCurrentMatchday();
-  const [upcoming, last] = await Promise.all([
+  const [champion, upcoming, last] = await Promise.all([
+    getCupChampion(),
     getCupContextForDay(currentDay + 1),
     getCupContextForDay(currentDay),
   ]);
+
+  if (champion) {
+    return (
+      <Link
+        href="/coupe"
+        className="block bg-gradient-to-r from-gold/[0.18] via-gold/[0.10] to-gold/[0.18] rounded-lg border border-gold/50 px-5 py-4 hover:border-gold/70 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <Trophy className="w-6 h-6 text-gold shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-base text-white font-serif">
+              🔥 Félicitations à <span className="font-bold text-gold">{champion.championName}</span>, vainqueur de la {champion.cupName} {champion.season} 🏆
+            </p>
+            <p className="text-[11px] text-muted mt-0.5">Voir le tableau de la coupe →</p>
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   if (!upcoming && !last) return null;
 

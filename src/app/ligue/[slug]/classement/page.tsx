@@ -1,5 +1,5 @@
 import { ClassementTable } from "@/components/classement/ClassementTable";
-import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments, getCupContextForDay } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments, getCupContextForDay, getCupChampion } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { Crown, TrendingUp, TrendingDown, Target, Zap, CreditCard, Trophy } from "lucide-react";
 import Link from "next/link";
@@ -27,8 +27,10 @@ export default async function ClassementPage({ params }: { params: { slug: strin
   ]);
   const currentMatchday = standings.currentDay;
 
-  // Cup context: upcoming round (next matchday) + last played round (current matchday)
-  const [cupUpcoming, cupLast] = await Promise.all([
+  // Cup context: champion (once final has winner) → takes priority;
+  // otherwise upcoming round + last played round
+  const [cupChampion, cupUpcoming, cupLast] = await Promise.all([
+    getCupChampion(),
     getCupContextForDay(currentMatchday + 1),
     getCupContextForDay(currentMatchday),
   ]);
@@ -82,7 +84,23 @@ export default async function ClassementPage({ params }: { params: { slug: strin
       {/* Center */}
       <div className="flex-1 space-y-6 min-w-0">
         {/* Cup announcements */}
-        {cupUpcoming && (
+        {cupChampion && (
+          <Link
+            href="/coupe"
+            className="block bg-gradient-to-r from-gold/[0.18] via-gold/[0.10] to-gold/[0.18] rounded-lg border border-gold/50 px-5 py-4 hover:border-gold/70 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Trophy className="w-6 h-6 text-gold shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-base text-white font-serif">
+                  🔥 Félicitations à <span className="font-bold text-gold">{cupChampion.championName}</span>, vainqueur de la {cupChampion.cupName} {cupChampion.season} 🏆
+                </p>
+                <p className="text-[11px] text-muted mt-0.5">Voir le tableau de la coupe →</p>
+              </div>
+            </div>
+          </Link>
+        )}
+        {!cupChampion && cupUpcoming && (
           <Link
             href="/coupe"
             className="block bg-gradient-to-r from-gold/[0.12] to-gold/[0.04] rounded-lg border border-gold/40 px-4 py-3 hover:border-gold/60 transition-colors"
@@ -98,7 +116,7 @@ export default async function ClassementPage({ params }: { params: { slug: strin
             </div>
           </Link>
         )}
-        {cupLast && (
+        {!cupChampion && cupLast && (
           <Link
             href="/coupe"
             className="block bg-surface rounded-lg border border-gold/20 px-4 py-3 hover:border-gold/40 transition-colors"

@@ -797,6 +797,39 @@ export async function getCupContextForDay(day: number): Promise<CupContext | nul
   };
 }
 
+export interface CupChampion {
+  cupName: string;
+  season: string;
+  championName: string;
+}
+
+export async function getCupChampion(): Promise<CupChampion | null> {
+  const cups = await prisma.$queryRawUnsafe<{ id: number; name: string; season: string }[]>(
+    "SELECT id, name, season FROM CUP WHERE status IN ('active','finished') ORDER BY id DESC LIMIT 1"
+  );
+  if (cups.length === 0) return null;
+  const cup = cups[0];
+
+  const finals = await prisma.$queryRawUnsafe<{ winner_id: number | null }[]>(
+    "SELECT winner_id FROM CUP_MATCH WHERE cup_id = ? AND round = 'Finale' AND winner_id IS NOT NULL LIMIT 1",
+    cup.id
+  );
+  if (finals.length === 0 || !finals[0].winner_id) return null;
+
+  const winnerId = Number(finals[0].winner_id);
+  const users = await prisma.$queryRawUnsafe<{ NAME: string }[]>(
+    "SELECT NAME FROM USER WHERE ID_USER = ? LIMIT 1",
+    winnerId
+  );
+  const championName = (users[0]?.NAME ?? "").replace(/<[^>]*>/g, "").trim() || `#${winnerId}`;
+
+  return {
+    cupName: cup.name,
+    season: cup.season,
+    championName,
+  };
+}
+
 // ── Player stats (cumulative across all matchdays) ────────
 export async function getPlayerStats(limit = 10) {
   const scoringCfg = await getScoringConfig();
