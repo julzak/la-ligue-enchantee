@@ -193,6 +193,26 @@ export default async function ClassementPage({ params }: { params: { slug: strin
           </Link>
         </div>
 
+        {/* Perles du forum - bigger */}
+        <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+          <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07]">
+            <h3 className="font-serif text-sm text-rouge">Perles du forum</h3>
+          </div>
+          <div className="divide-y divide-white/[0.05]">
+            {forumExcerpts.map((post, i) => (
+              <div key={i} className="px-3 py-3">
+                <Link href={`/ligue/${slug}/forum`} className="text-xs text-gold hover:underline font-medium block mb-1.5">
+                  {post.title}
+                </Link>
+                <p className="text-[11px] text-white/60 leading-relaxed">
+                  <span className="text-white/80 font-semibold">{post.author} : </span>
+                  {post.excerpt}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Jokers restants */}
         <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
           <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07] flex items-center gap-2">
@@ -235,25 +255,6 @@ export default async function ClassementPage({ params }: { params: { slug: strin
           </div>
         </div>
 
-        {/* Perles du forum - bigger */}
-        <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
-          <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07]">
-            <h3 className="font-serif text-sm text-rouge">Perles du forum</h3>
-          </div>
-          <div className="divide-y divide-white/[0.05]">
-            {forumExcerpts.map((post, i) => (
-              <div key={i} className="px-3 py-3">
-                <Link href={`/ligue/${slug}/forum`} className="text-xs text-gold hover:underline font-medium block mb-1.5">
-                  {post.title}
-                </Link>
-                <p className="text-[11px] text-white/60 leading-relaxed">
-                  <span className="text-white/80 font-semibold">{post.author} : </span>
-                  {post.excerpt}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
       </aside>
     </div>
   );
