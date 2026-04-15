@@ -44,8 +44,9 @@ export default async function MonEquipePage({
   const userId = session.user.userId;
   const currentDay = await getCurrentMatchday();
 
-  // Fetch team roster first, then scores for ALL roster players (not just lineup)
-  const team = await getParticipantTeam(league.dbId, userId, currentDay);
+  // Fetch team for NEXT matchday (the one being composed), with scores from LAST matchday
+  const nextDay = currentDay + 1;
+  const team = await getParticipantTeam(league.dbId, userId, nextDay);
   const rosterPlayerIds = team.map((p) => p.playerId);
   const lastDayScores = currentDay > 0
     ? await getRosterDayScores(rosterPlayerIds, currentDay)

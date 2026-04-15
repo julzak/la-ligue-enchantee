@@ -435,15 +435,17 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
     },
   });
 
-  // Get lineup for this day
-  const lineup = await prisma.teamDay.findMany({
-    where: {
-      leagueId: leagueDbId,
-      userId,
-      day: currentDay,
-    },
+  // Get lineup for this day (fallback to previous day if not yet saved)
+  let lineup = await prisma.teamDay.findMany({
+    where: { leagueId: leagueDbId, userId, day: currentDay },
     orderBy: { indx: "asc" },
   });
+  if (lineup.length === 0 && currentDay > 1) {
+    lineup = await prisma.teamDay.findMany({
+      where: { leagueId: leagueDbId, userId, day: currentDay - 1 },
+      orderBy: { indx: "asc" },
+    });
+  }
 
   const lineupPlayerIds = new Set(lineup.map((l) => l.playerId));
 
