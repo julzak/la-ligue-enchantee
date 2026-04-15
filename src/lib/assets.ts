@@ -9,6 +9,7 @@ export const clubLogos: Record<number, string> = {
   243: "/clubs/auxerre.png",      // AUXERRE
   201: "/clubs/brest.png",        // BREST
   242: "/clubs/le-havre.png",     // LE HAVRE
+  217: "/clubs/legion-etrangere.png", // LEGION ETRANGERE
   232: "/clubs/lens.png",         // LENS
   203: "/clubs/lille.png",        // LILLE
   245: "/clubs/lorient.png",      // LORIENT

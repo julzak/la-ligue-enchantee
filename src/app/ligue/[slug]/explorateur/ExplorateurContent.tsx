@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PositionBadge } from "@/components/ui/PositionBadge";
+import { getClubLogoUrl } from "@/lib/assets";
 import type { Position } from "@/lib/types";
 
 interface ClubPlayer {
@@ -38,6 +39,7 @@ export function ExplorateurContent({ clubs }: { clubs: ClubWithStats[] }) {
             (a, b) => posOrder[a.position] - posOrder[b.position]
           );
           const isOpen = openClubId === club.id;
+          const logoUrl = getClubLogoUrl(club.id);
 
           return (
             <div key={club.id} className="flex flex-col">
@@ -51,10 +53,19 @@ export function ExplorateurContent({ clubs }: { clubs: ClubWithStats[] }) {
                 }`}
               >
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 rounded-lg bg-surface-2 border border-white/[0.07] flex items-center justify-center shrink-0">
-                    <span className="text-muted text-xs font-medium">
-                      {club.name.slice(0, 3).toUpperCase()}
-                    </span>
+                  <div className="w-14 h-14 rounded-lg bg-surface-2 border border-white/[0.07] flex items-center justify-center shrink-0 overflow-hidden">
+                    {logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logoUrl}
+                        alt={club.name}
+                        className="w-10 h-10 object-contain"
+                      />
+                    ) : (
+                      <span className="text-muted text-xs font-medium">
+                        {club.name.slice(0, 3).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-white font-bold text-sm truncate">
