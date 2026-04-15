@@ -20,14 +20,28 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.login || !credentials?.password) return null;
 
-        // Find user by clean name (case-insensitive)
+        // Find user by clean name (case-insensitive).
+        // Some pseudos have legacy duplicates in USER (old seasons). Prefer the
+        // one that is currently registered in a league; fallback to max id.
         const users = await prisma.user.findMany();
-        const user = users.find((u) => {
+        const matches = users.filter((u) => {
           const { cleanName } = parseUserName(u.name);
           return cleanName.toLowerCase() === credentials.login.toLowerCase();
         });
 
-        if (!user) return null;
+        if (matches.length === 0) return null;
+
+        let user = matches[0];
+        if (matches.length > 1) {
+          const activeIds = await prisma.leagueUser.findMany({
+            where: { userId: { in: matches.map((m) => m.id) } },
+            select: { userId: true },
+          });
+          const activeSet = new Set(activeIds.map((r) => r.userId));
+          const active = matches.filter((m) => activeSet.has(m.id));
+          const pool = active.length > 0 ? active : matches;
+          user = pool.reduce((best, m) => (m.id > best.id ? m : best), pool[0]);
+        }
 
         const inputPwd = credentials.password;
         const storedPwd = user.password;
