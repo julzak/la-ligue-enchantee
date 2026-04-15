@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/admin-auth";
+import { getLeagues } from "@/lib/db";
 
 // GET: get squad + joker info for the logged-in user
 export async function GET(request: Request) {
@@ -197,9 +198,10 @@ export async function POST(request: Request) {
     const inClub = playerIn ? (await prisma.club.findUnique({ where: { id: playerIn.clubId } }))?.name ?? "" : "";
     const userName = (userRows[0]?.NAME ?? "").replace(/<[^>]*>/g, "").trim();
 
-    // Get league slug for forum category
-    const leagueSlugMap: Record<number, string> = { 1: "ligue-1", 2: "ligue-2", 3: "national-1" };
-    const category = leagueSlugMap[leagueId] ?? "general";
+    // Get league slug for forum category (derive from league name, not id —
+    // real DB ids are 19/20/22, not 1/2/3)
+    const leagues = await getLeagues();
+    const category = leagues.find((l) => l.dbId === leagueId)?.slug ?? "general";
 
     // Auto-post forum topic
     let topicId: number | null = null;
