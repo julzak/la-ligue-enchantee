@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { LockCountdown } from "@/components/layout/LockCountdown";
-import { Search, Gavel, Snowflake } from "lucide-react";
+import { Gavel, Snowflake } from "lucide-react";
 
 const leagueNames: Record<string, string> = {
   "ligue-1": "Ligue 1 (Baudens League)",
@@ -133,19 +133,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
               );
             })}
 
-            {/* Explorateur - icon button on the right */}
             <div className="flex-1" />
-            <Link
-              href={`/ligue/${slug}/explorateur`}
-              className={`p-2 rounded transition-colors ${
-                pathname.includes("/explorateur")
-                  ? "text-gold bg-gold/10"
-                  : "text-white/30 hover:text-white/60 hover:bg-white/[0.03]"
-              }`}
-              title="Explorateur - Clubs & joueurs libres"
-            >
-              <Search className="w-4 h-4" />
-            </Link>
           </div>
         </div>
 
