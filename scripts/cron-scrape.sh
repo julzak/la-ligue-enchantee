@@ -46,4 +46,8 @@ else
   echo "$(date '+%F %T') ERROR: exit code $EXIT_CODE" >> "$LOG_FILE"
 fi
 
+# Sync match scores from TheSportsDB (for HP match results section)
+echo "$(date '+%F %T') Syncing match schedule from TheSportsDB..." >> "$LOG_FILE"
+npx tsx scripts/sync-match-schedule.ts "$MATCHDAY" >> "$LOG_FILE" 2>&1 || echo "$(date '+%F %T') WARN: match schedule sync failed" >> "$LOG_FILE"
+
 echo "$(date '+%F %T') END cron-scrape" >> "$LOG_FILE"
