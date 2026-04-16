@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   )) as number[];
 
   const users = userIds.length > 0
-    ? (() => { const [ph, vs] = inParams(userIds); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
+    ? await (async () => { const [ph, vs] = inParams(userIds); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
         `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${ph})`, ...vs); })()
     : [];
   const userMap = new Map(users.map(u => [
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
   // Get first post content for preview
   const topicIds = topics.map(t => Number(t.id));
   const firstPosts = topicIds.length > 0
-    ? (() => { const [ph, vs] = inParams(topicIds); return prisma.$queryRawUnsafe<{ topic_id: number; content: string }[]>(
+    ? await (async () => { const [ph, vs] = inParams(topicIds); return prisma.$queryRawUnsafe<{ topic_id: number; content: string }[]>(
         `SELECT topic_id, content FROM FORUM_POST WHERE topic_id IN (${ph})
          AND id IN (SELECT MIN(id) FROM FORUM_POST WHERE topic_id IN (${ph}) GROUP BY topic_id)`, ...vs, ...vs); })()
     : [];

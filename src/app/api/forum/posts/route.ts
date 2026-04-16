@@ -46,7 +46,7 @@ export async function GET(request: Request) {
   // Get reactions for all posts
   const postIds = posts.map(p => Number(p.id));
   const reactions = postIds.length > 0
-    ? (() => { const [ph, vs] = inParams(postIds); return prisma.$queryRawUnsafe<{ post_id: number; emoji: string; user_id: number }[]>(
+    ? await (async () => { const [ph, vs] = inParams(postIds); return prisma.$queryRawUnsafe<{ post_id: number; emoji: string; user_id: number }[]>(
         `SELECT post_id, emoji, user_id FROM FORUM_REACTION WHERE post_id IN (${ph})`, ...vs); })()
     : [];
 

@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     // Get user names
     const userIds = Array.from(new Set(matches.flatMap((m) => [m.user1_id, m.user2_id].filter(Boolean))));
     const users = userIds.length > 0
-      ? (() => { const [ph, vs] = inParams(userIds as number[]); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
+      ? await (async () => { const [ph, vs] = inParams(userIds as number[]); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
           `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${ph})`, ...vs); })()
       : [];
     const userMap = new Map(users.map((u) => [Number(u.ID_USER), (u.NAME ?? "").replace(/<[^>]*>/g, "").trim()]));

@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         cupContext.matches.flatMap((m) => [m.user1Id, m.user2Id].filter((id): id is number => id !== null))
       ));
       const cupUsers = cupUserIds.length > 0
-        ? (() => { const [ph, vs] = inParams(cupUserIds); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
+        ? await (async () => { const [ph, vs] = inParams(cupUserIds); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
             `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${ph})`, ...vs); })()
         : [];
       const nameOf = new Map(cupUsers.map((u) => [
