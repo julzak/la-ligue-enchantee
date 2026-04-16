@@ -13,6 +13,16 @@ export async function GET(request: Request) {
   if (auth.error) return auth.error;
 
   const { searchParams } = new URL(request.url);
+
+  if (searchParams.get("list") === "clubs") {
+    const clubs = await prisma.$queryRawUnsafe<{ ID_CLUB: number; NAME: string }[]>(
+      "SELECT ID_CLUB, NAME FROM CLUB ORDER BY NAME"
+    );
+    return NextResponse.json({
+      clubs: clubs.map((c) => ({ id: Number(c.ID_CLUB), name: c.NAME })),
+    });
+  }
+
   const search = searchParams.get("search") ?? "";
 
   if (search.length < 2) {
@@ -42,15 +52,16 @@ export async function GET(request: Request) {
   });
 }
 
-// POST: create a new player (Legion etrangere)
+// POST: create a new player (any club, defaults to Légion étrangère)
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
-  const { fname, lname, position } = (await request.json()) as {
+  const { fname, lname, position, clubId } = (await request.json()) as {
     fname: string;
     lname: string;
     position: string;
+    clubId?: number;
   };
 
   if (!fname?.trim() || !lname?.trim()) {
@@ -60,9 +71,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Position invalide" }, { status: 400 });
   }
 
+  const targetClubId = clubId ?? LEGION_ETRANGERE_ID;
+
   await prisma.$executeRawUnsafe(
     "INSERT INTO PLAYER (ID_CLUB, FNAME, LNAME, POSITION) VALUES (?, ?, ?, ?)",
-    LEGION_ETRANGERE_ID,
+    targetClubId,
     fname.trim(),
     lname.trim(),
     position
@@ -74,7 +87,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    player: { id: Number(row.id), fname: fname.trim(), lname: lname.trim(), position, clubId: LEGION_ETRANGERE_ID },
+    player: { id: Number(row.id), fname: fname.trim(), lname: lname.trim(), position, clubId: targetClubId },
   });
 }
 

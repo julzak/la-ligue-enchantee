@@ -12,13 +12,22 @@ interface Player {
   clubName: string;
 }
 
+interface Club {
+  id: number;
+  name: string;
+}
+
 const POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"];
 
 export default function AdminJoueursPage() {
+  // Clubs list
+  const [clubs, setClubs] = useState<Club[]>([]);
+
   // Create form
   const [fname, setFname] = useState("");
   const [lname, setLname] = useState("");
   const [position, setPosition] = useState("Attaque");
+  const [clubId, setClubId] = useState<number>(0);
   const [creating, setCreating] = useState(false);
   const [createMsg, setCreateMsg] = useState("");
 
@@ -31,6 +40,19 @@ export default function AdminJoueursPage() {
   const [editLname, setEditLname] = useState("");
   const [editPosition, setEditPosition] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Fetch clubs on mount
+  useEffect(() => {
+    fetch("/api/admin/players?list=clubs")
+      .then((r) => r.json())
+      .then((d) => {
+        const list: Club[] = d.clubs ?? [];
+        setClubs(list);
+        const legion = list.find((c) => c.name.toLowerCase().includes("gion"));
+        if (legion) setClubId(legion.id);
+      })
+      .catch(() => {});
+  }, []);
 
   // Search players
   useEffect(() => {
@@ -54,7 +76,7 @@ export default function AdminJoueursPage() {
       const res = await fetch("/api/admin/players", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fname, lname, position }),
+        body: JSON.stringify({ fname, lname, position, clubId: clubId || undefined }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -115,13 +137,13 @@ export default function AdminJoueursPage() {
           Gestion des joueurs
         </h1>
         <p className="text-sm text-muted">
-          Creer des joueurs pour le mercato (Legion etrangere) ou corriger des noms/postes.
+          Créer des joueurs (n'importe quel club) ou corriger des noms/postes.
         </p>
       </div>
 
       {/* Create section */}
       <div className="bg-surface rounded-lg border border-white/[0.07] p-5">
-        <h2 className="text-sm font-medium text-white mb-4">Nouveau joueur (Legion etrangere)</h2>
+        <h2 className="text-sm font-medium text-white mb-4">Nouveau joueur</h2>
         <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3">
           <div>
             <label className="block text-[10px] uppercase tracking-wider text-muted mb-1">Prenom</label>
@@ -154,6 +176,18 @@ export default function AdminJoueursPage() {
             >
               {POSITIONS.map((p) => (
                 <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-wider text-muted mb-1">Club</label>
+            <select
+              value={clubId}
+              onChange={(e) => setClubId(Number(e.target.value))}
+              className="h-9 bg-surface-2 border border-white/[0.07] rounded px-3 text-sm text-white focus:outline-none focus:border-gold"
+            >
+              {clubs.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
