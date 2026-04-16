@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -34,8 +34,9 @@ export async function GET(request: Request) {
     Number(topic.author_id),
     ...posts.map(p => Number(p.author_id)),
   ]));
+  const [uPh, uVals] = inParams(userIds);
   const users = await prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
-    `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${userIds.join(",")})`
+    `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${uPh})`, ...uVals
   );
   const userMap = new Map(users.map(u => [
     Number(u.ID_USER),
@@ -45,8 +46,8 @@ export async function GET(request: Request) {
   // Get reactions for all posts
   const postIds = posts.map(p => Number(p.id));
   const reactions = postIds.length > 0
-    ? await prisma.$queryRawUnsafe<{ post_id: number; emoji: string; user_id: number }[]>(
-        `SELECT post_id, emoji, user_id FROM FORUM_REACTION WHERE post_id IN (${postIds.join(",")})`)
+    ? (() => { const [ph, vs] = inParams(postIds); return prisma.$queryRawUnsafe<{ post_id: number; emoji: string; user_id: number }[]>(
+        `SELECT post_id, emoji, user_id FROM FORUM_REACTION WHERE post_id IN (${ph})`, ...vs); })()
     : [];
 
   // Group reactions by post: { postId: { emoji: { count, userIds } } }

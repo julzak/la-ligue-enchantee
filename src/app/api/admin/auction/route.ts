@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-// import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET: auction status for a league
 export async function GET(request: Request) {
-  // Auth temporarily disabled for debugging
-  // const auth = await requireAdmin();
-  // if (auth.error) return auth.error;
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
 
   const { searchParams } = new URL(request.url);
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
@@ -103,9 +102,8 @@ export async function GET(request: Request) {
 
 // POST: admin actions (open, close-round, resolve-round, close-auction)
 export async function POST(request: Request) {
-  // Auth temporarily disabled — TODO: re-enable once session is stable
-  // const auth = await requireAdmin();
-  // if (auth.error) return auth.error;
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
 
   const { action, leagueId } = await request.json() as {
     action: "open" | "close-round" | "resolve-round" | "resolve-tiebreak" | "close-auction";

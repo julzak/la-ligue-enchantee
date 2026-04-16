@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, inParams } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 
 function nextPowerOf2(n: number): number {
@@ -46,8 +46,8 @@ export async function GET(request: Request) {
     // Get user names
     const userIds = Array.from(new Set(matches.flatMap((m) => [m.user1_id, m.user2_id].filter(Boolean))));
     const users = userIds.length > 0
-      ? await prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
-          `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${userIds.join(",")})`)
+      ? (() => { const [ph, vs] = inParams(userIds as number[]); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
+          `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${ph})`, ...vs); })()
       : [];
     const userMap = new Map(users.map((u) => [Number(u.ID_USER), (u.NAME ?? "").replace(/<[^>]*>/g, "").trim()]));
 

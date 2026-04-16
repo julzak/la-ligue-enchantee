@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-// import { requireAdmin } from "@/lib/admin-auth";
+import { prisma, inParams } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET: winter auction status + standings-based budgets for a league
 export async function GET(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
   const { searchParams } = new URL(request.url);
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
 
@@ -80,8 +82,9 @@ export async function GET(request: Request) {
   const playerOutIds = bids.map((b) => b.player_out_id).filter((id): id is number => id !== null && id > 0);
   let playerOutMap = new Map<number, string>();
   if (playerOutIds.length > 0) {
+    const [ph, vs] = inParams(playerOutIds);
     const outPlayers = await prisma.$queryRawUnsafe<{ id: number; fname: string; lname: string }[]>(
-      `SELECT ID_PLAYER as id, FNAME as fname, LNAME as lname FROM PLAYER WHERE ID_PLAYER IN (${playerOutIds.join(",")})`
+      `SELECT ID_PLAYER as id, FNAME as fname, LNAME as lname FROM PLAYER WHERE ID_PLAYER IN (${ph})`, ...vs
     );
     playerOutMap = new Map(outPlayers.map((p) => [Number(p.id), `${p.fname} ${p.lname}`.trim()]));
   }
@@ -143,6 +146,8 @@ export async function GET(request: Request) {
 
 // POST: admin actions for winter mercato
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
   const { action, leagueId } = await request.json() as {
     action: "create" | "open" | "close-round" | "resolve-round" | "resolve-tiebreak" | "close-auction";
     leagueId: number;

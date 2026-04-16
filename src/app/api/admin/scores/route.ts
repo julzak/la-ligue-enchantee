@@ -93,24 +93,35 @@ export async function POST(request: Request) {
       (s) => !(s.points === null && s.goals === 0 && s.passes === 0 && s.used === 0)
     );
 
-    // Parameterized upserts to prevent SQL injection
+    // Batch upsert: build a single INSERT ... VALUES (...), (...), ... ON DUPLICATE KEY UPDATE
+    const validRows: { playerId: number; used: number; points: number; goals: number; passes: number; redCard: number; ownGoals: number; penaltySaved: number }[] = [];
     for (const s of toSave) {
       const playerId = Math.round(Number(s.playerId));
-      const used = Math.round(Number(s.used));
       const points = Number(s.points ?? 0);
-      const goals = Math.round(Number(s.goals));
-      const passes = Math.round(Number(s.passes));
-      const redCard = Math.round(Number(s.redCard ?? 0));
-      const ownGoals = Math.round(Number(s.ownGoals ?? 0));
-      const penaltySaved = Math.round(Number(s.penaltySaved ?? 0));
-
       if (isNaN(playerId) || isNaN(points)) continue;
+      validRows.push({
+        playerId,
+        used: Math.round(Number(s.used)),
+        points,
+        goals: Math.round(Number(s.goals)),
+        passes: Math.round(Number(s.passes)),
+        redCard: Math.round(Number(s.redCard ?? 0)),
+        ownGoals: Math.round(Number(s.ownGoals ?? 0)),
+        penaltySaved: Math.round(Number(s.penaltySaved ?? 0)),
+      });
+    }
 
+    // Batch in chunks of 50 to avoid query size limits
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
+      const batch = validRows.slice(i, i + BATCH_SIZE);
+      const placeholders = batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+      const values = batch.flatMap((r) => [r.playerId, day, r.used, r.points, r.goals, r.passes, r.redCard, r.ownGoals, r.penaltySaved]);
       await prisma.$executeRawUnsafe(
         `INSERT INTO SCORE (ID_PLAYER, DAY, USED, POINTS, GOALS, PASSES, RED_CARD, OWN_GOALS, PENALTY_SAVED)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         VALUES ${placeholders}
          ON DUPLICATE KEY UPDATE USED=VALUES(USED), POINTS=VALUES(POINTS), GOALS=VALUES(GOALS), PASSES=VALUES(PASSES), RED_CARD=VALUES(RED_CARD), OWN_GOALS=VALUES(OWN_GOALS), PENALTY_SAVED=VALUES(PENALTY_SAVED)`,
-        playerId, day, used, points, goals, passes, redCard, ownGoals, penaltySaved
+        ...values
       );
     }
 

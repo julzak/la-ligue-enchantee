@@ -21,10 +21,14 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.login || !credentials?.password) return null;
 
         // Find user by clean name (case-insensitive).
+        // Pre-filter in SQL with LIKE to avoid loading all ~1500 users,
+        // then exact-match after stripping HTML tags in JS.
         // Some pseudos have legacy duplicates in USER (old seasons). Prefer the
         // one that is currently registered in a league; fallback to max id.
-        const users = await prisma.user.findMany();
-        const matches = users.filter((u) => {
+        const candidates = await prisma.user.findMany({
+          where: { name: { contains: credentials.login } },
+        });
+        const matches = candidates.filter((u) => {
           const { cleanName } = parseUserName(u.name);
           return cleanName.toLowerCase() === credentials.login.toLowerCase();
         });

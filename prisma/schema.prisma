@@ -166,6 +166,5 @@ model User {
   @@index([email], map: "EMAIL")
   @@index([id], map: "ID_USER")
   @@index([name], map: "NAME")
-  @@index([password], map: "PASSWORD")
   @@map("USER")
 }

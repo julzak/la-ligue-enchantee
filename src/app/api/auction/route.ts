@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -78,8 +78,9 @@ export async function GET(request: Request) {
   const playerOutIds = myBids.map((b) => b.player_out_id).filter((id): id is number => id !== null && id > 0);
   let playerOutNameMap = new Map<number, string>();
   if (playerOutIds.length > 0) {
+    const [ph, vs] = inParams(playerOutIds);
     const outPlayers = await prisma.$queryRawUnsafe<{ id: number; fname: string; lname: string }[]>(
-      `SELECT ID_PLAYER as id, FNAME as fname, LNAME as lname FROM PLAYER WHERE ID_PLAYER IN (${playerOutIds.join(",")})`
+      `SELECT ID_PLAYER as id, FNAME as fname, LNAME as lname FROM PLAYER WHERE ID_PLAYER IN (${ph})`, ...vs
     );
     playerOutNameMap = new Map(outPlayers.map((p) => [Number(p.id), `${p.fname} ${p.lname}`.trim()]));
   }

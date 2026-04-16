@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { prisma } from "@/lib/prisma";
+import { prisma, inParams } from "@/lib/prisma";
 import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores, getCupContextForDay } from "@/lib/db";
 
 const anthropic = new Anthropic();
@@ -90,9 +90,8 @@ export async function POST(request: Request) {
         cupContext.matches.flatMap((m) => [m.user1Id, m.user2Id].filter((id): id is number => id !== null))
       ));
       const cupUsers = cupUserIds.length > 0
-        ? await prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
-            `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${cupUserIds.join(",")})`
-          )
+        ? (() => { const [ph, vs] = inParams(cupUserIds); return prisma.$queryRawUnsafe<{ ID_USER: number; NAME: string }[]>(
+            `SELECT ID_USER, NAME FROM USER WHERE ID_USER IN (${ph})`, ...vs); })()
         : [];
       const nameOf = new Map(cupUsers.map((u) => [
         Number(u.ID_USER),
