@@ -28,7 +28,6 @@ export function Navbar() {
 
   const effectiveSlug = slug ?? savedSlug;
 
-  const monEquipeSlug = myLeagueSlug ?? effectiveSlug;
   const navLinks = effectiveSlug
     ? [
         { href: `/ligue/${effectiveSlug}/classement`, label: "Classement" },
@@ -39,6 +38,7 @@ export function Navbar() {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [myLeagueSlug, setMyLeagueSlug] = useState<string | null>(null);
+  const monEquipeSlug = myLeagueSlug ?? effectiveSlug;
   useEffect(() => {
     if (!session?.user) { setIsAdmin(false); return; }
     fetch("/api/is-admin")
