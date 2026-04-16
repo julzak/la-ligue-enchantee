@@ -70,6 +70,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
     { href: `/ligue/${slug}/classement`, label: "RÉSULTATS", live: true },
     { href: `/ligue/${slug}/classement-general`, label: "GÉNÉRAL" },
     { href: `/ligue/${slug}/statistiques`, label: "STATS" },
+    { href: `/ligue/${slug}/explorateur`, label: "CLUBS" },
   ];
 
   function isTabActive(tabHref: string) {

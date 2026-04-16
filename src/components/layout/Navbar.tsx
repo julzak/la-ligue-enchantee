@@ -28,20 +28,25 @@ export function Navbar() {
 
   const effectiveSlug = slug ?? savedSlug;
 
+  const monEquipeSlug = myLeagueSlug ?? effectiveSlug;
   const navLinks = effectiveSlug
     ? [
         { href: `/ligue/${effectiveSlug}/classement`, label: "Classement" },
-        { href: `/ligue/${effectiveSlug}/mon-equipe`, label: "Mon équipe" },
+        ...(monEquipeSlug ? [{ href: `/ligue/${monEquipeSlug}/mon-equipe`, label: "Mon équipe" }] : []),
         { href: "/forum", label: "Forum" },
       ]
     : [];
 
   const [isAdmin, setIsAdmin] = useState(false);
+  const [myLeagueSlug, setMyLeagueSlug] = useState<string | null>(null);
   useEffect(() => {
     if (!session?.user) { setIsAdmin(false); return; }
     fetch("/api/is-admin")
       .then((r) => r.json())
-      .then((d) => setIsAdmin(d.isAdmin === true))
+      .then((d) => {
+        setIsAdmin(d.isAdmin === true);
+        if (d.myLeagueSlug) setMyLeagueSlug(d.myLeagueSlug);
+      })
       .catch(() => setIsAdmin(false));
   }, [session]);
 
