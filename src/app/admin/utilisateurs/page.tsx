@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Loader2, Trash2, Plus } from "lucide-react";
+import { Shield, Loader2, Trash2, Plus, KeyRound } from "lucide-react";
 
 interface AdminUser {
   userId: number;
@@ -18,6 +18,7 @@ export default function AdminUsersPage() {
   const [allUsers, setAllUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState(0);
+  const [resetUserId, setResetUserId] = useState(0);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -85,6 +86,31 @@ export default function AdminUsersPage() {
     setSaving(false);
   }
 
+  async function resetPassword() {
+    if (!resetUserId) return;
+    const user = allUsers.find((u) => u.id === resetUserId);
+    if (!confirm(`Remettre le mot de passe de ${user?.name ?? resetUserId} à "ligue" ?`)) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: resetUserId }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessage(`Mot de passe de ${user?.name} remis à "ligue"`);
+        setResetUserId(0);
+      } else {
+        setMessage("Erreur: " + data.error);
+      }
+    } catch {
+      setMessage("Erreur réseau");
+    }
+    setSaving(false);
+  }
+
   // Filter out users already admin from dropdown
   const adminIds = new Set(admins.map((a) => a.userId));
   const nonAdminUsers = allUsers
@@ -136,6 +162,37 @@ export default function AdminUsersPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Reset password */}
+          <div className="bg-surface rounded-lg border border-white/[0.07] p-5">
+            <h2 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-gold" />
+              Reset mot de passe
+            </h2>
+            <div className="flex items-center gap-3">
+              <select
+                value={resetUserId}
+                onChange={(e) => setResetUserId(Number(e.target.value))}
+                className="flex-1 bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+              >
+                <option value={0}>Choisir un utilisateur...</option>
+                {allUsers
+                  .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+                  .map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+              </select>
+              <button
+                onClick={resetPassword}
+                disabled={!resetUserId || saving}
+                className="h-9 px-4 bg-rouge/80 text-white font-semibold rounded text-sm hover:bg-rouge flex items-center gap-2 transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                Reset à &quot;ligue&quot;
+              </button>
+            </div>
+            <p className="text-[11px] text-muted mt-2">Le mot de passe sera remis à &quot;ligue&quot;. Le participant pourra le changer via /mon-compte.</p>
           </div>
 
           {/* Add admin */}

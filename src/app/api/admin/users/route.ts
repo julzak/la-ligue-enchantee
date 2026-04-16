@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { requireAdmin, invalidateAdminCache } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 // GET: list all admins
 export async function GET() {
@@ -45,6 +46,29 @@ export async function POST(request: Request) {
     userId
   );
   invalidateAdminCache();
+
+  return NextResponse.json({ ok: true });
+}
+
+// PATCH: reset user password to "ligue"
+export async function PATCH(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { userId } = await request.json() as { userId: number };
+  if (!userId) {
+    return NextResponse.json({ error: "userId requis" }, { status: 400 });
+  }
+
+  const hashed = await bcrypt.hash("ligue", 10);
+  const result = await prisma.$executeRawUnsafe(
+    "UPDATE USER SET PASSWORD = ? WHERE ID_USER = ?",
+    hashed, userId
+  );
+
+  if (result === 0) {
+    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+  }
 
   return NextResponse.json({ ok: true });
 }
