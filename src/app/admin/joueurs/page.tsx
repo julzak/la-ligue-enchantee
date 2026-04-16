@@ -137,7 +137,7 @@ export default function AdminJoueursPage() {
           Gestion des joueurs
         </h1>
         <p className="text-sm text-muted">
-          Créer des joueurs (n'importe quel club) ou corriger des noms/postes.
+          Créer des joueurs (n&apos;importe quel club) ou corriger des noms/postes.
         </p>
       </div>
 
