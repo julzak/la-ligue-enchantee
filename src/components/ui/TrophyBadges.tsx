@@ -54,9 +54,9 @@ export function TrophyBadges({ trophies, leagueSlug }: { trophies: TrophyType[];
           <span key={i} className="inline-flex items-center">
             <Icon className="w-3.5 h-3.5" style={{ color }} fill={color} />
             {g.count > 1 && (
-              <span className="text-[9px] font-bold leading-none" style={{ color }}>
+              <sup className="text-[8px] font-bold leading-none -ml-0.5" style={{ color }}>
                 {g.count}
-              </span>
+              </sup>
             )}
           </span>
         );

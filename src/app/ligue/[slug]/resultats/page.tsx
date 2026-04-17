@@ -1,16 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getLeagueBySlug, getLeagueStandings } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getCurrentMatchday } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { DeltaBadge } from "@/components/ui/DeltaBadge";
 
-export default async function ResultatsPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ResultatsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ day?: string }>;
+}) {
   const { slug } = await params;
+  const { day: dayParam } = await searchParams;
   const league = await getLeagueBySlug(slug);
   if (!league) notFound();
 
-  const standings = await getLeagueStandings(league.dbId);
+  const maxDay = await getCurrentMatchday();
+  const selectedDay = dayParam ? Math.max(1, Math.min(maxDay, Number(dayParam))) : maxDay;
+
+  const standings = await getLeagueStandings(league.dbId, selectedDay);
   const currentMatchday = standings.currentDay;
+  const dayOptions = Array.from({ length: maxDay }, (_, i) => maxDay - i);
 
   // Sort by matchday score (not cumulative)
   const dayRanked = [...standings.standings]
@@ -23,6 +34,25 @@ export default async function ResultatsPage({ params }: { params: Promise<{ slug
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="font-serif text-xl text-white">Résultats de la journée {currentMatchday}</h2>
+        <form method="GET" className="flex items-center gap-2">
+          <label htmlFor="day" className="text-sm text-muted">Journée</label>
+          <select
+            id="day"
+            name="day"
+            defaultValue={currentMatchday}
+            className="bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-gold/40"
+          >
+            {dayOptions.map((d) => (
+              <option key={d} value={d}>Journée {d}</option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="text-xs text-gold hover:underline px-2 py-1"
+          >
+            Voir
+          </button>
+        </form>
       </div>
 
       {/* Highlights */}
