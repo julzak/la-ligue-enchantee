@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma, inParams } from "@/lib/prisma";
 import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores, getCupContextForDay } from "@/lib/db";
 
-const anthropic = new Anthropic();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
 // GET: retrieve saved topo (if exists)
 export async function GET(request: Request) {
@@ -149,13 +149,9 @@ Détail par participant (meilleurs/pires joueurs L1 de LEUR effectif) :
 ${participantDetails.join("\n\n")}
 `;
 
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
-      messages: [
-        {
-          role: "user",
-          content: `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
 
 Ton style :
 - Élégant, mordant, drôle. Style chronique sportive british avec une pointe d'ironie française.
@@ -174,12 +170,10 @@ Ton style :
 Voici les données de la journée :
 ${context}
 
-Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`,
-        },
-      ],
-    });
+Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`;
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
     // Save to DB
     await prisma.$executeRawUnsafe(
