@@ -309,8 +309,8 @@ export default function AdminNotesPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header — sticky on mobile for easy access to save/publish */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-20 bg-night pt-2 pb-3 -mt-2 border-b border-white/[0.07]">
         <div>
           <h1 className="font-serif text-2xl text-white mb-1">Saisie des notes</h1>
           <p className="text-sm text-muted">
@@ -434,7 +434,7 @@ export default function AdminNotesPage() {
               const { home, away } = getMatchPlayers(match);
               const score = match.home_score !== null ? `${match.home_score}-${match.away_score}` : "—";
               return (
-                <div key={`${match.home_team}-${match.away_team}`} className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+                <div key={`${match.home_team}-${match.away_team}`} className="bg-surface rounded-lg border border-white/[0.07]">
                   {/* Match header */}
                   <div className="flex items-center justify-between px-4 py-2 bg-surface-2 border-b border-white/[0.07]">
                     <span className="text-sm font-medium text-white">{match.home_team.split(" ").pop()}</span>

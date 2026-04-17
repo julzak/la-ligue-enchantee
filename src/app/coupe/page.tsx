@@ -83,6 +83,32 @@ export default async function CoupePage() {
 
   const rounds = Array.from(new Set(matches.map((m) => m.round)));
 
+  // Build feeder map: for each match position, find which 2 matches from the
+  // previous round feed into it (winners become user1 and user2).
+  // Structure: consecutive pairs (pos P, P+1) feed into the next round's match.
+  const matchByPos = new Map(matches.map((m) => [Number(m.position), m]));
+  const roundBounds = rounds.map((r) => {
+    const rm = matches.filter((m) => m.round === r);
+    return { round: r, start: Math.min(...rm.map((m) => Number(m.position))), count: rm.length };
+  });
+
+  // feederLabel: for a NULL slot in a match, describe who could fill it
+  function feederLabel(position: number, slot: "user1" | "user2"): string {
+    // Find the round this match belongs to
+    const roundIdx = roundBounds.findIndex((rb) => position >= rb.start && position < rb.start + rb.count);
+    if (roundIdx <= 0) return "?";
+    const prevRound = roundBounds[roundIdx - 1];
+    const currentRound = roundBounds[roundIdx];
+    const offset = position - currentRound.start;
+    const feederPos = prevRound.start + offset * 2 + (slot === "user1" ? 0 : 1);
+    const feeder = matchByPos.get(feederPos);
+    if (!feeder) return "?";
+    if (feeder.winner_id) return userMap.get(Number(feeder.winner_id)) ?? "?";
+    const n1 = feeder.user1_id ? (userMap.get(Number(feeder.user1_id)) ?? "?") : "?";
+    const n2 = feeder.user2_id ? (userMap.get(Number(feeder.user2_id)) ?? "?") : "?";
+    return `Vq ${n1.split(" ")[0]}/${n2.split(" ")[0]}`;
+  }
+
   return (
     <>
       <Navbar />
@@ -120,8 +146,10 @@ export default async function CoupePage() {
 
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     {roundMatches.map((m) => {
-                      const u1Name = m.user1_id ? userMap.get(Number(m.user1_id)) ?? "?" : "";
-                      const u2Name = m.user2_id ? userMap.get(Number(m.user2_id)) ?? "?" : "";
+                      const u1Name = m.user1_id ? userMap.get(Number(m.user1_id)) ?? "?" : feederLabel(Number(m.position), "user1");
+                      const u2Name = m.user2_id ? userMap.get(Number(m.user2_id)) ?? "?" : feederLabel(Number(m.position), "user2");
+                      const u1Tbd = !m.user1_id;
+                      const u2Tbd = !m.user2_id;
                       const u1League = m.user1_id ? leagueLabels[leagueMap.get(Number(m.user1_id)) ?? 0] ?? "" : "";
                       const u2League = m.user2_id ? leagueLabels[leagueMap.get(Number(m.user2_id)) ?? 0] ?? "" : "";
                       const isResolved = m.winner_id !== null;
@@ -151,10 +179,10 @@ export default async function CoupePage() {
                         >
                           {/* Player 1 */}
                           <div className={`flex items-center gap-2 px-3 py-2 ${u1Won ? "bg-rouge/10" : isResolved ? "opacity-40" : ""}`}>
-                            <span className={`text-xs flex-1 truncate ${u1Won ? "text-white font-medium" : "text-white/70"}`}>
+                            <span className={`text-xs flex-1 truncate ${u1Tbd ? "text-white/30 italic" : u1Won ? "text-white font-medium" : "text-white/70"}`}>
                               {u1Name}
-                              {u1League && <span className="text-[9px] text-muted ml-1">({u1League})</span>}
-                              {u1Bonus > 0 && <span className="text-[9px] text-vert ml-1">+{u1Bonus}</span>}
+                              {!u1Tbd && u1League && <span className="text-[9px] text-muted ml-1">({u1League})</span>}
+                              {!u1Tbd && u1Bonus > 0 && <span className="text-[9px] text-vert ml-1">+{u1Bonus}</span>}
                             </span>
                             {m.score1 !== null && (
                               <span className={`text-xs tabular-nums font-bold ${u1Won ? "text-rouge" : "text-muted"}`}>
@@ -168,10 +196,10 @@ export default async function CoupePage() {
 
                           {/* Player 2 */}
                           <div className={`flex items-center gap-2 px-3 py-2 ${u2Won ? "bg-rouge/10" : isResolved ? "opacity-40" : ""}`}>
-                            <span className={`text-xs flex-1 truncate ${u2Won ? "text-white font-medium" : "text-white/70"}`}>
+                            <span className={`text-xs flex-1 truncate ${u2Tbd ? "text-white/30 italic" : u2Won ? "text-white font-medium" : "text-white/70"}`}>
                               {u2Name}
-                              {u2League && <span className="text-[9px] text-muted ml-1">({u2League})</span>}
-                              {u2Bonus > 0 && <span className="text-[9px] text-vert ml-1">+{u2Bonus}</span>}
+                              {!u2Tbd && u2League && <span className="text-[9px] text-muted ml-1">({u2League})</span>}
+                              {!u2Tbd && u2Bonus > 0 && <span className="text-[9px] text-vert ml-1">+{u2Bonus}</span>}
                             </span>
                             {m.score2 !== null && (
                               <span className={`text-xs tabular-nums font-bold ${u2Won ? "text-rouge" : "text-muted"}`}>
