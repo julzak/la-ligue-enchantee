@@ -180,8 +180,32 @@ export async function POST(request: Request) {
 
     await prisma.$executeRawUnsafe(
       "INSERT INTO JOKER_LOG (league_id, user_id, player_out_id, player_in_id, day) VALUES (?, ?, ?, ?, ?)",
-      leagueId, userId, playerOutId, playerInId, currentDay
+      leagueId, userId, playerOutId, playerInId, nextDay
     );
+
+    // Copy lineup from current day to next day, replacing OUT with IN player
+    const prevLineup = await prisma.teamDay.findMany({
+      where: { leagueId, userId, day: currentDay },
+    });
+    if (prevLineup.length > 0) {
+      // Delete any existing lineup for nextDay
+      await prisma.teamDay.deleteMany({
+        where: { leagueId, userId, day: nextDay },
+      });
+      const now = new Date();
+      await prisma.teamDay.createMany({
+        data: prevLineup.map((l) => ({
+          leagueId,
+          userId,
+          playerId: l.playerId === playerOutId ? playerInId : l.playerId,
+          day: nextDay,
+          indx: l.indx,
+          isValid: l.isValid,
+          dtSave: now,
+          dtValid: now,
+        })),
+      });
+    }
 
     // Get player + user names for forum post
     const [playerOut, playerIn, userRows] = await Promise.all([
@@ -203,25 +227,41 @@ export async function POST(request: Request) {
     const leagues = await getLeagues();
     const category = leagues.find((l) => l.dbId === leagueId)?.slug ?? "general";
 
-    // Auto-post forum topic
+    // Auto-post in existing "Jokers" topic for this league (or create one if missing)
     let topicId: number | null = null;
     try {
-      const title = `Joker : ${outName} -> ${inName}`;
       const content = `**${userName}** utilise un joker :\n\nSortie : **${outName}** (${outClub})\nEntree : **${inName}** (${inClub})\n\nEffectif a partir de la J${nextDay}.`;
 
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO FORUM_TOPIC (league_id, category, author_id, title, post_count, last_post_at, last_post_by, created_at)
-         VALUES (?, ?, ?, ?, 1, NOW(), ?, NOW())`,
-        leagueId, category, userId, title, userId
+      // Find existing "Jokers" topic in this league's category
+      const existingTopics = await prisma.$queryRawUnsafe<{ id: number }[]>(
+        "SELECT id FROM FORUM_TOPIC WHERE category = ? AND title LIKE 'Jokers%' ORDER BY id DESC LIMIT 1",
+        category
       );
 
-      const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>("SELECT LAST_INSERT_ID() as id");
-      topicId = Number(row.id);
-
-      await prisma.$executeRawUnsafe(
-        "INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())",
-        topicId, userId, content
-      );
+      if (existingTopics.length > 0) {
+        topicId = Number(existingTopics[0].id);
+        await prisma.$executeRawUnsafe(
+          "INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())",
+          topicId, userId, content
+        );
+        await prisma.$executeRawUnsafe(
+          "UPDATE FORUM_TOPIC SET post_count = post_count + 1, last_post_at = NOW(), last_post_by = ? WHERE id = ?",
+          userId, topicId
+        );
+      } else {
+        // No existing topic — create one
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO FORUM_TOPIC (league_id, category, author_id, title, post_count, last_post_at, last_post_by, created_at)
+           VALUES (?, ?, ?, 'Jokers 2025-2026', 1, NOW(), ?, NOW())`,
+          leagueId, category, userId, userId
+        );
+        const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>("SELECT LAST_INSERT_ID() as id");
+        topicId = Number(row.id);
+        await prisma.$executeRawUnsafe(
+          "INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())",
+          topicId, userId, content
+        );
+      }
     } catch {
       // Forum post failed — don't block the joker
     }

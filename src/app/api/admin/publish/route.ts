@@ -116,7 +116,7 @@ export async function POST(request: Request) {
           const passes = score.passes;
           // Position-based goal bonus: GK +10, DEF +4, MID/ATT +2
           const goalBonus = pos === "GK" ? 10 : pos === "DEF" ? 4 : 2;
-          const total = pts + goalBonus * goals + passes - 2 * (score.ownGoals ?? 0) + 2 * (score.penaltySaved ?? 0);
+          const total = Math.max(0, pts + goalBonus * goals + passes - 2 * (score.ownGoals ?? 0) + 2 * (score.penaltySaved ?? 0));
 
           playerUsed++;
           ptsFrf += pts;

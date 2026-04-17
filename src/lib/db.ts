@@ -36,7 +36,7 @@ function calcPlayerTotal(
   const gb = cfg ? goalBonusForPosition(position, cfg) : goalBonusForPositionDefault(position);
   const cscPenalty = cfg ? cfg.cscMalus : -2;
   const penBonus = cfg ? cfg.penaltySavedBonus : 2;
-  return base + gb * goals + passes + cscPenalty * ownGoals + penBonus * penaltySaved;
+  return Math.max(0, base + gb * goals + passes + cscPenalty * ownGoals + penBonus * penaltySaved);
 }
 
 // Fallback for when config isn't loaded yet (should not happen in practice)
@@ -447,7 +447,11 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
     });
   }
 
-  const lineupPlayerIds = new Set(lineup.map((l) => l.playerId));
+  // Filter lineup to only include players still in the active squad
+  // (handles joker swaps where fallback lineup from day-1 has stale players)
+  const activePlayerIds = new Set(teamMembers.map((t) => t.playerId));
+  const validLineup = lineup.filter((l) => activePlayerIds.has(l.playerId));
+  const lineupPlayerIds = new Set(validLineup.map((l) => l.playerId));
 
   // Get player details
   const playerMap = await getCachedPlayers();
