@@ -75,22 +75,86 @@ export async function POST(request: Request) {
       userId = overrideUserId;
     }
 
-    // Enforce deadline (skip for admin overrides)
+    // Enforce deadline per match day (skip for admin overrides)
+    // Rule: for each day with matches, players from those clubs are locked at 15h
+    // (or 2h before kickoff if a match starts before 17h that day)
     if (!isAdmin) {
       try {
-        const deadlineRes = await fetch(new URL("/api/admin/deadline", request.url).href);
-        const deadlineData = await deadlineRes.json();
-        if (deadlineData.lockAt) {
-          const lockAt = new Date(deadlineData.lockAt);
-          if (new Date() >= lockAt) {
+        const matches = await prisma.$queryRawUnsafe<{
+          home_team: string; away_team: string; match_date: string; match_time: string;
+        }[]>(
+          "SELECT home_team, away_team, match_date, match_time FROM MATCH_SCHEDULE WHERE matchday = ?",
+          day
+        );
+
+        if (matches.length > 0) {
+          // Get deadline config
+          const cfgRows = await prisma.$queryRawUnsafe<{
+            deadline_hour: number; early_match_hour: number; early_match_offset_hours: number;
+          }[]>(
+            "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = '2025-2026' LIMIT 1"
+          );
+          const cfg = cfgRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
+
+          // Group matches by date, compute deadline per date
+          const byDate = new Map<string, { teams: Set<string>; earliestTime: string }>();
+          for (const m of matches) {
+            const date = String(m.match_date).slice(0, 10);
+            const time = String(m.match_time || "20:00:00").slice(0, 5);
+            if (!byDate.has(date)) byDate.set(date, { teams: new Set(), earliestTime: time });
+            const entry = byDate.get(date)!;
+            entry.teams.add(m.home_team);
+            entry.teams.add(m.away_team);
+            if (time < entry.earliestTime) entry.earliestTime = time;
+          }
+
+          // Map club IDs to team names for the starters
+          const starterPlayerIds = starters.map((s: StarterEntry) => s.playerId);
+          const starterPlayers = await prisma.player.findMany({
+            where: { id: { in: starterPlayerIds } },
+            select: { id: true, clubId: true },
+          });
+          const clubIds = [...new Set(starterPlayers.map((p) => p.clubId))];
+          const clubs = await prisma.club.findMany({
+            where: { id: { in: clubIds } },
+            select: { id: true, name: true },
+          });
+          const clubNameById = new Map(clubs.map((c) => [c.id, c.name]));
+          const playerClubName = new Map(starterPlayers.map((p) => [p.id, clubNameById.get(p.clubId) ?? ""]));
+
+          // Check each date: if deadline passed, block players from those clubs
+          const now = new Date();
+          const lockedPlayers: string[] = [];
+
+          for (const [date, { teams, earliestTime }] of byDate) {
+            const kickoffHour = parseInt(earliestTime.split(":")[0]);
+            let deadlineHour = cfg.deadline_hour;
+            if (kickoffHour < cfg.early_match_hour) {
+              deadlineHour = kickoffHour - cfg.early_match_offset_hours;
+            }
+            const deadlineUtcHour = deadlineHour - 2; // Paris = UTC+2
+            const deadline = new Date(`${date}T${String(deadlineUtcHour).padStart(2, "0")}:00:00Z`);
+
+            if (now >= deadline) {
+              // This day's matches are locked — check if any starter belongs to these clubs
+              for (const [playerId, clubName] of playerClubName) {
+                if (teams.has(clubName)) {
+                  lockedPlayers.push(clubName);
+                }
+              }
+            }
+          }
+
+          if (lockedPlayers.length > 0) {
+            const uniqueClubs = [...new Set(lockedPlayers)];
             return NextResponse.json(
-              { error: `Journee fermee depuis ${lockAt.toLocaleString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" })}. Contactez un admin pour modifier.` },
+              { error: `Impossible de modifier : les joueurs de ${uniqueClubs.join(", ")} sont bloques (match en cours ou passe). Contactez un admin.` },
               { status: 403 }
             );
           }
         }
       } catch {
-        // Deadline check failed — allow save (fail open, not closed)
+        // Deadline check failed — allow save (fail open)
       }
     }
 
