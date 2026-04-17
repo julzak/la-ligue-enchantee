@@ -125,9 +125,9 @@ export async function POST(request: Request) {
           const clubNameById = new Map(clubs.map((c) => [c.id, c.name.toUpperCase()]));
           const playerClubName = new Map(starterPlayers.map((p) => [p.id, clubNameById.get(p.clubId) ?? ""]));
 
-          // Check each date: if deadline passed, block players from those clubs
+          // Build set of locked club names (deadline passed for their match day)
           const now = new Date();
-          const lockedPlayers: string[] = [];
+          const lockedClubs = new Set<string>();
 
           for (const [date, { teams, earliestHour }] of Array.from(byDate.entries())) {
             let deadlineHour = Number(cfg.deadline_hour);
@@ -138,21 +138,39 @@ export async function POST(request: Request) {
             const deadline = new Date(`${date}T${String(Math.max(0, deadlineUtcHour)).padStart(2, "0")}:00:00Z`);
 
             if (now >= deadline) {
-              // This day's matches are locked — check if any starter belongs to these clubs
-              for (const [, clubName] of Array.from(playerClubName.entries())) {
-                if (teams.has(clubName)) {
-                  lockedPlayers.push(clubName);
-                }
-              }
+              teams.forEach((t: string) => lockedClubs.add(t));
             }
           }
 
-          if (lockedPlayers.length > 0) {
-            const uniqueClubs = Array.from(new Set(lockedPlayers));
-            return NextResponse.json(
-              { error: `Impossible de modifier : les joueurs de ${uniqueClubs.join(", ")} sont bloqués (match trop proche ou passé). Contactez un admin.` },
-              { status: 403 }
-            );
+          if (lockedClubs.size > 0) {
+            // Compare new lineup with previous: only block if locked players were moved
+            const newStarterIds = new Set(starters.map((s: StarterEntry) => s.playerId));
+            const prevLineup = await prisma.teamDay.findMany({
+              where: { leagueId, userId, day },
+            });
+            const prevStarterIds = new Set(prevLineup.map((l) => l.playerId));
+
+            // Find locked players that changed (added or removed from starters)
+            const movedLocked: string[] = [];
+            for (const [pid, clubName] of Array.from(playerClubName.entries())) {
+              if (!lockedClubs.has(clubName)) continue;
+              const wasStarter = prevStarterIds.has(pid);
+              const isStarter = newStarterIds.has(pid);
+              if (wasStarter !== isStarter) {
+                movedLocked.push(clubName);
+              }
+            }
+
+            // Also check: locked player newly added (not in prev lineup at all)
+            // This handles the case where prev lineup is empty (first save)
+            // In that case, allow everything (no previous state to compare)
+            if (movedLocked.length > 0 && prevLineup.length > 0) {
+              const uniqueClubs = Array.from(new Set(movedLocked));
+              return NextResponse.json(
+                { error: `Impossible de modifier les joueurs de ${uniqueClubs.join(", ")} (match trop proche ou passé). Les autres changements sont possibles.` },
+                { status: 403 }
+              );
+            }
           }
         }
       } catch {
