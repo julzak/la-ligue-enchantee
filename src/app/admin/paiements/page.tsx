@@ -46,12 +46,15 @@ export default function PaiementsPage() {
   useEffect(() => { fetchPayments(); }, []);
 
   async function togglePaid(userId: number, paid: boolean) {
+    // Optimistic update (avoids scroll-up from full refetch)
+    setPayments((prev) =>
+      prev.map((p) => p.userId === userId ? { ...p, paid, paidAt: paid ? new Date().toISOString() : null } : p)
+    );
     await fetch("/api/admin/paiements", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, paid }),
     });
-    fetchPayments();
   }
 
   // Group payments by league

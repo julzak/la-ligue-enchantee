@@ -290,7 +290,12 @@ export default function JokersPage() {
           <div>
             <h3 className="text-sm font-medium text-white mb-3">Joueur à sortir</h3>
             <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
-              {squad.map((s) => (
+              {[...squad].sort((a, b) => {
+                const posOrder: Record<string, number> = { GK: 0, DEF: 1, MID: 2, ATT: 3 };
+                const pa = posOrder[posLabel(a.position)] ?? 9;
+                const pb = posOrder[posLabel(b.position)] ?? 9;
+                return pa !== pb ? pa - pb : a.name.localeCompare(b.name, "fr");
+              }).map((s) => (
                 <button
                   key={s.playerId}
                   onClick={() => setPlayerOut(s.playerId)}

@@ -157,7 +157,10 @@ export default function AdminNotesPage() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
-  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<string | null>(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("notes_lastSaved");
+    return null;
+  });
   const [filter, setFilter] = useState("");
   const [showOnlyFilled, setShowOnlyFilled] = useState(false);
   const [showOnlyTaken, setShowOnlyTaken] = useState(true);
@@ -247,7 +250,9 @@ export default function AdminNotesPage() {
       const data = await res.json();
       if (data.ok) {
         setMessage(`Sauvegardé (${toSave.length} joueurs)`);
-        setLastSaved(new Date().toLocaleString("fr-FR"));
+        const ts = new Date().toLocaleString("fr-FR");
+        setLastSaved(ts);
+        localStorage.setItem("notes_lastSaved", ts);
       } else {
         setMessage("Erreur: " + data.error);
       }

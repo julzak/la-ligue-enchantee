@@ -36,7 +36,12 @@ export default function AdminEquipesPage() {
     setSelectedSlug(league?.slug ?? "");
     fetch(`/api/admin/jokers/participants?leagueId=${selectedLeague}`)
       .then((r) => r.json())
-      .then((d) => setParticipants(d.participants ?? []))
+      .then((d) => {
+        const sorted = (d.participants ?? []).sort((a: { cleanName: string }, b: { cleanName: string }) =>
+          a.cleanName.localeCompare(b.cleanName, "fr")
+        );
+        setParticipants(sorted);
+      })
       .catch(() => {});
   }, [selectedLeague, leagues]);
 

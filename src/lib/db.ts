@@ -435,16 +435,23 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
     },
   });
 
-  // Get lineup for this day (fallback to previous day if not yet saved)
+  // Get lineup for this day (fallback to most recent saved lineup)
   let lineup = await prisma.teamDay.findMany({
     where: { leagueId: leagueDbId, userId, day: currentDay },
     orderBy: { indx: "asc" },
   });
   if (lineup.length === 0 && currentDay > 1) {
-    lineup = await prisma.teamDay.findMany({
-      where: { leagueId: leagueDbId, userId, day: currentDay - 1 },
-      orderBy: { indx: "asc" },
-    });
+    // Find the most recent day with a saved lineup
+    const lastSaved = await prisma.$queryRawUnsafe<{ DAY: number }[]>(
+      "SELECT DISTINCT DAY FROM TEAM_DAY WHERE ID_LEAGUE = ? AND ID_USER = ? AND DAY < ? ORDER BY DAY DESC LIMIT 1",
+      leagueDbId, userId, currentDay
+    );
+    if (lastSaved.length > 0) {
+      lineup = await prisma.teamDay.findMany({
+        where: { leagueId: leagueDbId, userId, day: Number(lastSaved[0].DAY) },
+        orderBy: { indx: "asc" },
+      });
+    }
   }
 
   // Filter lineup to only include players still in the active squad
