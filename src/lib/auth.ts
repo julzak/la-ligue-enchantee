@@ -21,16 +21,20 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.login || !credentials?.password) return null;
 
         // Find user by clean name (case-insensitive).
-        // Pre-filter in SQL with LIKE to avoid loading all ~1500 users,
-        // then exact-match after stripping HTML tags in JS.
+        // Pre-filter in SQL using the first word of the login (before any / or space)
+        // to reduce rows loaded, then exact-match after stripping HTML tags in JS.
         // Some pseudos have legacy duplicates in USER (old seasons). Prefer the
         // one that is currently registered in a league; fallback to max id.
+        const firstWord = credentials.login.split(/[\s/]/)[0].trim();
         const candidates = await prisma.user.findMany({
-          where: { name: { contains: credentials.login } },
+          where: firstWord.length >= 2 ? { name: { contains: firstWord } } : undefined,
         });
         const matches = candidates.filter((u) => {
           const { cleanName } = parseUserName(u.name);
-          return cleanName.toLowerCase() === credentials.login.toLowerCase();
+          // Normalize whitespace for comparison (HTML stripping can leave double spaces)
+          const normalizedClean = cleanName.replace(/\s+/g, " ").toLowerCase();
+          const normalizedLogin = credentials.login.replace(/\s+/g, " ").toLowerCase();
+          return normalizedClean === normalizedLogin;
         });
 
         if (matches.length === 0) return null;
