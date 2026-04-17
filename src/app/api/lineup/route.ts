@@ -114,7 +114,7 @@ export async function POST(request: Request) {
             where: { id: { in: starterPlayerIds } },
             select: { id: true, clubId: true },
           });
-          const clubIds = [...new Set(starterPlayers.map((p) => p.clubId))];
+          const clubIds = Array.from(new Set(starterPlayers.map((p) => p.clubId)));
           const clubs = await prisma.club.findMany({
             where: { id: { in: clubIds } },
             select: { id: true, name: true },
