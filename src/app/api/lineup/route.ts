@@ -97,15 +97,18 @@ export async function POST(request: Request) {
           const cfg = cfgRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
 
           // Group matches by date, compute deadline per date
-          const byDate = new Map<string, { teams: Set<string>; earliestTime: string }>();
+          const byDate = new Map<string, { teams: Set<string>; earliestHour: number }>();
           for (const m of matches) {
-            const date = String(m.match_date).slice(0, 10);
-            const time = String(m.match_time || "20:00:00").slice(0, 5);
-            if (!byDate.has(date)) byDate.set(date, { teams: new Set(), earliestTime: time });
+            // match_date and match_time are Date objects from Prisma
+            const dateObj = m.match_date instanceof Date ? m.match_date : new Date(m.match_date);
+            const date = dateObj.toISOString().slice(0, 10);
+            const timeObj = m.match_time instanceof Date ? m.match_time : null;
+            const hour = timeObj ? timeObj.getUTCHours() + 2 : 20; // stored as UTC, Paris = +2
+            if (!byDate.has(date)) byDate.set(date, { teams: new Set(), earliestHour: hour });
             const entry = byDate.get(date)!;
             entry.teams.add(m.home_team.toUpperCase());
             entry.teams.add(m.away_team.toUpperCase());
-            if (time < entry.earliestTime) entry.earliestTime = time;
+            if (hour < entry.earliestHour) entry.earliestHour = hour;
           }
 
           // Map club IDs to team names for the starters
@@ -126,14 +129,13 @@ export async function POST(request: Request) {
           const now = new Date();
           const lockedPlayers: string[] = [];
 
-          for (const [date, { teams, earliestTime }] of Array.from(byDate.entries())) {
-            const kickoffHour = parseInt(earliestTime.split(":")[0]);
-            let deadlineHour = cfg.deadline_hour;
-            if (kickoffHour < cfg.early_match_hour) {
-              deadlineHour = kickoffHour - cfg.early_match_offset_hours;
+          for (const [date, { teams, earliestHour }] of Array.from(byDate.entries())) {
+            let deadlineHour = Number(cfg.deadline_hour);
+            if (earliestHour < Number(cfg.early_match_hour)) {
+              deadlineHour = earliestHour - Number(cfg.early_match_offset_hours);
             }
             const deadlineUtcHour = deadlineHour - 2; // Paris = UTC+2
-            const deadline = new Date(`${date}T${String(deadlineUtcHour).padStart(2, "0")}:00:00Z`);
+            const deadline = new Date(`${date}T${String(Math.max(0, deadlineUtcHour)).padStart(2, "0")}:00:00Z`);
 
             if (now >= deadline) {
               // This day's matches are locked — check if any starter belongs to these clubs
