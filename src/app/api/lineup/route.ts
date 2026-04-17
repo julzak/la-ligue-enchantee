@@ -103,8 +103,8 @@ export async function POST(request: Request) {
             const time = String(m.match_time || "20:00:00").slice(0, 5);
             if (!byDate.has(date)) byDate.set(date, { teams: new Set(), earliestTime: time });
             const entry = byDate.get(date)!;
-            entry.teams.add(m.home_team);
-            entry.teams.add(m.away_team);
+            entry.teams.add(m.home_team.toUpperCase());
+            entry.teams.add(m.away_team.toUpperCase());
             if (time < entry.earliestTime) entry.earliestTime = time;
           }
 
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
             where: { id: { in: clubIds } },
             select: { id: true, name: true },
           });
-          const clubNameById = new Map(clubs.map((c) => [c.id, c.name]));
+          const clubNameById = new Map(clubs.map((c) => [c.id, c.name.toUpperCase()]));
           const playerClubName = new Map(starterPlayers.map((p) => [p.id, clubNameById.get(p.clubId) ?? ""]));
 
           // Check each date: if deadline passed, block players from those clubs
