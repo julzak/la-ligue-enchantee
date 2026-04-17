@@ -126,7 +126,7 @@ export async function POST(request: Request) {
           const now = new Date();
           const lockedPlayers: string[] = [];
 
-          for (const [date, { teams, earliestTime }] of byDate) {
+          for (const [date, { teams, earliestTime }] of Array.from(byDate.entries())) {
             const kickoffHour = parseInt(earliestTime.split(":")[0]);
             let deadlineHour = cfg.deadline_hour;
             if (kickoffHour < cfg.early_match_hour) {
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
 
             if (now >= deadline) {
               // This day's matches are locked — check if any starter belongs to these clubs
-              for (const [, clubName] of playerClubName) {
+              for (const [, clubName] of Array.from(playerClubName.entries())) {
                 if (teams.has(clubName)) {
                   lockedPlayers.push(clubName);
                 }
