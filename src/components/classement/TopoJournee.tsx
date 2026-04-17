@@ -12,6 +12,7 @@ interface TopoJourneeProps {
 
 export function TopoJournee({ matchday, slug }: TopoJourneeProps) {
   const [content, setContent] = useState<string | null>(null);
+  const [isProvisional, setIsProvisional] = useState(false);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
@@ -24,6 +25,7 @@ export function TopoJournee({ matchday, slug }: TopoJourneeProps) {
           const data = await res.json();
           if (data.topo) {
             setContent(data.topo);
+            setIsProvisional(data.isProvisional === true);
           }
         }
       } catch {
@@ -46,6 +48,7 @@ export function TopoJournee({ matchday, slug }: TopoJourneeProps) {
       if (res.ok) {
         const data = await res.json();
         setContent(data.topo);
+        setIsProvisional(data.isProvisional === true);
       }
     } catch {
       // silent fail
@@ -70,13 +73,16 @@ export function TopoJournee({ matchday, slug }: TopoJourneeProps) {
       <div className="flex items-center gap-2 px-5 pt-4 pb-2">
         <Sparkles className="w-4 h-4 text-gold" />
         <h3 className="font-serif text-sm text-gold">Journée {matchday} : la synthèse de Lia 🤖</h3>
-        {!content && (
+        {isProvisional && (
+          <span className="text-[9px] uppercase tracking-wider bg-orange-400/20 text-orange-400 px-1.5 py-0.5 rounded">provisoire</span>
+        )}
+        {(!content || isProvisional) && (
           <button
             onClick={generateTopo}
             disabled={generating}
             className="ml-auto text-[10px] uppercase tracking-wider text-gold/60 hover:text-gold bg-surface-2 hover:bg-gold/10 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
           >
-            {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Générer avec l'IA"}
+            {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : isProvisional ? "Regénérer (journée complète)" : "Générer avec l'IA"}
           </button>
         )}
       </div>

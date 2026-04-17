@@ -15,17 +15,22 @@ export async function GET(request: Request) {
 
   const currentDay = await getCurrentMatchday();
 
-  const rows = await prisma.$queryRawUnsafe<{ content: string }[]>(
-    "SELECT content FROM TOPO WHERE matchday = ? AND league_slug = ? LIMIT 1",
+  const rows = await prisma.$queryRawUnsafe<{ content: string; is_provisional: number }[]>(
+    "SELECT content, is_provisional FROM TOPO WHERE matchday = ? AND league_slug = ? LIMIT 1",
     currentDay,
     slug
   );
 
   if (rows.length > 0) {
-    return NextResponse.json({ topo: rows[0].content, matchday: currentDay, cached: true });
+    return NextResponse.json({
+      topo: rows[0].content,
+      matchday: currentDay,
+      cached: true,
+      isProvisional: rows[0].is_provisional === 1,
+    });
   }
 
-  return NextResponse.json({ topo: null, matchday: currentDay, cached: false });
+  return NextResponse.json({ topo: null, matchday: currentDay, cached: false, isProvisional: false });
 }
 
 // POST: generate + save topo
@@ -47,15 +52,35 @@ export async function POST(request: Request) {
 
     const cupContext = await getCupContextForDay(currentDay);
 
+    // Check how many matches are played this matchday
+    const matchCounts = await prisma.$queryRawUnsafe<{ total: number; played: number }[]>(
+      "SELECT COUNT(*) as total, SUM(home_score IS NOT NULL) as played FROM MATCH_SCHEDULE WHERE matchday = ?",
+      currentDay
+    );
+    const totalMatches = Number(matchCounts[0]?.total ?? 9);
+    const playedMatches = Number(matchCounts[0]?.played ?? 0);
+    const isIncomplete = playedMatches < totalMatches && playedMatches > 0;
+
     // Check if already generated for this matchday
-    const existing = await prisma.$queryRawUnsafe<{ content: string }[]>(
-      "SELECT content FROM TOPO WHERE matchday = ? AND league_slug = ? LIMIT 1",
+    const existing = await prisma.$queryRawUnsafe<{ content: string; is_provisional: number }[]>(
+      "SELECT content, is_provisional FROM TOPO WHERE matchday = ? AND league_slug = ? LIMIT 1",
       currentDay,
       slug
     );
 
+    // If a final (non-provisional) topo exists, return it
+    // If a provisional topo exists but the day is now complete, allow regeneration
     if (existing.length > 0) {
-      return NextResponse.json({ topo: existing[0].content, matchday: currentDay, cached: true });
+      const wasProvisional = existing[0].is_provisional === 1;
+      if (!wasProvisional || isIncomplete) {
+        return NextResponse.json({
+          topo: existing[0].content,
+          matchday: currentDay,
+          cached: true,
+          isProvisional: wasProvisional,
+        });
+      }
+      // wasProvisional && !isIncomplete → day is now complete, regenerate final version
     }
 
     // Build context for Claude
@@ -169,21 +194,22 @@ Ton style :
 
 Voici les données de la journée :
 ${context}
-
+${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}/${totalMatches} matchs joués, ${totalMatches - playedMatches} reporté(s)). Mentionne-le brièvement en fin de synthèse.\n` : ""}
 Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`;
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
-    // Save to DB
+    // Save to DB (mark as provisional if matchday incomplete)
     await prisma.$executeRawUnsafe(
-      "INSERT INTO TOPO (matchday, league_slug, content) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE content = VALUES(content), created_at = CURRENT_TIMESTAMP",
+      "INSERT INTO TOPO (matchday, league_slug, content, is_provisional) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE content = VALUES(content), is_provisional = VALUES(is_provisional), created_at = CURRENT_TIMESTAMP",
       currentDay,
       slug,
-      text
+      text,
+      isIncomplete ? 1 : 0
     );
 
-    return NextResponse.json({ topo: text, matchday: currentDay, cached: false });
+    return NextResponse.json({ topo: text, matchday: currentDay, cached: false, isProvisional: isIncomplete });
   } catch (error) {
     console.error("Topo generation error:", error);
     return NextResponse.json(
