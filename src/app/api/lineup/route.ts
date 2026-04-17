@@ -100,9 +100,9 @@ export async function POST(request: Request) {
           const byDate = new Map<string, { teams: Set<string>; earliestHour: number }>();
           for (const m of matches) {
             // match_date and match_time are Date objects from Prisma
-            const dateObj = m.match_date instanceof Date ? m.match_date : new Date(m.match_date);
+            const dateObj = new Date(m.match_date as unknown as string);
             const date = dateObj.toISOString().slice(0, 10);
-            const timeObj = m.match_time instanceof Date ? m.match_time : null;
+            const timeObj = m.match_time ? new Date(m.match_time as unknown as string) : null;
             const hour = timeObj ? timeObj.getUTCHours() + 2 : 20; // stored as UTC, Paris = +2
             if (!byDate.has(date)) byDate.set(date, { teams: new Set(), earliestHour: hour });
             const entry = byDate.get(date)!;
