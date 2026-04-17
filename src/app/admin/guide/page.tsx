@@ -91,8 +91,9 @@ export default function AdminGuidePage() {
 
       {/* Deadlines */}
       <Section title="Deadlines">
-        <p>Les equipes sont bloquees a <strong className="text-white">{deadlines.defaultHour}h</strong> le jour du premier match de la journee. Si un match est programme avant {deadlines.earlyMatchHour}h, la cloture est avancee a <strong className="text-white">{deadlines.earlyMatchOffsetHours}h avant le coup d&apos;envoi</strong>.</p>
-        <p className="mt-2">La deadline est calculee automatiquement depuis le calendrier des matchs. En cas de besoin, elle peut etre modifiee manuellement depuis la page <strong className="text-white">Notes</strong> (champ date/heure a cote du selecteur de journee).</p>
+        <p>Le blocage fonctionne <strong className="text-white">par jour de match</strong>. Pour chaque jour ou des matchs sont programmes (vendredi, samedi, dimanche), les joueurs des clubs qui jouent ce jour-la sont bloques a <strong className="text-white">{deadlines.defaultHour}h</strong>. Si un match est programme avant {deadlines.earlyMatchHour}h ce jour-la, la cloture est avancee a <strong className="text-white">{deadlines.earlyMatchOffsetHours}h avant le coup d&apos;envoi</strong>.</p>
+        <p className="mt-2">Exemple : Lens-Toulouse le samedi a 15h, le reste le dimanche. Les joueurs de Lens et Toulouse sont bloques samedi a 13h (2h avant). Les autres joueurs restent modifiables jusqu&apos;au dimanche 15h.</p>
+        <p className="mt-2">Le blocage est applique cote serveur : meme si l&apos;interface affiche encore le bouton &quot;Valider&quot;, le serveur refusera la sauvegarde pour les joueurs bloques. Les admins peuvent toujours modifier les equipes via le module admin.</p>
         <p className="text-xs text-muted mt-2">Les heures par defaut sont modifiables dans la page <strong className="text-white">Configuration</strong>.</p>
       </Section>
 
