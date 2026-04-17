@@ -150,7 +150,7 @@ export async function POST(request: Request) {
           if (lockedPlayers.length > 0) {
             const uniqueClubs = Array.from(new Set(lockedPlayers));
             return NextResponse.json(
-              { error: `Impossible de modifier : les joueurs de ${uniqueClubs.join(", ")} sont bloqués (match en cours ou passé). Contactez un admin.` },
+              { error: `Impossible de modifier : les joueurs de ${uniqueClubs.join(", ")} sont bloqués (match trop proche ou passé). Contactez un admin.` },
               { status: 403 }
             );
           }
