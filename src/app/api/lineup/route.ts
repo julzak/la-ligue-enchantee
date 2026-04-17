@@ -137,7 +137,7 @@ export async function POST(request: Request) {
 
             if (now >= deadline) {
               // This day's matches are locked — check if any starter belongs to these clubs
-              for (const [playerId, clubName] of playerClubName) {
+              for (const [, clubName] of playerClubName) {
                 if (teams.has(clubName)) {
                   lockedPlayers.push(clubName);
                 }
