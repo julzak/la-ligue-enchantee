@@ -249,11 +249,14 @@ export async function POST(request: Request) {
           userId, topicId
         );
       } else {
-        // No existing topic — create one
+        // No existing topic — create one with dynamic season title
+        const now = new Date();
+        const seasonYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+        const seasonTitle = `Jokers ${seasonYear}-${seasonYear + 1}`;
         await prisma.$executeRawUnsafe(
           `INSERT INTO FORUM_TOPIC (league_id, category, author_id, title, post_count, last_post_at, last_post_by, created_at)
-           VALUES (?, ?, ?, 'Jokers 2025-2026', 1, NOW(), ?, NOW())`,
-          leagueId, category, userId, userId
+           VALUES (?, ?, ?, ?, 1, NOW(), ?, NOW())`,
+          leagueId, category, userId, seasonTitle, userId
         );
         const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>("SELECT LAST_INSERT_ID() as id");
         topicId = Number(row.id);
