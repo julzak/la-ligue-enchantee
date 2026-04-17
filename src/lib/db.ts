@@ -548,7 +548,7 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
     const pos = player?.position ?? "";
     const total = score
       ? calcPlayerTotal(dec(score.points), score.goals, score.passes, pos, score.redCard, score.ownGoals, score.penaltySaved, scoringCfg)
-      : 2; // forfait
+      : 0; // pas de score = pas joué (forfait 2 pts uniquement si saisi manuellement par un admin)
 
     return {
       playerId: l.playerId,

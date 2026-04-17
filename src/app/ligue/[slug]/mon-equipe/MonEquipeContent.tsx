@@ -139,8 +139,6 @@ export function MonEquipeContent({
         if (score.total > bestPlayer.points) {
           bestPlayer = { name: score.playerName, points: score.total };
         }
-      } else {
-        totalPts += 2; // forfait
       }
     }
 
