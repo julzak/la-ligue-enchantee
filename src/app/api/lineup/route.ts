@@ -67,11 +67,31 @@ export async function POST(request: Request) {
 
     // Admin override: edit another user's team (past matchdays, etc.)
     let userId = sessionUserId;
-    if (overrideUserId && overrideUserId !== sessionUserId) {
+    const isAdmin = overrideUserId && overrideUserId !== sessionUserId;
+    if (isAdmin) {
       if (!(await isUserAdmin(sessionUserId))) {
         return NextResponse.json({ error: "Acces admin requis" }, { status: 403 });
       }
       userId = overrideUserId;
+    }
+
+    // Enforce deadline (skip for admin overrides)
+    if (!isAdmin) {
+      try {
+        const deadlineRes = await fetch(new URL("/api/admin/deadline", request.url).href);
+        const deadlineData = await deadlineRes.json();
+        if (deadlineData.lockAt) {
+          const lockAt = new Date(deadlineData.lockAt);
+          if (new Date() >= lockAt) {
+            return NextResponse.json(
+              { error: `Journee fermee depuis ${lockAt.toLocaleString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" })}. Contactez un admin pour modifier.` },
+              { status: 403 }
+            );
+          }
+        }
+      } catch {
+        // Deadline check failed — allow save (fail open, not closed)
+      }
     }
 
     // Verify target user belongs to this league
