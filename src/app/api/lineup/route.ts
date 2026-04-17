@@ -67,9 +67,9 @@ export async function POST(request: Request) {
 
     // Admin override: edit another user's team (past matchdays, etc.)
     let userId = sessionUserId;
-    const isAdmin = overrideUserId && overrideUserId !== sessionUserId;
-    if (isAdmin) {
-      if (!(await isUserAdmin(sessionUserId))) {
+    const callerIsAdmin = await isUserAdmin(sessionUserId);
+    if (overrideUserId && overrideUserId !== sessionUserId) {
+      if (!callerIsAdmin) {
         return NextResponse.json({ error: "Acces admin requis" }, { status: 403 });
       }
       userId = overrideUserId;
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     // Enforce deadline per match day (skip for admin overrides)
     // Rule: for each day with matches, players from those clubs are locked at 15h
     // (or 2h before kickoff if a match starts before 17h that day)
-    if (!isAdmin) {
+    if (!callerIsAdmin) {
       try {
         const matches = await prisma.$queryRawUnsafe<{
           home_team: string; away_team: string; match_date: string; match_time: string;
@@ -145,9 +145,22 @@ export async function POST(request: Request) {
           if (lockedClubs.size > 0) {
             // Compare new lineup with previous: only block if locked players were moved
             const newStarterIds = new Set(starters.map((s: StarterEntry) => s.playerId));
-            const prevLineup = await prisma.teamDay.findMany({
+
+            // Get saved lineup for this day, or fallback to most recent
+            let prevLineup = await prisma.teamDay.findMany({
               where: { leagueId, userId, day },
             });
+            if (prevLineup.length === 0) {
+              const lastSaved = await prisma.$queryRawUnsafe<{ DAY: number }[]>(
+                "SELECT DISTINCT DAY FROM TEAM_DAY WHERE ID_LEAGUE = ? AND ID_USER = ? AND DAY < ? ORDER BY DAY DESC LIMIT 1",
+                leagueId, userId, day
+              );
+              if (lastSaved.length > 0) {
+                prevLineup = await prisma.teamDay.findMany({
+                  where: { leagueId, userId, day: Number(lastSaved[0].DAY) },
+                });
+              }
+            }
             const prevStarterIds = new Set(prevLineup.map((l) => l.playerId));
 
             // Find locked players that changed (added or removed from starters)
@@ -161,10 +174,7 @@ export async function POST(request: Request) {
               }
             }
 
-            // Also check: locked player newly added (not in prev lineup at all)
-            // This handles the case where prev lineup is empty (first save)
-            // In that case, allow everything (no previous state to compare)
-            if (movedLocked.length > 0 && prevLineup.length > 0) {
+            if (movedLocked.length > 0) {
               const uniqueClubs = Array.from(new Set(movedLocked));
               return NextResponse.json(
                 { error: `Impossible de modifier les joueurs de ${uniqueClubs.join(", ")} (match trop proche ou passé). Les autres changements sont possibles.` },
