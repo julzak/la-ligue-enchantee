@@ -83,7 +83,7 @@ export default function AdminGuidePage() {
           <span className="text-muted">Contre son camp (CSC)</span><span className="text-rouge">{scoring.cscMalus} pts</span>
           <span className="text-muted">Carton rouge</span><span className="text-rouge">note ramenee a 0, bonus conserves</span>
           <span className="text-muted">Penalty arrete (gardien)</span><span className="text-vert">+{scoring.penaltySavedBonus} pts</span>
-          <span className="text-muted">Joueur non note ou forfait</span><span>2 pts</span>
+          <span className="text-muted">Joueur non note (entre en jeu &lt;45 min)</span><span>2 pts (saisie manuelle admin)</span>
         </div>
         <p className="text-xs text-muted">Certains cas sont a traiter manuellement : un penalty rate se traduit par -1 pt a ajuster sur la note, un carton rouge annule par la commission reste a 0, et un tapis vert donne 5 pts au gagnant et 4 pts au perdant par joueur.</p>
         <p className="text-xs text-muted mt-1">Ces valeurs sont modifiables dans la page <strong className="text-white">Configuration</strong>.</p>
