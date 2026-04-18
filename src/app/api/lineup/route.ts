@@ -75,10 +75,10 @@ export async function POST(request: Request) {
       userId = overrideUserId;
     }
 
-    // Enforce deadline per match day (skip for admin overrides)
-    // Rule: for each day with matches, players from those clubs are locked at 15h
-    // (or 2h before kickoff if a match starts before 17h that day)
-    if (!callerIsAdmin) {
+    // Enforce deadline per match day
+    // Admins bypass ONLY when editing another user's team (not their own)
+    const isEditingOwnTeam = userId === sessionUserId;
+    if (!callerIsAdmin || isEditingOwnTeam) {
       try {
         const matches = await prisma.$queryRawUnsafe<{
           home_team: string; away_team: string; match_date: string; match_time: string;
