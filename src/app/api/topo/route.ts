@@ -174,7 +174,7 @@ Détail par participant (meilleurs/pires joueurs L1 de LEUR effectif) :
 ${participantDetails.join("\n\n")}
 `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
 
     const prompt = `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
 
@@ -197,8 +197,23 @@ ${context}
 ${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}/${totalMatches} matchs joués, ${totalMatches - playedMatches} reporté(s)). Mentionne-le brièvement en fin de synthèse.\n` : ""}
 Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    // Try models in order with retry (handles 503 overload)
+    let text = "";
+    for (const modelId of MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelId });
+        const result = await model.generateContent(prompt);
+        text = result.response.text();
+        if (text) break;
+      } catch (modelErr: unknown) {
+        const status = (modelErr as { status?: number }).status;
+        console.error(`Topo: ${modelId} failed (${status}), trying next...`);
+        continue;
+      }
+    }
+    if (!text) {
+      return NextResponse.json({ error: "Tous les modèles IA sont indisponibles. Réessayez dans quelques minutes." }, { status: 503 });
+    }
 
     // Save to DB (mark as provisional if matchday incomplete)
     await prisma.$executeRawUnsafe(
