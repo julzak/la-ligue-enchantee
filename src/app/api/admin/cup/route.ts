@@ -260,9 +260,9 @@ export async function POST(request: Request) {
 
     // Get matches for this round
     const matches = await prisma.$queryRawUnsafe<{
-      id: number; user1_id: number | null; user2_id: number | null; matchday: number | null;
+      id: number; position: number; user1_id: number | null; user2_id: number | null; matchday: number | null;
     }[]>(
-      "SELECT id, user1_id, user2_id, matchday FROM CUP_MATCH WHERE cup_id = ? AND round = ? AND winner_id IS NULL",
+      "SELECT id, position, user1_id, user2_id, matchday FROM CUP_MATCH WHERE cup_id = ? AND round = ? AND winner_id IS NULL",
       cupId, round
     );
 
