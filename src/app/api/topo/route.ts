@@ -1,9 +1,28 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma, inParams } from "@/lib/prisma";
 import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores, getCupContextForDay } from "@/lib/db";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+const GEMINI_KEY = process.env.GEMINI_API_KEY ?? "";
+
+async function callGemini(modelId: string, prompt: string): Promise<string> {
+  const useThinking = modelId.includes("2.5");
+  const body: Record<string, unknown> = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      maxOutputTokens: 600,
+      ...(useThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+    },
+  };
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${GEMINI_KEY}`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+  );
+  if (!res.ok) {
+    throw new Error(`Gemini ${modelId}: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
 
 // GET: retrieve saved topo (if exists)
 export async function GET(request: Request) {
@@ -174,7 +193,7 @@ Détail par participant (meilleurs/pires joueurs L1 de LEUR effectif) :
 ${participantDetails.join("\n\n")}
 `;
 
-    const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"];
+    const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
     const prompt = `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
 
@@ -203,18 +222,13 @@ ${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}
       const maxRetries = modelId === MODELS[0] ? 3 : 1;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          const model = genAI.getGenerativeModel({
-            model: modelId,
-            generationConfig: modelId.includes("2.5") ? { thinkingConfig: { thinkingBudget: 0 } } as Record<string, unknown> : undefined,
-          });
-          const result = await model.generateContent(prompt);
-          text = result.response.text();
+          text = await callGemini(modelId, prompt);
           if (text) break;
         } catch (modelErr: unknown) {
-          const status = (modelErr as { status?: number }).status;
-          console.error(`Topo: ${modelId} attempt ${attempt}/${maxRetries} failed (${status})`);
+          const msg = (modelErr as Error).message ?? "";
+          console.error(`Topo: ${modelId} attempt ${attempt}/${maxRetries} failed: ${msg.slice(0, 80)}`);
           if (attempt < maxRetries) {
-            await new Promise((r) => setTimeout(r, 2000 * attempt));
+            await new Promise((r) => setTimeout(r, 3000 * attempt));
           }
         }
       }
