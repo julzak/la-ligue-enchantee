@@ -3,6 +3,27 @@ import { prisma, inParams } from "@/lib/prisma";
 import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores, getCupContextForDay } from "@/lib/db";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY ?? "";
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? "";
+
+async function callClaude(prompt: string): Promise<string> {
+  if (!ANTHROPIC_KEY) throw new Error("No Anthropic key");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": ANTHROPIC_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error(`Claude: ${res.status}`);
+  const data = await res.json();
+  return data.content?.[0]?.text ?? "";
+}
 
 async function callGemini(modelId: string, prompt: string): Promise<string> {
   const useThinking = modelId.includes("2.5");
@@ -234,6 +255,16 @@ ${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}
       }
       if (text) break;
     }
+    // Last resort: Claude Haiku
+    if (!text && ANTHROPIC_KEY) {
+      try {
+        text = await callClaude(prompt);
+        console.log("Topo: fallback Claude Haiku OK");
+      } catch (e: unknown) {
+        console.error("Topo: Claude fallback failed:", (e as Error).message);
+      }
+    }
+
     if (!text) {
       return NextResponse.json({ error: "Tous les modèles IA sont indisponibles. Réessayez dans quelques minutes." }, { status: 503 });
     }
