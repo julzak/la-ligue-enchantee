@@ -197,19 +197,25 @@ ${context}
 ${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}/${totalMatches} matchs joués, ${totalMatches - playedMatches} reporté(s)). Mentionne-le brièvement en fin de synthèse.\n` : ""}
 Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`;
 
-    // Try models in order with retry (handles 503 overload)
+    // Try primary model with retries, then fallback
     let text = "";
     for (const modelId of MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelId });
-        const result = await model.generateContent(prompt);
-        text = result.response.text();
-        if (text) break;
-      } catch (modelErr: unknown) {
-        const status = (modelErr as { status?: number }).status;
-        console.error(`Topo: ${modelId} failed (${status}), trying next...`);
-        continue;
+      const maxRetries = modelId === MODELS[0] ? 3 : 1;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const model = genAI.getGenerativeModel({ model: modelId });
+          const result = await model.generateContent(prompt);
+          text = result.response.text();
+          if (text) break;
+        } catch (modelErr: unknown) {
+          const status = (modelErr as { status?: number }).status;
+          console.error(`Topo: ${modelId} attempt ${attempt}/${maxRetries} failed (${status})`);
+          if (attempt < maxRetries) {
+            await new Promise((r) => setTimeout(r, 2000 * attempt));
+          }
+        }
       }
+      if (text) break;
     }
     if (!text) {
       return NextResponse.json({ error: "Tous les modèles IA sont indisponibles. Réessayez dans quelques minutes." }, { status: 503 });
