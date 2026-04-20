@@ -320,16 +320,39 @@ export async function POST(request: Request) {
       );
 
       // Advance winner to next round
-      const nextMatch = await prisma.$queryRawUnsafe<{ id: number; user1_id: number | null }[]>(
-        "SELECT id, user1_id FROM CUP_MATCH WHERE cup_id = ? AND position > ? AND (user1_id IS NULL OR user2_id IS NULL) ORDER BY position LIMIT 1",
-        cupId, Number(match.id)
+      // Bracket logic: match at position P feeds into the next round.
+      // Pairs (P, P+1) go to the same target match. Even P = user1, odd P = user2.
+      const pos = Number(match.position);
+      const isEvenSlot = pos % 2 === 0;
+      // Find the target match: next round, with position > current round's max position
+      // Target position = next_round_start + floor((pos - current_round_start) / 2)
+      // Simpler: find match in next round where this position feeds into
+      const targetField = isEvenSlot ? "user2_id" : "user1_id";
+      const nextMatch = await prisma.$queryRawUnsafe<{ id: number }[]>(
+        `SELECT id FROM CUP_MATCH WHERE cup_id = ? AND position > ? AND round != ? ORDER BY position LIMIT 1`,
+        cupId, pos, round
+      );
+      // For paired matches, both pos P and P+1 feed into the same target
+      // We need to find the correct target: skip floor((pos - roundStartPos) / 2) matches into next round
+      const roundMatches = await prisma.$queryRawUnsafe<{ position: number }[]>(
+        "SELECT position FROM CUP_MATCH WHERE cup_id = ? AND round = ? ORDER BY position",
+        cupId, round
+      );
+      const roundStartPos = roundMatches.length > 0 ? Number(roundMatches[0].position) : pos;
+      const offsetInRound = pos - roundStartPos;
+      const targetOffset = Math.floor(offsetInRound / 2);
+
+      const nextRoundMatches = await prisma.$queryRawUnsafe<{ id: number; position: number }[]>(
+        "SELECT id, position FROM CUP_MATCH WHERE cup_id = ? AND position > ? AND round != ? ORDER BY position",
+        cupId, Math.max(...roundMatches.map(r => Number(r.position))), round
       );
 
-      if (nextMatch.length > 0) {
-        const field = nextMatch[0].user1_id === null ? "user1_id" : "user2_id";
+      if (nextRoundMatches.length > targetOffset) {
+        const target = nextRoundMatches[targetOffset];
+        const slot = offsetInRound % 2 === 0 ? "user1_id" : "user2_id";
         await prisma.$executeRawUnsafe(
-          `UPDATE CUP_MATCH SET ${field} = ? WHERE id = ?`,
-          winnerId, Number(nextMatch[0].id)
+          `UPDATE CUP_MATCH SET ${slot} = ? WHERE id = ?`,
+          winnerId, Number(target.id)
         );
       }
 
