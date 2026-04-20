@@ -25,7 +25,7 @@ export function ClassementTable({ standings, participants }: ClassementTableProp
   return (
     <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
       <div className="bg-surface-2 px-4 py-3 border-b border-white/[0.07]">
-        <h2 className="font-serif text-sm text-paper">Classement de la journée</h2>
+        <h2 className="font-serif text-sm text-gold">Classement de la journée</h2>
       </div>
 
       <div className="grid grid-cols-[2rem_1fr_3.5rem_3.5rem] px-3 py-2 text-[10px] uppercase tracking-wider text-muted border-b border-white/[0.07]">

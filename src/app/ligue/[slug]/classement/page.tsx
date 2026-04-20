@@ -89,7 +89,6 @@ export default async function ClassementPage({
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Left column - Classement */}
       <div className="w-full lg:w-72 lg:shrink-0 overflow-x-auto">
-        <h2 className="font-serif text-base text-white mb-2">Classement de la journée {currentMatchday}</h2>
         <form method="GET" className="flex items-center gap-2 mb-3">
           <label htmlFor="day" className="text-xs text-muted">Journée</label>
           <select
