@@ -1,5 +1,5 @@
 import { ClassementTable } from "@/components/classement/ClassementTable";
-import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments, getCupContextForDay, getCupChampion } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments, getCupContextForDay, getCupChampion, getCurrentMatchday } from "@/lib/db";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { Crown, TrendingUp, TrendingDown, Target, Zap, CreditCard, Trophy } from "lucide-react";
 import Link from "next/link";
@@ -13,19 +13,30 @@ const forumExcerpts = [
   { title: "Résultats journée 24", author: "laurent", excerpt: "Magnifique, Quelle belle inspiration..." },
 ];
 
-export default async function ClassementPage({ params }: { params: { slug: string } }) {
+export default async function ClassementPage({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams: Promise<{ day?: string }>;
+}) {
   const { slug } = params;
+  const { day: dayParam } = await searchParams;
   const league = await getLeagueBySlug(slug);
   if (!league) {
     notFound();
   }
 
+  const maxDay = await getCurrentMatchday();
+  const selectedDay = dayParam ? Math.max(1, Math.min(maxDay, Number(dayParam))) : undefined;
+
   const [standings, jokersMap, paymentsMap] = await Promise.all([
-    getLeagueStandings(league.dbId),
+    getLeagueStandings(league.dbId, selectedDay),
     getLeagueJokersRemaining(league.dbId),
     getLeaguePayments(league.dbId),
   ]);
   const currentMatchday = standings.currentDay;
+  const dayOptions = Array.from({ length: maxDay }, (_, i) => maxDay - i);
 
   // Cup context: champion (once final has winner) → takes priority;
   // otherwise upcoming round + last played round
@@ -78,6 +89,20 @@ export default async function ClassementPage({ params }: { params: { slug: strin
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Left column - Classement */}
       <div className="w-full lg:w-72 lg:shrink-0 overflow-x-auto">
+        <form method="GET" className="flex items-center gap-2 mb-3">
+          <label htmlFor="day" className="text-xs text-muted">Journée</label>
+          <select
+            id="day"
+            name="day"
+            defaultValue={currentMatchday}
+            className="bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-gold/40 flex-1"
+          >
+            {dayOptions.map((d) => (
+              <option key={d} value={d}>J{d}</option>
+            ))}
+          </select>
+          <button type="submit" className="text-xs text-gold hover:underline px-1">Voir</button>
+        </form>
         <ClassementTable standings={tableStandings} participants={participants} />
       </div>
 
