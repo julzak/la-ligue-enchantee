@@ -203,7 +203,10 @@ ${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}
       const maxRetries = modelId === MODELS[0] ? 3 : 1;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          const model = genAI.getGenerativeModel({ model: modelId });
+          const model = genAI.getGenerativeModel({
+            model: modelId,
+            generationConfig: modelId.includes("2.5") ? { thinkingConfig: { thinkingBudget: 0 } } as Record<string, unknown> : undefined,
+          });
           const result = await model.generateContent(prompt);
           text = result.response.text();
           if (text) break;
