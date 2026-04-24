@@ -420,7 +420,7 @@ export function EquipeContent({
           <Link href={`/ligue/${slug}/classement`} className="text-sm text-gold hover:underline block">
             Accueil de la ligue
           </Link>
-          <Link href={`/ligue/${slug}/forum`} className="text-sm text-gold hover:underline block">
+          <Link href={`/forum/${slug}`} className="text-sm text-gold hover:underline block">
             Forum de la ligue
           </Link>
           <Link href={`/ligue/${slug}/mon-equipe`} className="text-sm text-gold hover:underline block">

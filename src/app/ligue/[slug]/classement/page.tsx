@@ -284,7 +284,7 @@ export default async function ClassementPage({
           <div className="divide-y divide-white/[0.05]">
             {forumExcerpts.map((post, i) => (
               <div key={i} className="px-3 py-3">
-                <Link href={`/ligue/${slug}/forum`} className="text-xs text-gold hover:underline font-medium block mb-1.5">
+                <Link href={`/forum/${slug}`} className="text-xs text-gold hover:underline font-medium block mb-1.5">
                   {post.title}
                 </Link>
                 <p className="text-[11px] text-white/60 leading-relaxed">
