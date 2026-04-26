@@ -82,8 +82,9 @@ export async function POST(request: Request) {
       try {
         const matches = await prisma.$queryRawUnsafe<{
           home_team: string; away_team: string; match_date: string; match_time: string;
+          is_postponed: number | null; admin_override_date: string | null; home_score: number | null;
         }[]>(
-          "SELECT home_team, away_team, match_date, match_time FROM MATCH_SCHEDULE WHERE matchday = ?",
+          "SELECT home_team, away_team, match_date, match_time, is_postponed, admin_override_date, home_score FROM MATCH_SCHEDULE WHERE matchday = ?",
           day
         );
 
@@ -96,12 +97,20 @@ export async function POST(request: Request) {
           );
           const cfg = cfgRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
 
-          // Group matches by date, compute deadline per date
+          // Group matches by date, compute deadline per date.
+          // Postponed matches without a result use admin_override_date if set,
+          // otherwise they are skipped (no lock on their clubs).
           const byDate = new Map<string, { teams: Set<string>; earliestHour: number }>();
           for (const m of matches) {
-            // match_date and match_time are Date objects from Prisma
-            const dateObj = new Date(m.match_date as unknown as string);
-            const date = dateObj.toISOString().slice(0, 10);
+            const isUnplayedPostponed = m.is_postponed === 1 && m.home_score === null;
+            let effectiveDate: Date;
+            if (isUnplayedPostponed) {
+              if (!m.admin_override_date) continue;
+              effectiveDate = new Date(m.admin_override_date as unknown as string);
+            } else {
+              effectiveDate = new Date(m.match_date as unknown as string);
+            }
+            const date = effectiveDate.toISOString().slice(0, 10);
             const timeObj = m.match_time ? new Date(m.match_time as unknown as string) : null;
             const hour = timeObj ? timeObj.getUTCHours() + 2 : 20; // stored as UTC, Paris = +2
             if (!byDate.has(date)) byDate.set(date, { teams: new Set(), earliestHour: hour });
