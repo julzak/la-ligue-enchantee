@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, memo } from "react";
-import { Save, Send, Loader2, ChevronDown, Image as ImageIcon } from "lucide-react";
+import { Save, Send, Loader2, ChevronDown, Image as ImageIcon, CalendarClock } from "lucide-react";
 
 interface PlayerScore {
   playerId: number;
@@ -21,10 +21,14 @@ interface PlayerScore {
 }
 
 interface MatchInfo {
+  id: number;
   home_team: string;
   away_team: string;
+  match_date: string | null;
   home_score: number | null;
   away_score: number | null;
+  is_postponed: number | null;
+  admin_override_date: string | null;
   infographic_url: string | null;
 }
 
@@ -149,6 +153,66 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: Pl
     </div>
   );
 });
+
+function PostponedControls({ match, onUpdate }: { match: MatchInfo; onUpdate: (id: number, patch: { is_postponed?: 0 | 1; admin_override_date?: string | null }) => void }) {
+  const isPostponed = match.is_postponed === 1;
+  const hasResult = match.home_score !== null;
+  const overrideDate = match.admin_override_date ? new Date(match.admin_override_date).toISOString().slice(0, 10) : "";
+
+  if (!isPostponed && hasResult) return null;
+
+  if (!isPostponed) {
+    return (
+      <div className="px-4 py-1.5 border-b border-white/[0.05] flex justify-end">
+        <button
+          onClick={() => onUpdate(match.id, { is_postponed: 1 })}
+          className="text-[10px] text-muted hover:text-orange-400 flex items-center gap-1 transition-colors"
+          title="Marquer ce match comme reporte"
+        >
+          <CalendarClock className="w-3 h-3" />
+          Reporter
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-2 border-b border-white/[0.05] bg-orange-400/5 flex items-center gap-3 text-[11px]">
+      <span className="text-orange-400 font-medium flex items-center gap-1">
+        <CalendarClock className="w-3.5 h-3.5" />
+        Reporte
+      </span>
+      {hasResult ? (
+        overrideDate ? (
+          <span className="text-muted">joue le {new Date(overrideDate).toLocaleDateString("fr-FR")}</span>
+        ) : (
+          <span className="text-muted">joue (date initiale appliquee)</span>
+        )
+      ) : (
+        <>
+          <label className="text-muted">Rejoue le</label>
+          <input
+            type="date"
+            defaultValue={overrideDate}
+            onBlur={(e) => {
+              const newVal = e.target.value || null;
+              const oldVal = overrideDate || null;
+              if (newVal !== oldVal) onUpdate(match.id, { admin_override_date: newVal });
+            }}
+            className="bg-surface-2 border border-white/[0.07] rounded px-1.5 py-0.5 text-white focus:outline-none focus:border-gold"
+          />
+          <button
+            onClick={() => onUpdate(match.id, { is_postponed: 0, admin_override_date: null })}
+            className="ml-auto text-muted hover:text-rouge transition-colors"
+            title="Annuler le report"
+          >
+            Annuler
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function AdminNotesPage() {
   const [day, setDay] = useState(0);
@@ -280,6 +344,25 @@ export default function AdminNotesPage() {
       setMessage("Erreur publication");
     }
     setPublishing(false);
+  }
+
+  async function handleUpdateMatch(matchId: number, patch: { is_postponed?: 0 | 1; admin_override_date?: string | null }) {
+    try {
+      const res = await fetch("/api/admin/match-schedule", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: matchId, ...patch }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setMessage("Erreur: " + (data.error ?? "report match"));
+        return;
+      }
+      setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, ...patch } as MatchInfo : m)));
+      setMessage("Match mis a jour");
+    } catch {
+      setMessage("Erreur report match");
+    }
   }
 
   // Group players by match
@@ -452,6 +535,9 @@ export default function AdminNotesPage() {
                       </a>
                     )}
                   </div>
+
+                  {/* Postponed match controls */}
+                  <PostponedControls match={match} onUpdate={handleUpdateMatch} />
 
                   {/* Sticky column headers */}
                   <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05] sticky top-0 bg-surface z-10">
