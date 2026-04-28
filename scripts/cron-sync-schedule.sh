@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sync match schedule daily from TheSportsDB
 # Cron: 0 6 * * * (every day at 6:00 AM, before any deadline)
-# Syncs current matchday + next matchday to catch advances/postponements
+# Syncs current matchday + 2 next matchdays to catch advances/postponements
 
 set -euo pipefail
 
@@ -11,8 +11,11 @@ export PATH="/usr/local/bin:/usr/bin:/bin:$HOME/.nvm/versions/node/$(ls $HOME/.n
 
 cd "$APP_DIR"
 
+# get-current-matchday renvoie la derniere journee AVEC scores saisis.
+# Tant qu'une journee n'est pas publiee on est en retard d'1 indice ;
+# on sync donc sur 3 journees pour garantir que la prochaine a venir est presente.
 MATCHDAY=$(npx tsx scripts/get-current-matchday.ts 2>/dev/null || echo "29")
-NEXT=$((MATCHDAY + 1))
+END=$((MATCHDAY + 2))
 
-echo "$(date '+%F %T') Syncing J${MATCHDAY}-J${NEXT}" >> "$LOG_FILE"
-npx tsx scripts/sync-match-schedule.ts "$MATCHDAY" "$NEXT" >> "$LOG_FILE" 2>&1 || echo "$(date '+%F %T') WARN: sync failed" >> "$LOG_FILE"
+echo "$(date '+%F %T') Syncing J${MATCHDAY}-J${END}" >> "$LOG_FILE"
+npx tsx scripts/sync-match-schedule.ts "$MATCHDAY" "$END" >> "$LOG_FILE" 2>&1 || echo "$(date '+%F %T') WARN: sync failed" >> "$LOG_FILE"
