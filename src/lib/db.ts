@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
-import { getClubLogoUrl, getClubShortName } from "./assets";
+import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "./assets";
 import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
 
 // ── Request-scoped caches (dedup within same render) ────
@@ -145,6 +145,81 @@ export async function getUserById(userId: number): Promise<ParsedUser | null> {
 export async function getCurrentMatchday(): Promise<number> {
   const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
   return latest?.day ?? 1;
+}
+
+// ── Locked clubs for a matchday ─────────────────────────
+// Retourne les clubIds dont la deadline de saisie d'equipe est passee
+// pour la journee donnee. Logique cote serveur uniquement (utilise
+// par /api/lineup pour bloquer les modifs et par /mon-equipe pour
+// griser les joueurs concernes cote UI).
+//
+// Regles :
+//   - Match reporte non joue (is_postponed=1 AND home_score IS NULL) :
+//     - sans admin_override_date : exclu du calcul, club non locke
+//     - avec admin_override_date : deadline calculee sur cette nouvelle date
+//   - Sinon : deadline calculee sur match_date
+//   - Deadline = SCORING_CONFIG.deadline_hour (15h Paris par defaut),
+//     avancee a (heure_match - early_match_offset_hours) si match avant
+//     early_match_hour (17h)
+export async function getLockedClubIds(day: number): Promise<Set<number>> {
+  const matches = await prisma.$queryRawUnsafe<{
+    home_team: string; away_team: string; match_date: string; match_time: string;
+    is_postponed: number | null; admin_override_date: string | null; home_score: number | null;
+  }[]>(
+    "SELECT home_team, away_team, match_date, match_time, is_postponed, admin_override_date, home_score FROM MATCH_SCHEDULE WHERE matchday = ?",
+    day
+  );
+
+  if (matches.length === 0) return new Set();
+
+  const cfgRows = await prisma.$queryRawUnsafe<{
+    deadline_hour: number; early_match_hour: number; early_match_offset_hours: number;
+  }[]>(
+    "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = '2025-2026' LIMIT 1"
+  );
+  const cfg = cfgRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
+
+  const byDate = new Map<string, { clubIds: Set<number>; earliestHour: number }>();
+  for (const m of matches) {
+    const isUnplayedPostponed = m.is_postponed === 1 && m.home_score === null;
+    let effectiveDate: Date;
+    if (isUnplayedPostponed) {
+      if (!m.admin_override_date) continue;
+      effectiveDate = new Date(m.admin_override_date as unknown as string);
+    } else {
+      effectiveDate = new Date(m.match_date as unknown as string);
+    }
+    const date = effectiveDate.toISOString().slice(0, 10);
+    const timeObj = m.match_time ? new Date(m.match_time as unknown as string) : null;
+    const hour = timeObj ? timeObj.getUTCHours() + 2 : 20; // stored as UTC, Paris = +2
+    const homeId = getClubIdByTeamName(m.home_team);
+    const awayId = getClubIdByTeamName(m.away_team);
+    if (homeId === null || awayId === null) {
+      console.warn(`[getLockedClubIds] Unknown team J${day}: "${m.home_team}" / "${m.away_team}"`);
+      continue;
+    }
+    if (!byDate.has(date)) byDate.set(date, { clubIds: new Set(), earliestHour: hour });
+    const entry = byDate.get(date)!;
+    entry.clubIds.add(homeId);
+    entry.clubIds.add(awayId);
+    if (hour < entry.earliestHour) entry.earliestHour = hour;
+  }
+
+  const now = new Date();
+  const lockedClubIds = new Set<number>();
+  for (const [date, { clubIds, earliestHour }] of Array.from(byDate.entries())) {
+    let deadlineHour = Number(cfg.deadline_hour);
+    if (earliestHour < Number(cfg.early_match_hour)) {
+      deadlineHour = earliestHour - Number(cfg.early_match_offset_hours);
+    }
+    const deadlineUtcHour = deadlineHour - 2; // Paris = UTC+2
+    const deadline = new Date(`${date}T${String(Math.max(0, deadlineUtcHour)).padStart(2, "0")}:00:00Z`);
+    if (now >= deadline) {
+      clubIds.forEach((id) => lockedClubIds.add(id));
+    }
+  }
+
+  return lockedClubIds;
 }
 
 // ── Standings (from STATS_USER) ───────────────────────────
