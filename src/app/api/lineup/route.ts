@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isUserAdmin } from "@/lib/admin-auth";
+import { getClubIdByTeamName } from "@/lib/assets";
 import type { Position } from "@/lib/types";
 
 interface StarterEntry {
@@ -100,7 +101,9 @@ export async function POST(request: Request) {
           // Group matches by date, compute deadline per date.
           // Postponed matches without a result use admin_override_date if set,
           // otherwise they are skipped (no lock on their clubs).
-          const byDate = new Map<string, { teams: Set<string>; earliestHour: number }>();
+          // Match par clubId (pas par nom) car MATCH_SCHEDULE.home_team
+          // ("Lyon") differe de CLUB.NAME ("LYON (OL)") pour PSG/OM/OL/Monaco/Paris FC.
+          const byDate = new Map<string, { clubIds: Set<number>; earliestHour: number }>();
           for (const m of matches) {
             const isUnplayedPostponed = m.is_postponed === 1 && m.home_score === null;
             let effectiveDate: Date;
@@ -113,32 +116,32 @@ export async function POST(request: Request) {
             const date = effectiveDate.toISOString().slice(0, 10);
             const timeObj = m.match_time ? new Date(m.match_time as unknown as string) : null;
             const hour = timeObj ? timeObj.getUTCHours() + 2 : 20; // stored as UTC, Paris = +2
-            if (!byDate.has(date)) byDate.set(date, { teams: new Set(), earliestHour: hour });
+            const homeId = getClubIdByTeamName(m.home_team);
+            const awayId = getClubIdByTeamName(m.away_team);
+            if (homeId === null || awayId === null) {
+              console.warn(`[lineup] Unknown team in MATCH_SCHEDULE J${day}: "${m.home_team}" / "${m.away_team}"`);
+              continue;
+            }
+            if (!byDate.has(date)) byDate.set(date, { clubIds: new Set(), earliestHour: hour });
             const entry = byDate.get(date)!;
-            entry.teams.add(m.home_team.toUpperCase());
-            entry.teams.add(m.away_team.toUpperCase());
+            entry.clubIds.add(homeId);
+            entry.clubIds.add(awayId);
             if (hour < entry.earliestHour) entry.earliestHour = hour;
           }
 
-          // Map club IDs to team names for the starters
+          // Get clubId for each starter (pour comparaison directe)
           const starterPlayerIds = starters.map((s: StarterEntry) => s.playerId);
           const starterPlayers = await prisma.player.findMany({
             where: { id: { in: starterPlayerIds } },
             select: { id: true, clubId: true },
           });
-          const clubIds = Array.from(new Set(starterPlayers.map((p) => p.clubId)));
-          const clubs = await prisma.club.findMany({
-            where: { id: { in: clubIds } },
-            select: { id: true, name: true },
-          });
-          const clubNameById = new Map(clubs.map((c) => [c.id, c.name.toUpperCase()]));
-          const playerClubName = new Map(starterPlayers.map((p) => [p.id, clubNameById.get(p.clubId) ?? ""]));
+          const playerClubId = new Map(starterPlayers.map((p) => [p.id, p.clubId]));
 
-          // Build set of locked club names (deadline passed for their match day)
+          // Build set of locked clubIds (deadline passed for their match day)
           const now = new Date();
-          const lockedClubs = new Set<string>();
+          const lockedClubIds = new Set<number>();
 
-          for (const [date, { teams, earliestHour }] of Array.from(byDate.entries())) {
+          for (const [date, { clubIds, earliestHour }] of Array.from(byDate.entries())) {
             let deadlineHour = Number(cfg.deadline_hour);
             if (earliestHour < Number(cfg.early_match_hour)) {
               deadlineHour = earliestHour - Number(cfg.early_match_offset_hours);
@@ -147,11 +150,11 @@ export async function POST(request: Request) {
             const deadline = new Date(`${date}T${String(Math.max(0, deadlineUtcHour)).padStart(2, "0")}:00:00Z`);
 
             if (now >= deadline) {
-              teams.forEach((t: string) => lockedClubs.add(t));
+              clubIds.forEach((id: number) => lockedClubIds.add(id));
             }
           }
 
-          if (lockedClubs.size > 0) {
+          if (lockedClubIds.size > 0) {
             // Compare new lineup with previous: only block if locked players were moved
             const newStarterIds = new Set(starters.map((s: StarterEntry) => s.playerId));
 
@@ -173,20 +176,25 @@ export async function POST(request: Request) {
             const prevStarterIds = new Set(prevLineup.map((l) => l.playerId));
 
             // Find locked players that changed (added or removed from starters)
-            const movedLocked: string[] = [];
-            for (const [pid, clubName] of Array.from(playerClubName.entries())) {
-              if (!lockedClubs.has(clubName)) continue;
+            const movedLockedClubIds = new Set<number>();
+            for (const [pid, clubId] of Array.from(playerClubId.entries())) {
+              if (!lockedClubIds.has(clubId)) continue;
               const wasStarter = prevStarterIds.has(pid);
               const isStarter = newStarterIds.has(pid);
               if (wasStarter !== isStarter) {
-                movedLocked.push(clubName);
+                movedLockedClubIds.add(clubId);
               }
             }
 
-            if (movedLocked.length > 0) {
-              const uniqueClubs = Array.from(new Set(movedLocked));
+            if (movedLockedClubIds.size > 0) {
+              // Resolve club names just for the error message
+              const lockedClubs = await prisma.club.findMany({
+                where: { id: { in: Array.from(movedLockedClubIds) } },
+                select: { name: true },
+              });
+              const clubNames = lockedClubs.map((c) => c.name);
               return NextResponse.json(
-                { error: `Impossible de modifier les joueurs de ${uniqueClubs.join(", ")} (match trop proche ou passé). Les autres changements sont possibles.` },
+                { error: `Impossible de modifier les joueurs de ${clubNames.join(", ")} (match trop proche ou passé). Les autres changements sont possibles.` },
                 { status: 403 }
               );
             }
