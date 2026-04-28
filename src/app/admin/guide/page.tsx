@@ -104,6 +104,16 @@ export default function AdminGuidePage() {
         <p className="mt-2">Le champ <strong className="text-white">Deadline</strong> permet de definir l&apos;heure de cloture pour la journee suivante.</p>
       </Section>
 
+      {/* Matches reportes */}
+      <Section title="Matches reportes" step="Quand la LFP annonce un report">
+        <p>Sur la page <strong className="text-white">Saisie des notes</strong>, chaque match dispose d&apos;un bouton <strong className="text-white">Reporter</strong>. La gestion d&apos;un report se fait en deux temps.</p>
+        <p className="mt-2"><strong className="text-white">1. Des l&apos;annonce du report</strong> (avant qu&apos;on ait la nouvelle date) : cliquer sur <strong className="text-white">Reporter</strong>. Le match passe en bandeau orange et est exclu du calcul de deadline. Effet immediat : les joueurs des deux clubs concernes sont <strong className="text-white">deverrouilles</strong> pour tous les participants, meme si la deadline initiale est passee.</p>
+        <p className="mt-2"><strong className="text-white">2. Quand la nouvelle date est connue</strong> : saisir cette date dans l&apos;input du bandeau orange. La deadline se recalcule automatiquement sur la nouvelle date (regle standard : {deadlines.defaultHour}h locale, ou heure du match - {deadlines.earlyMatchOffsetHours}h si coup d&apos;envoi avant {deadlines.earlyMatchHour}h). Les joueurs des deux clubs se reverrouillent a cette nouvelle deadline.</p>
+        <p className="mt-2"><strong className="text-white">Annuler un report</strong> : cliquer sur <strong className="text-white">Annuler</strong> dans le bandeau orange. Le calendrier d&apos;origine reprend la main.</p>
+        <p className="text-xs text-muted mt-2">Important : le report doit etre enregistre <strong className="text-white">avant</strong> la saisie du score. Si un score est deja saisi pour le match, marquer le match comme reporte n&apos;a aucun effet sur les locks (comportement volontaire pour eviter de debloquer des joueurs apres coup).</p>
+        <p className="text-xs text-muted mt-1">Les autres joueurs de l&apos;equipe (clubs non concernes par le report) ne sont pas affectes : ils suivent le calendrier normal.</p>
+      </Section>
+
       {/* Jokers */}
       <Section title="Jokers" step="Sur demande des participants via le forum">
         <p>Selectionner la ligue puis le participant concerne. Choisir le joueur qui <strong className="text-white">sort</strong> de l&apos;effectif, puis rechercher et selectionner le joueur qui <strong className="text-white">entre</strong> (par nom ou par club). Valider pour executer le joker. Le joueur entre sera effectif a partir de la journee suivante.</p>

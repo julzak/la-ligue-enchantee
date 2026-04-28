@@ -10,8 +10,8 @@ export async function GET(request: Request) {
 
   if (!day) return NextResponse.json({ matches: [] });
 
-  const matches = await prisma.$queryRawUnsafe<{
-    id: number;
+  const rows = await prisma.$queryRawUnsafe<{
+    id: bigint;
     home_team: string;
     away_team: string;
     match_date: Date;
@@ -25,6 +25,11 @@ export async function GET(request: Request) {
     "SELECT id, home_team, away_team, match_date, match_time, home_score, away_score, is_postponed, admin_override_date, infographic_url FROM MATCH_SCHEDULE WHERE matchday = ? ORDER BY COALESCE(admin_override_date, match_date), match_time",
     day
   );
+
+  // MATCH_SCHEDULE.id est BIGINT cote MySQL : Prisma raw renvoie BigInt,
+  // que NextResponse.json ne sait pas serialiser. Cast en Number (les ids
+  // restent largement sous 2^53).
+  const matches = rows.map((r) => ({ ...r, id: Number(r.id) }));
 
   return NextResponse.json({ matches });
 }
