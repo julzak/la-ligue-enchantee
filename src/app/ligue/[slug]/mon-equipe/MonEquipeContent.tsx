@@ -4,9 +4,9 @@ import { useState, useMemo, useCallback } from "react";
 import { PositionBadge } from "@/components/ui/PositionBadge";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { FormBadge } from "@/components/ui/FormBadge";
-import { Check, AlertTriangle, Loader2, Zap, Search } from "lucide-react";
+import { Check, AlertTriangle, Loader2, Zap, Search, Lock } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { Position, FormIndicator } from "@/lib/types";
 
 // ── Types matching db.ts returns ──────────────────────────
@@ -42,6 +42,9 @@ interface MonEquipeContentProps {
   team: TeamPlayer[];
   lastDayScores: DayScore[];
   currentDay: number;
+  selectedDay: number;
+  maxDay: number;
+  lockedClubIds: number[];
   leagueId: number;
   userName: string;
   adminOverrideUserId?: number;
@@ -85,12 +88,18 @@ export function MonEquipeContent({
   team,
   lastDayScores,
   currentDay,
+  selectedDay,
+  maxDay,
+  lockedClubIds,
   leagueId,
   userName,
   adminOverrideUserId,
 }: MonEquipeContentProps) {
   const params = useParams();
   const slug = params.slug as string;
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // Track which players are starters locally
   const [starterIds, setStarterIds] = useState<Set<number>>(() => {
@@ -102,6 +111,22 @@ export function MonEquipeContent({
   });
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const lockedClubIdSet = useMemo(() => new Set(lockedClubIds), [lockedClubIds]);
+  const isPlayerLocked = useCallback(
+    (clubId: number) => lockedClubIdSet.has(clubId),
+    [lockedClubIdSet]
+  );
+
+  function handleDayChange(newDay: number) {
+    if (newDay === selectedDay) return;
+    // Preserve les autres search params (ex: mode admin avec ?league=X&leagueId=Y)
+    const next = new URLSearchParams(searchParams.toString());
+    if (newDay === currentDay + 1) next.delete("day");
+    else next.set("day", String(newDay));
+    const qs = next.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
 
   // Build score map for form indicator
   const scoreMap = useMemo(() => {
@@ -145,9 +170,10 @@ export function MonEquipeContent({
     return { totalPts, playedCount, bestPlayer };
   }, [starters, scoreMap]);
 
-  // Toggle a player starter/bench
+  // Toggle a player starter/bench (no-op if player's club is locked)
   const handleToggle = useCallback(
-    (playerId: number) => {
+    (playerId: number, clubId: number) => {
+      if (isPlayerLocked(clubId)) return;
       setSaveResult(null);
       setStarterIds((prev) => {
         const next = new Set(prev);
@@ -161,7 +187,7 @@ export function MonEquipeContent({
         return next;
       });
     },
-    []
+    [isPlayerLocked]
   );
 
   // Save lineup
@@ -179,7 +205,7 @@ export function MonEquipeContent({
 
     const payload = {
       leagueId,
-      day: currentDay + 1,
+      day: selectedDay,
       starters: sorted.map((p, i) => ({
         playerId: p.playerId,
         indx: i + 1,
@@ -196,7 +222,7 @@ export function MonEquipeContent({
 
       const data = await res.json();
       if (res.ok) {
-        setSaveResult({ ok: true, message: "Equipe validee pour la journee " + (currentDay + 1) + " !" });
+        setSaveResult({ ok: true, message: "Equipe validee pour la journee " + selectedDay + " !" });
       } else {
         setSaveResult({ ok: false, message: data.error || "Erreur inconnue" });
       }
@@ -205,7 +231,7 @@ export function MonEquipeContent({
     } finally {
       setSaving(false);
     }
-  }, [isValid, saving, starters, leagueId, currentDay]);
+  }, [isValid, saving, starters, leagueId, selectedDay, adminOverrideUserId]);
 
   function getForm(playerId: number): FormIndicator {
     const score = scoreMap.get(playerId);
@@ -218,16 +244,23 @@ export function MonEquipeContent({
   function renderPlayerCard(player: TeamPlayer, isStarter: boolean) {
     const score = scoreMap.get(player.playerId);
     const form = getForm(player.playerId);
+    const locked = isPlayerLocked(player.clubId);
 
     return (
       <button
         key={player.playerId}
-        onClick={() => handleToggle(player.playerId)}
+        onClick={() => handleToggle(player.playerId, player.clubId)}
+        disabled={locked}
+        title={locked ? "Match deja debute ou trop proche : modification impossible" : undefined}
         className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all text-left ${
           isStarter
             ? "bg-gold/[0.06] border-2 border-gold/25 shadow-[inset_0_0_20px_rgba(200,168,75,0.03)]"
             : "bg-surface-2 border border-white/[0.07]"
-        } hover:bg-white/[0.04] cursor-pointer active:scale-[0.98]`}
+        } ${
+          locked
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-white/[0.04] cursor-pointer active:scale-[0.98]"
+        }`}
       >
         <PlayerAvatar playerId={player.playerId} name={player.playerName} size={44} clubLogoUrl={player.clubLogo} />
         <div className="flex-1 min-w-0">
@@ -235,6 +268,7 @@ export function MonEquipeContent({
             <PositionBadge position={player.position} />
             <span className="text-sm font-medium text-white truncate">{player.playerName}</span>
             <FormBadge form={form} />
+            {locked && <Lock className="w-3 h-3 text-muted shrink-0" />}
           </div>
           <div className="flex items-center gap-1.5 mt-1">
             <span className="text-xs text-muted">{player.clubName}</span>
@@ -265,14 +299,37 @@ export function MonEquipeContent({
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-serif text-xl text-white mb-1">Mon equipe</h2>
           <p className="text-sm text-muted">
-            {userName} - Composition pour la journee {currentDay + 1}
+            {userName} - Composition pour la journee {selectedDay}
+            {selectedDay !== currentDay + 1 && (
+              <button
+                onClick={() => handleDayChange(currentDay + 1)}
+                className="ml-2 text-xs text-gold/70 hover:text-gold underline"
+              >
+                Revenir a la journee a venir
+              </button>
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={selectedDay}
+            onChange={(e) => handleDayChange(Number(e.target.value))}
+            className="bg-surface border border-white/[0.07] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-gold"
+            aria-label="Selectionner une journee"
+          >
+            {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
+              <option key={d} value={d}>
+                Journee {d}
+                {d === currentDay + 1 ? " (a venir)" : ""}
+                {d === currentDay ? " (en cours)" : ""}
+                {d < currentDay ? " (passee)" : ""}
+              </option>
+            ))}
+          </select>
           <Link
             href={`/ligue/${slug}/explorateur`}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted hover:text-gold bg-surface border border-white/[0.07] rounded-lg transition-colors"

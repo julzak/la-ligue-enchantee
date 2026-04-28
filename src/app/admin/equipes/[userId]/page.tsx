@@ -38,6 +38,11 @@ export default async function AdminEquipeUserPage({
     getParticipantDayScores(leagueDbId, userId, targetDay),
   ]);
 
+  // Mode admin : pas de lock cote UI (le backend bypass deja la deadline
+  // pour les admins editant une autre equipe). On laisse aussi la borne
+  // haute large pour que l'admin puisse remonter en avance si besoin.
+  const maxDay = Math.max(currentDay + 2, targetDay);
+
   return (
     <div className="space-y-4">
       <div className="bg-surface rounded-lg border border-gold/20 px-4 py-3">
@@ -48,7 +53,10 @@ export default async function AdminEquipeUserPage({
       <MonEquipeContent
         team={team}
         lastDayScores={lastDayScores}
-        currentDay={targetDay - 1}
+        currentDay={currentDay}
+        selectedDay={targetDay}
+        maxDay={maxDay}
+        lockedClubIds={[]}
         leagueId={leagueDbId}
         userName={user.cleanName}
         adminOverrideUserId={userId}

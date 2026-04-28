@@ -7,14 +7,19 @@ import {
   getParticipantTeam,
   getRosterDayScores,
   getCurrentMatchday,
+  getLockedClubIds,
 } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import { MonEquipeContent } from "./MonEquipeContent";
 
+const MIN_DAY = 1;
+
 export default async function MonEquipePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ day?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.userId) {
@@ -44,19 +49,31 @@ export default async function MonEquipePage({
   const userId = session.user.userId;
   const currentDay = await getCurrentMatchday();
 
-  // Fetch team for NEXT matchday (the one being composed), with scores from LAST matchday
-  const nextDay = currentDay + 1;
-  const team = await getParticipantTeam(league.dbId, userId, nextDay);
+  // Resolve selected day from ?day= search param.
+  // Bornes : [1, currentDay + 2]. Defaut : currentDay + 1 (prochaine journee).
+  const { day: dayStr } = await searchParams;
+  const maxDay = currentDay + 2;
+  const dayParsed = dayStr ? parseInt(dayStr, 10) : NaN;
+  const selectedDay = Number.isFinite(dayParsed) && dayParsed >= MIN_DAY && dayParsed <= maxDay
+    ? dayParsed
+    : currentDay + 1;
+
+  const team = await getParticipantTeam(league.dbId, userId, selectedDay);
   const rosterPlayerIds = team.map((p) => p.playerId);
+  // Resume "derniere journee" reste fige sur currentDay, pas lie au selecteur
   const lastDayScores = currentDay > 0
     ? await getRosterDayScores(rosterPlayerIds, currentDay)
     : [];
+  const lockedClubIdsSet = await getLockedClubIds(selectedDay);
 
   return (
     <MonEquipeContent
       team={team}
       lastDayScores={lastDayScores}
       currentDay={currentDay}
+      selectedDay={selectedDay}
+      maxDay={maxDay}
+      lockedClubIds={Array.from(lockedClubIdsSet)}
       leagueId={league.dbId}
       userName={session.user.name}
     />
