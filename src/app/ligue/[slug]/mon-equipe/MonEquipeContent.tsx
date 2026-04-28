@@ -309,7 +309,7 @@ export function MonEquipeContent({
                 onClick={() => handleDayChange(currentDay + 1)}
                 className="ml-2 text-xs text-gold/70 hover:text-gold underline"
               >
-                Revenir a la journee a venir
+                Revenir a la journee à venir
               </button>
             )}
           </p>
@@ -324,7 +324,7 @@ export function MonEquipeContent({
             {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
               <option key={d} value={d}>
                 Journee {d}
-                {d === currentDay + 1 ? " (a venir)" : ""}
+                {d === currentDay + 1 ? " (à venir)" : ""}
                 {d === currentDay ? " (en cours)" : ""}
                 {d < currentDay ? " (passee)" : ""}
               </option>
