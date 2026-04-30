@@ -1025,13 +1025,20 @@ export async function getLeagueStats(leagueDbId: number) {
   const participants = await getLeagueParticipants(leagueDbId);
   const participantMap = new Map(participants.map((p) => [p.id, p]));
 
-  // Vainqueurs par journée (best PTS_TOT per day)
-  const dayMap = new Map<number, { userId: number; pts: number }>();
+  // Vainqueurs par journée (best PTS_TOT, tiebreak par moyenne pts/joueurs joues).
+  // Aligne sur la regle de la coupe (admin/cup/route.ts:301-310). Si la moyenne
+  // est aussi egale, on garde le premier rencontre (pas de tiebreak interligue ici).
+  const dayMap = new Map<number, { userId: number; pts: number; avg: number }>();
   allStats.forEach((s) => {
     const prev = dayMap.get(s.day);
     const pts = dec(s.ptsTot);
-    if (!prev || pts > prev.pts) {
-      dayMap.set(s.day, { userId: s.userId, pts });
+    const avg = s.playerUsed > 0 ? pts / s.playerUsed : 0;
+    if (
+      !prev ||
+      pts > prev.pts ||
+      (pts === prev.pts && avg > prev.avg)
+    ) {
+      dayMap.set(s.day, { userId: s.userId, pts, avg });
     }
   });
 
