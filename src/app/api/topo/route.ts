@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 // POST: generate + save topo
 export async function POST(request: Request) {
   try {
-    const { slug } = await request.json();
+    const { slug, force } = await request.json();
 
     const league = await getLeagueBySlug(slug);
     if (!league) {
@@ -110,7 +110,8 @@ export async function POST(request: Request) {
 
     // If a final (non-provisional) topo exists, return it
     // If a provisional topo exists but the day is now complete, allow regeneration
-    if (existing.length > 0) {
+    // If `force === true` is sent in body, always regenerate (bypass cache)
+    if (existing.length > 0 && !force) {
       const wasProvisional = existing[0].is_provisional === 1;
       if (!wasProvisional || isIncomplete) {
         return NextResponse.json({
