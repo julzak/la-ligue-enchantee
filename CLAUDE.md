@@ -10,6 +10,17 @@ Fantasy football entre potes (~20 ans d'historique). Chronique IA "Lia" qui réd
 - DB MySQL hébergée séparément sur une instance Scaleway (`51.15.205.26:3306`, db `ligueenc_v3`) — l'IP du VPS OVH est whitelistée côté Scaleway. Si une IP locale dev n'arrive plus à se connecter en TCP/3306, c'est un sujet de whitelist Scaleway, pas un sujet OVH.
 - Ne JAMAIS supposer Vercel ; ne pas régénérer de `vercel.json` ; ne pas mentionner les Vercel deploy URLs dans une suggestion d'action.
 
+### Accès et deploy
+
+- SSH alias : `ligue-ovh` (config dans `~/.ssh/config`, host `vps-8428e40e.vps.ovh.net`, user `ubuntu`)
+- Chemin projet sur le serveur : `/opt/la-ligue-enchantee/`
+- Process manager : pm2, app nommée `ligue` (`pm2 ls`, `pm2 logs ligue`, `pm2 restart ligue`)
+- Pas d'auto-deploy depuis GitHub. Après un push, déployer manuellement :
+  ```bash
+  ssh ligue-ovh 'cd /opt/la-ligue-enchantee && git pull && npm run build && pm2 restart ligue'
+  ```
+  (`npm run build` exécute `prisma generate && next build`. Ajouter `npm install` avant le build si `package.json` a changé.)
+
 ## Stack
 - Next.js 14 (App Router), TypeScript, Tailwind, shadcn (v4 + Base UI)
 - Prisma + MySQL (driver `mysql2`)
