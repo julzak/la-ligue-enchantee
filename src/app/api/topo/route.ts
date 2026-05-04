@@ -170,15 +170,33 @@ export async function POST(request: Request) {
       );
 
       if (relevantMatches.length > 0) {
-        const lines = relevantMatches.map((m) => {
+        const winners: string[] = [];
+        const losers: string[] = [];
+        const pending: string[] = [];
+        for (const m of relevantMatches) {
           const n1 = m.user1Id ? nameOf.get(m.user1Id) ?? `#${m.user1Id}` : "—";
           const n2 = m.user2Id ? nameOf.get(m.user2Id) ?? `#${m.user2Id}` : "—";
           const s1 = m.score1 !== null ? m.score1.toFixed(1) : "?";
           const s2 = m.score2 !== null ? m.score2.toFixed(1) : "?";
-          const winner = m.winnerId ? nameOf.get(m.winnerId) ?? `#${m.winnerId}` : null;
-          return `${n1} ${s1} - ${s2} ${n2}${winner ? ` → ${winner} qualifié` : ""}`;
-        });
-        cupSection = `\n🏆 Coupe Enchantée - ${cupContext.round} (J${cupContext.matchday}) :\n${lines.join("\n")}\n`;
+          if (m.winnerId === null) {
+            pending.push(`Match en cours : ${n1} (${s1} pts) vs ${n2} (${s2} pts)`);
+            continue;
+          }
+          const winnerIsUser1 = m.winnerId === m.user1Id;
+          const winnerName = winnerIsUser1 ? n1 : n2;
+          const loserName = winnerIsUser1 ? n2 : n1;
+          const winnerScore = winnerIsUser1 ? s1 : s2;
+          const loserScore = winnerIsUser1 ? s2 : s1;
+          winners.push(`${winnerName} (${winnerScore} pts)`);
+          losers.push(`${loserName} (${loserScore} pts)`);
+        }
+        const sectionParts: string[] = [];
+        if (winners.length > 0) {
+          sectionParts.push(`QUALIFIÉS pour le tour suivant : ${winners.join(" ; ")}`);
+          sectionParts.push(`ÉLIMINÉS de la Coupe : ${losers.join(" ; ")}`);
+        }
+        if (pending.length > 0) sectionParts.push(pending.join("\n"));
+        cupSection = `\n🏆 Coupe Enchantée - ${cupContext.round} (J${cupContext.matchday}) :\n${sectionParts.join("\n")}\n`;
       }
     }
 
@@ -230,7 +248,7 @@ Ton style :
 - 1-2 emojis max, bien placés.
 - 3e personne uniquement (pas de "tu" ni "vous").
 - Pas de formules de politesse, pas d'intro. Attaque direct.
-- Si une section "Coupe Enchantée" est présente dans les données, consacre-lui 1 phrase dédiée : cite les qualifiés/éliminés marquants parmi les participants de la ligue et place une punchline. N'invente rien.
+- Si une section "Coupe Enchantée" est présente dans les données, consacre-lui 1 phrase dédiée. RÈGLE STRICTE : pour citer un qualifié, recopie EXACTEMENT un nom de la ligne "QUALIFIÉS pour le tour suivant". Pour citer un éliminé, recopie EXACTEMENT un nom de la ligne "ÉLIMINÉS de la Coupe". N'inverse JAMAIS qualifié/éliminé. Ne déduis PAS le résultat à partir des scores ou des performances de joueurs : copie les noms tels quels. Place ensuite une punchline.
 
 Voici les données de la journée :
 ${context}
