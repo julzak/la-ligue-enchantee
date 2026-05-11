@@ -87,7 +87,7 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: Pl
   const total = calcTotal(s);
   const hasData = s.points !== null;
   return (
-    <div className={`grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
+    <div className={`grid grid-cols-[minmax(6.5rem,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] min-w-[420px] gap-0.5 px-2 py-1 items-center border-b border-white/[0.04] last:border-b-0 ${hasData ? "bg-gold/[0.02]" : ""}`}>
       <span className="text-xs text-white truncate flex items-center gap-1" title={`${s.fname} ${s.lname} (${s.position})`}>
         {CLUB_LOGOS[s.clubId] && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -539,26 +539,28 @@ export default function AdminNotesPage() {
                   {/* Postponed match controls */}
                   <PostponedControls match={match} onUpdate={handleUpdateMatch} />
 
-                  {/* Sticky column headers */}
-                  <div className="grid grid-cols-[minmax(0,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] gap-0.5 px-2 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05] sticky top-0 bg-surface z-10">
-                    <span>Joueur</span>
-                    <span className="text-center">Note</span>
-                    <span className="text-center">But</span>
-                    <span className="text-center">Pas</span>
-                    <span className="text-center text-rouge/70">CSC</span>
-                    <span className="text-center text-rouge/70">🟥</span>
-                    <span className="text-center text-vert/70">Pen</span>
-                    <span className="text-right">Tot.</span>
-                  </div>
+                  <div className="overflow-x-auto">
+                    {/* Sticky column headers */}
+                    <div className="grid grid-cols-[minmax(6.5rem,1fr)_3rem_2.5rem_2.5rem_2rem_2rem_2rem_3rem] min-w-[420px] gap-0.5 px-2 py-1 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.05] sticky top-0 bg-surface z-10">
+                      <span>Joueur</span>
+                      <span className="text-center">Note</span>
+                      <span className="text-center">But</span>
+                      <span className="text-center">Pas</span>
+                      <span className="text-center text-rouge/70">CSC</span>
+                      <span className="text-center text-rouge/70">🟥</span>
+                      <span className="text-center text-vert/70">Pen</span>
+                      <span className="text-right">Tot.</span>
+                    </div>
 
-                  {/* Home team */}
-                  <div className="border-b border-white/[0.05]">
-                    {home.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
-                  </div>
+                    {/* Home team */}
+                    <div className="border-b border-white/[0.05]">
+                      {home.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
+                    </div>
 
-                  {/* Away team — subtle separator */}
-                  <div className="border-t border-gold/10">
-                    {away.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
+                    {/* Away team — subtle separator */}
+                    <div className="border-t border-gold/10">
+                      {away.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
+                    </div>
                   </div>
                 </div>
               );
