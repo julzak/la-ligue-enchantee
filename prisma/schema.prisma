@@ -11,9 +11,13 @@ model Club {
   id       Int    @id @default(autoincrement()) @map("ID_CLUB") @db.UnsignedInt
   idClubEq String @map("ID_CLUB_EQ") @db.VarChar(10)
   name     String @default("") @map("NAME") @db.VarChar(50)
+  seasonId Int?   @map("ID_SEASON") @db.UnsignedInt
+
+  season Season? @relation(fields: [seasonId], references: [id])
 
   @@index([id], map: "ID_CLUB")
   @@index([name], map: "NAME")
+  @@index([seasonId], map: "ID_SEASON")
   @@map("CLUB")
 }
 
@@ -34,11 +38,18 @@ model League {
   name      String @default("") @map("NAME") @db.VarChar(50)
   firstYear Int    @default(0) @map("FIRST_YEAR")
 
+  seasonId      Int?    @map("ID_SEASON") @db.UnsignedInt
+  divisionLabel String? @map("DIVISION_LABEL") @db.VarChar(50)
+  tier          Int?    @map("TIER")
+
+  season Season? @relation(fields: [seasonId], references: [id])
+
   @@index([firstYear], map: "FIRST_YEAR")
   @@index([chiefId], map: "ID_CHIEF")
   @@index([forumId], map: "ID_FORUM")
   @@index([id], map: "ID_LEAGUE")
   @@index([name], map: "NAME")
+  @@index([seasonId], map: "ID_SEASON_LEAGUE")
   @@map("LEAGUE")
 }
 
@@ -59,6 +70,9 @@ model Player {
   lname    String  @default("") @map("LNAME") @db.VarChar(50)
   position String  @default("") @map("POSITION") @db.VarChar(50)
   link     String? @map("LINK") @db.VarChar(150)
+  seasonId Int?    @map("ID_SEASON") @db.UnsignedInt
+
+  season Season? @relation(fields: [seasonId], references: [id])
 
   @@index([fname], map: "FNAME")
   @@index([clubId], map: "ID_CLUB")
@@ -66,6 +80,7 @@ model Player {
   @@index([link], map: "LINK")
   @@index([lname], map: "LNAME")
   @@index([position], map: "POSITION")
+  @@index([seasonId], map: "ID_SEASON_PLAYER")
   @@map("PLAYER")
 }
 
@@ -167,4 +182,68 @@ model User {
   @@index([id], map: "ID_USER")
   @@index([name], map: "NAME")
   @@map("USER")
+}
+
+model Season {
+  id        Int          @id @default(autoincrement()) @map("ID_SEASON") @db.UnsignedInt
+  label     String       @map("LABEL") @db.VarChar(20)
+  status    SeasonStatus @default(SETUP) @map("STATUS")
+  startedAt DateTime?    @map("STARTED_AT") @db.DateTime(0)
+  closedAt  DateTime?    @map("CLOSED_AT") @db.DateTime(0)
+  isCurrent Boolean      @default(false) @map("IS_CURRENT")
+
+  leagues   League[]
+  clubs     Club[]
+  players   Player[]
+  palmares  Palmares[]
+  movements SeasonMovement[]
+
+  @@index([status], map: "STATUS")
+  @@index([isCurrent], map: "IS_CURRENT")
+  @@map("SEASON")
+}
+
+enum SeasonStatus {
+  SETUP
+  AUCTION
+  ACTIVE
+  WINTER
+  CLOSED
+}
+
+model Palmares {
+  id            Int    @id @default(autoincrement()) @map("ID_PALMARES") @db.UnsignedInt
+  seasonId      Int    @map("ID_SEASON") @db.UnsignedInt
+  divisionLabel String @map("DIVISION_LABEL") @db.VarChar(50)
+  position      String @map("POSITION") @db.VarChar(20)
+  pseudo        String @map("PSEUDO") @db.VarChar(150)
+
+  season Season @relation(fields: [seasonId], references: [id])
+
+  @@index([seasonId], map: "ID_SEASON_PALMARES")
+  @@map("PALMARES")
+}
+
+model SeasonMovement {
+  id           Int          @id @default(autoincrement()) @map("ID_MOVEMENT") @db.UnsignedInt
+  seasonId     Int          @map("ID_SEASON") @db.UnsignedInt
+  userId       Int          @map("ID_USER") @db.UnsignedInt
+  fromLeagueId Int          @map("FROM_LEAGUE_ID") @db.UnsignedInt
+  fromTier     Int          @map("FROM_TIER")
+  toTier       Int          @map("TO_TIER")
+  type         MovementType @map("TYPE")
+  rankFinal    Int          @map("RANK_FINAL")
+  pseudo       String       @map("PSEUDO") @db.VarChar(150)
+  overridden   Boolean      @default(false) @map("OVERRIDDEN")
+
+  season Season @relation(fields: [seasonId], references: [id])
+
+  @@index([seasonId], map: "ID_SEASON_MOVEMENT")
+  @@map("SEASON_MOVEMENT")
+}
+
+enum MovementType {
+  PROMOTION
+  RELEGATION
+  STAY
 }
