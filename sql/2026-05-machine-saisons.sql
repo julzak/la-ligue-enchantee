@@ -83,44 +83,44 @@ CREATE TABLE IF NOT EXISTS `SEASON_MOVEMENT` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------------
--- 3. Colonnes saison sur CLUB
+-- NOTE moteur : CLUB / LEAGUE / PLAYER sont en MyISAM (vérifié sur la prod
+-- 2026-05-30). MyISAM ne supporte PAS les clés étrangères. On ajoute donc
+-- seulement les colonnes + index sur ces 3 tables (PAS de ADD CONSTRAINT),
+-- pour ne pas faire échouer l'ALTER. Le rattachement saison est garanti côté
+-- application (seasonId écrit par les server actions). Les tables neuves
+-- (SEASON, PALMARES, SEASON_MOVEMENT) sont en InnoDB et gardent leurs FK.
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- 3. Colonne saison sur CLUB (MyISAM : colonne + index, sans FK)
 -- ---------------------------------------------------------------------------
 ALTER TABLE `CLUB`
   ADD COLUMN `ID_SEASON` INT UNSIGNED NULL AFTER `NAME`,
-  ADD KEY `ID_SEASON_CLUB` (`ID_SEASON`),
-  ADD CONSTRAINT `FK_CLUB_SEASON`
-    FOREIGN KEY (`ID_SEASON`) REFERENCES `SEASON` (`ID_SEASON`);
+  ADD KEY `ID_SEASON_CLUB` (`ID_SEASON`);
 
 -- ---------------------------------------------------------------------------
--- 4. Colonnes saison + division sur LEAGUE
+-- 4. Colonnes saison + division sur LEAGUE (MyISAM : sans FK)
 -- ---------------------------------------------------------------------------
 ALTER TABLE `LEAGUE`
   ADD COLUMN `ID_SEASON`      INT UNSIGNED NULL AFTER `FIRST_YEAR`,
   ADD COLUMN `DIVISION_LABEL` VARCHAR(50)  NULL AFTER `ID_SEASON`,
   ADD COLUMN `TIER`           INT          NULL AFTER `DIVISION_LABEL`,
-  ADD KEY `ID_SEASON_LEAGUE` (`ID_SEASON`),
-  ADD CONSTRAINT `FK_LEAGUE_SEASON`
-    FOREIGN KEY (`ID_SEASON`) REFERENCES `SEASON` (`ID_SEASON`);
+  ADD KEY `ID_SEASON_LEAGUE` (`ID_SEASON`);
 
 -- ---------------------------------------------------------------------------
--- 5. Colonne saison sur PLAYER
+-- 5. Colonne saison sur PLAYER (MyISAM : sans FK)
 -- ---------------------------------------------------------------------------
 ALTER TABLE `PLAYER`
   ADD COLUMN `ID_SEASON` INT UNSIGNED NULL AFTER `LINK`,
-  ADD KEY `ID_SEASON_PLAYER` (`ID_SEASON`),
-  ADD CONSTRAINT `FK_PLAYER_SEASON`
-    FOREIGN KEY (`ID_SEASON`) REFERENCES `SEASON` (`ID_SEASON`);
+  ADD KEY `ID_SEASON_PLAYER` (`ID_SEASON`);
 
 -- =============================================================================
 -- ROLLBACK (à exécuter manuellement en cas de besoin, dans cet ordre) :
 -- =============================================================================
--- ALTER TABLE `PLAYER` DROP FOREIGN KEY `FK_PLAYER_SEASON`,
---   DROP KEY `ID_SEASON_PLAYER`, DROP COLUMN `ID_SEASON`;
--- ALTER TABLE `LEAGUE` DROP FOREIGN KEY `FK_LEAGUE_SEASON`,
---   DROP KEY `ID_SEASON_LEAGUE`, DROP COLUMN `TIER`,
+-- ALTER TABLE `PLAYER` DROP KEY `ID_SEASON_PLAYER`, DROP COLUMN `ID_SEASON`;
+-- ALTER TABLE `LEAGUE` DROP KEY `ID_SEASON_LEAGUE`, DROP COLUMN `TIER`,
 --   DROP COLUMN `DIVISION_LABEL`, DROP COLUMN `ID_SEASON`;
--- ALTER TABLE `CLUB` DROP FOREIGN KEY `FK_CLUB_SEASON`,
---   DROP KEY `ID_SEASON_CLUB`, DROP COLUMN `ID_SEASON`;
+-- ALTER TABLE `CLUB` DROP KEY `ID_SEASON_CLUB`, DROP COLUMN `ID_SEASON`;
 -- DROP TABLE IF EXISTS `SEASON_MOVEMENT`;
 -- DROP TABLE IF EXISTS `PALMARES`;
 -- DROP TABLE IF EXISTS `SEASON`;
