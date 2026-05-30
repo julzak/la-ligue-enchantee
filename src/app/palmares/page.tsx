@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 // Ordre d'affichage des divisions (tier). Les labels inconnus passent après,
 // triés alphabétiquement. "Coupe" est traitée à part (bloc dédié par saison).
-const DIVISION_ORDER = ["Ligue 1", "Ligue 2", "National 1", "National 2", "National 3"];
+const DIVISION_ORDER = ["Ligue 1", "Ligue 2", "Ligue 3", "Ligue 4", "Ligue 5"];
 
 function divisionRank(label: string): number {
   const i = DIVISION_ORDER.indexOf(label);

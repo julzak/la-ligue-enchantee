@@ -246,6 +246,15 @@ export default function NouvelleSaisonPage() {
     }
   }
 
+  // Défaut de la Ligue Enchantée : 3 ligues (Ligue 1/2/3). Labels éditables.
+  function applyDefaultLeagues() {
+    setLeagues([
+      { name: "Ligue 1", divisionLabel: "Ligue 1", tier: 1 },
+      { name: "Ligue 2", divisionLabel: "Ligue 2", tier: 2 },
+      { name: "Ligue 3", divisionLabel: "Ligue 3", tier: 3 },
+    ]);
+  }
+
   const selectedCount = clubs.filter((c) => c.selected).length;
 
   return (
@@ -420,12 +429,15 @@ export default function NouvelleSaisonPage() {
               niveau hiérarchique (tier 1 = division la plus haute) sont libres.
             </p>
             <div className="flex flex-wrap items-center gap-2">
+              <button className={btnGhost} onClick={applyDefaultLeagues}>
+                Pré-remplir 3 ligues (Ligue 1/2/3)
+              </button>
               <button className={btnGhost} onClick={addLeague}>
                 + Ajouter une ligue
               </button>
               {prefillLabel && (
                 <button className={btnGhost} onClick={applyPrefill}>
-                  Pré-remplir depuis {prefillLabel}
+                  Reprendre depuis {prefillLabel}
                 </button>
               )}
             </div>
