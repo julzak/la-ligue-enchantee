@@ -15,11 +15,18 @@ Fantasy football entre potes (~20 ans d'historique). Chronique IA "Lia" qui réd
 - SSH alias : `ligue-ovh` (config dans `~/.ssh/config`, host `vps-8428e40e.vps.ovh.net`, user `ubuntu`)
 - Chemin projet sur le serveur : `/opt/la-ligue-enchantee/`
 - Process manager : pm2, app nommée `ligue` (`pm2 ls`, `pm2 logs ligue`, `pm2 restart ligue`)
-- Pas d'auto-deploy depuis GitHub. Après un push, déployer manuellement :
+- **Auto-deploy actif depuis le 2026-05-30** : tout push sur `main` déclenche
+  `.github/workflows/deploy.yml` (SSH vers OVH : `git reset --hard origin/main`
+  + `npm install` + `npm run build` + `pm2 restart ligue`). Run ~45s. Déclenchable
+  à la main via `gh workflow run deploy.yml`.
+- **L'auto-deploy ne touche JAMAIS la base.** Le projet n'utilise pas Prisma
+  Migrate (`build` = `prisma generate && next build`, ne modifie pas le schéma).
+  Toute migration SQL (`sql/*.sql`) reste un acte manuel à appliquer AVANT le
+  push du code qui en dépend, sinon la prod casse au déploiement auto.
+- Deploy manuel encore possible au besoin :
   ```bash
-  ssh ligue-ovh 'cd /opt/la-ligue-enchantee && git pull && npm run build && pm2 restart ligue'
+  ssh ligue-ovh 'cd /opt/la-ligue-enchantee && git pull && npm install && npm run build && pm2 restart ligue'
   ```
-  (`npm run build` exécute `prisma generate && next build`. Ajouter `npm install` avant le build si `package.json` a changé.)
 
 ## Stack
 - Next.js 14 (App Router), TypeScript, Tailwind, shadcn (v4 + Base UI)
@@ -35,3 +42,87 @@ Fantasy football entre potes (~20 ans d'historique). Chronique IA "Lia" qui réd
 ## Mécaniques notables
 - TOPO (synthèse Lia) : route `POST /api/topo` avec `{slug, force?}`. `force: true` bypass le cache pour forcer la régénération (utile après un fix de prompt). Pas d'auth sur cette route — à durcir un jour.
 - Cup section : depuis le fix du commit `2f5f9d5`, format `QUALIFIÉS pour le tour suivant: ... ; ÉLIMINÉS de la Coupe: ...` au lieu d'une syntaxe match-par-match avec flèche, pour empêcher Gemini Flash d'inverser qualifié/éliminé.
+
+# Snippet to append to ~/Projects/la-ligue-enchantee/CLAUDE.md
+
+Add this section after "Mécaniques notables" (or wherever fits in your current structure).
+
+---
+
+## Règles métier critiques
+
+### Barème de scoring (source de bugs historique)
+
+Le mot "forfaitaire" dans `regles-scoring.md` veut dire "valeur fixe", pas "forfait au sens sportif". Source d'ambiguïté connue. Référence stricte :
+
+| Cas | Points | Notes |
+|---|---|---|
+| Forfait (joueur pas dans la feuille de match, n'a pas joué) | **0** | jamais 2 |
+| Carton rouge | **0** | peu importe le temps de jeu (bonus buts/passes conservés) |
+| Joueur sans ligne SCORE saisie en DB | **0** | équivalent forfait, pas 2 |
+| Joueur entré ET ayant joué mais pas noté par L'Équipe | **2** | temps de jeu insuffisant pour notation |
+
+Toute régression sur ces 4 cas doit être détectée par un script `scripts/test-bareme-*.ts` avant deploy. Le test doit inclure un sanity-check sur la donnée buggée d'origine pour prouver qu'il peut détecter la régression qu'il garde.
+
+### Format Cup section (anti-inversion Gemini Flash)
+
+Depuis le commit `2f5f9d5`, le format pour la section Coupe est :
+
+```
+QUALIFIÉS pour le tour suivant: ...
+ÉLIMINÉS de la Coupe: ...
+```
+
+Ne JAMAIS revenir à un format match-par-match avec flèche (`Équipe A → Équipe B`) : Gemini Flash inversait régulièrement qualifié/éliminé.
+
+## Module Enchères (à implémenter pour démarrage août 2026)
+
+**Premier démarrage des enchères sur la nouvelle plateforme. Aucun historique de bugs runtime. À traiter en zone à haut risque.**
+
+Règlement source de vérité : `docs/regles-encheres.md`. Toujours lire ce fichier avant de toucher au module enchères. Ne jamais re-déduire les règles depuis le code ou la mémoire.
+
+### Pièges connus du règlement (anti-bugs)
+
+Ces points sont les plus piégeux dans le règlement officiel. Tout fix ou ajout dans le module enchères doit avoir un test de non-régression sur chacun.
+
+**1. Le gardien est lié à un CLUB, pas à un joueur.**
+La donnée stockée doit être `gardiens_marseille` ou équivalent, pas `Mandanda`. Si un participant mise `Mandanda`, la mise doit être convertie ou rejetée explicitement. Le scoring du gardien doit toujours prendre le gardien aligné par le club à la journée concernée, pas un joueur figé.
+
+**2. Égalité de mise sur un joueur = personne ne l'obtient.**
+Pas "attribué au premier arrivé", pas "attribué alphabétiquement". Le joueur est remis en jeu au tour suivant. Les points misés sont récupérés pour les deux participants.
+
+**3. Points non utilisés au tour N = reportés au tour N+1.**
+Le budget restant est dynamique. Un participant qui a misé 130 points au tour 1 et obtenu pour 80 points de joueurs commence le tour 2 avec 50 points de plus que ce qu'il avait misé au tour 1 sur des joueurs perdus. Source de bugs : un calcul de budget qui ne tracerait que les acquisitions sans tracer les mises perdues.
+
+**4. Pénalités de composition appliquées AVANT calcul du round.**
+Si la mise est invalide (pas de gardien, dépassement de quota par ligne, mauvais total de joueurs, dépassement budget), des retraits doivent être appliqués sur les acquisitions du tour. Ces retraits se font sur les acquisitions LES PLUS ÉLEVÉES en priorité. En cas d'égalité sur le montant : ordre alphabétique.
+
+**5. Le retrait ne peut pas créer d'acquisition négative.**
+Si la pénalité dit "retire 2 joueurs" mais que le participant n'a obtenu qu'1 joueur au tour, on ne retire qu'1 joueur. Pas de dette portée au tour suivant.
+
+**6. Quotas effectif (13 joueurs) vs quotas titulaires (11 joueurs) sont différents.**
+Effectif total : 1 GK, 3-6 DEF, 3-6 MIL, 1-4 ATT (somme = 13). Composition titulaires journée : 1 GK, ≥3 DEF, ≥3 MIL, 1-3 ATT (somme = 11). Le module enchères valide l'effectif, le module titulaires valide les compositions. Ne pas mélanger.
+
+**7. Heure butoir = email faisant foi dans le règlement papier.**
+Sur la nouvelle plateforme, c'est le timestamp serveur de soumission qui fait foi. Préciser ça aux participants au démarrage. Tolérance = 0 : une mise reçue à T+1 seconde après la deadline est rejetée, pas placée au tour suivant.
+
+**8. Mercato d'hiver : budget inversement proportionnel au classement J19.**
+Pas le même mécanisme que le mercato d'été. À traiter dans un module séparé pour éviter de casser le mercato d'été en touchant à l'autre.
+
+### Contrat de test pour le module enchères
+
+Avant tout déploiement du module enchères en prod, ces tests doivent exister et passer :
+
+- `scripts/test-encheres-egalite.ts` : 2 participants même mise sur même joueur → personne ne l'obtient, points rendus aux deux
+- `scripts/test-encheres-quota-gardien.ts` : mise sans gardien → retrait d'1 joueur sur la plus grosse acquisition
+- `scripts/test-encheres-depassement-budget.ts` : mise totalisant 131 pts → retrait d'1 joueur
+- `scripts/test-encheres-depassement-attaquants.ts` : 5 attaquants misés et 5 obtenus → retrait d'1 attaquant (le plus cher)
+- `scripts/test-encheres-report-points.ts` : participant ayant misé 130 pts, obtenu 80 pts au T1 → entame T2 avec un budget qui inclut les 50 pts perdus
+- `scripts/test-encheres-retrait-insuffisant.ts` : pénalité de 2 retraits mais 1 seule acquisition → 1 seul retrait, pas de dette portée
+- `scripts/test-encheres-deadline.ts` : soumission 1s après deadline → rejet, mise marquée invalide
+
+Chaque test inclut un sanity-check sur la valeur attendue (ex: assert que sans la logique d'égalité, le test détecterait bien la régression).
+
+### Tests à effectuer en recette fonctionnelle
+
+Avant l'ouverture des enchères réelles en août, organiser une simulation interne (3-5 participants, joueurs fictifs) sur 2 tours complets pour exercer les cas limites en conditions réelles. Loguer chaque divergence entre le résultat attendu (calculé à la main) et le résultat produit par le système.
