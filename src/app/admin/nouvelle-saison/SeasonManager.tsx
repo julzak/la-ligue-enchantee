@@ -103,12 +103,25 @@ export default function SeasonManager() {
   }
 
   if (loading) return <p className="text-sm text-muted">Chargement des saisons...</p>;
+  // On masque les saisons "archive" : clôturées et sans aucune ligue rattachée
+  // (= palmarès historique importé via CSV, 2017-2025, le site n'existait pas).
+  // Leurs boutons ne servent à rien. Une saison gérable a au moins une ligue,
+  // ou n'est pas encore clôturée.
+  const managedSeasons = seasons.filter(
+    (s) => !(s.status === "CLOSED" && (s._count?.leagues ?? 0) === 0)
+  );
+
   if (seasons.length === 0)
     return <p className="text-sm text-muted">Aucune saison. Crée la première ci-dessous.</p>;
 
   return (
     <div className="space-y-3">
       <h2 className="font-serif text-base text-gold">Saisons existantes</h2>
+      {managedSeasons.length === 0 && (
+        <p className="text-sm text-muted">
+          Aucune saison active à gérer. Crée la prochaine saison ci-dessous.
+        </p>
+      )}
       {msg && <div className="rounded bg-gold/10 px-3 py-2 text-sm text-gold">{msg}</div>}
       {err && <div className="rounded border border-rouge/40 bg-rouge/10 px-3 py-2 text-sm text-rouge">{err}</div>}
 
@@ -127,7 +140,7 @@ export default function SeasonManager() {
       )}
 
       <div className="space-y-2">
-        {seasons.map((s) => {
+        {managedSeasons.map((s) => {
           const next = NEXT_STATUS[s.status];
           return (
             <div key={s.id} className="rounded-lg border border-border bg-surface p-3">
