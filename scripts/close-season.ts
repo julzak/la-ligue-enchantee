@@ -59,7 +59,11 @@ async function getCupFinal(seasonLabel: string): Promise<{ winner: string | null
 async function main() {
   const seasonId = Number(process.argv[2]);
   const dry = process.argv.includes("--dry");
-  if (!seasonId) { console.error("Usage: tsx scripts/close-season.ts <seasonId> [--dry]"); process.exit(1); }
+  // Règle métier confirmée 2026-05-31 : PAS de montées/descentes (ligues par
+  // affinité, fixes). La clôture ne fige que le palmarès. Le calcul de
+  // mouvements reste accessible via --with-movements mais n'est plus le défaut.
+  const withMovements = process.argv.includes("--with-movements");
+  if (!seasonId) { console.error("Usage: tsx scripts/close-season.ts <seasonId> [--dry] [--with-movements]"); process.exit(1); }
 
   const season = await prisma.season.findUnique({ where: { id: seasonId } });
   if (!season) throw new Error("Saison introuvable");
@@ -96,6 +100,7 @@ async function main() {
     ranked.filter((s) => s.finalRank <= 3).forEach((s) =>
       palmares.push({ seasonId, divisionLabel, position: String(s.finalRank), pseudo: s.pseudo }));
 
+    if (!withMovements) continue; // pas de montées/descentes (ligues par affinité)
     if (tier == null) { warnings.push(`Ligue "${divisionLabel}" sans tier.`); continue; }
     ranked.forEach((s) => {
       const { type, toTier } = computeMovement(s.finalRank, n, tier, minTier, maxTier);
