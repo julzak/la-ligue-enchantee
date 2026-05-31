@@ -150,15 +150,28 @@ export default function SeasonManager() {
                       {next.label}
                     </button>
                   )}
-                  {(s.status === "ACTIVE" || s.status === "WINTER") && (
-                    <button
-                      className="rounded border border-rouge/40 bg-rouge/10 px-3 py-1.5 text-xs text-rouge hover:bg-rouge/20 disabled:opacity-40"
-                      onClick={() => close(s)}
-                      disabled={busy}
-                    >
-                      Clôturer la saison
-                    </button>
-                  )}
+                  {/* Bouton clôture toujours visible avec le libellé de la saison.
+                      Grisé si déjà clôturée (CLOSED) ou pas encore jouable. */}
+                  {(() => {
+                    const closable = s.status === "ACTIVE" || s.status === "WINTER";
+                    const isClosed = s.status === "CLOSED";
+                    return (
+                      <button
+                        className="rounded border border-rouge/40 bg-rouge/10 px-3 py-1.5 text-xs text-rouge hover:bg-rouge/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={() => close(s)}
+                        disabled={busy || !closable}
+                        title={
+                          isClosed
+                            ? "Saison déjà clôturée"
+                            : closable
+                            ? ""
+                            : "La saison doit être démarrée (ACTIVE) avant de pouvoir être clôturée"
+                        }
+                      >
+                        {isClosed ? `Saison ${s.label} clôturée` : `Clôturer la saison ${s.label}`}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
