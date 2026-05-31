@@ -9,20 +9,9 @@ interface Season {
   isCurrent: boolean;
   _count?: { clubs: number; players: number; leagues: number };
 }
-interface Movement {
-  id: number;
-  userId: number;
-  pseudo: string;
-  fromTier: number;
-  toTier: number;
-  type: string;
-  rankFinal: number;
-  overridden: boolean;
-}
 interface CloseResult {
   seasonLabel: string;
   podiumCount: number;
-  movementCount: number;
   cupWinner: string | null;
   cupFinalist: string | null;
   warnings: string[];
@@ -37,12 +26,6 @@ const NEXT_STATUS: Record<string, { to: string; label: string } | null> = {
   CLOSED: null,
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  PROMOTION: "Montée",
-  RELEGATION: "Descente",
-  STAY: "Maintien",
-};
-
 const btnGhost =
   "rounded border border-border bg-surface px-3 py-1.5 text-xs text-foreground hover:bg-surface-2 disabled:opacity-40";
 
@@ -52,8 +35,6 @@ export default function SeasonManager() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
-  const [openMovements, setOpenMovements] = useState<number | null>(null);
-  const [movements, setMovements] = useState<Movement[]>([]);
   const [closeResult, setCloseResult] = useState<CloseResult | null>(null);
 
   async function load() {
@@ -96,7 +77,7 @@ export default function SeasonManager() {
   async function close(season: Season) {
     if (
       !confirm(
-        `Clôturer la saison ${season.label} ?\n\nCela fige le palmarès (podiums + coupe) et calcule les montées/descentes. L'action est rejouable.`
+        `Clôturer la saison ${season.label} ?\n\nCela fige le palmarès (podiums de chaque ligue + vainqueur et finaliste de la coupe). L'action est rejouable.`
       )
     )
       return;
@@ -121,33 +102,6 @@ export default function SeasonManager() {
     }
   }
 
-  async function loadMovements(seasonId: number) {
-    if (openMovements === seasonId) {
-      setOpenMovements(null);
-      return;
-    }
-    setOpenMovements(seasonId);
-    const res = await fetch(`/api/admin/seasons/movements?seasonId=${seasonId}`);
-    const data = await res.json();
-    setMovements(data.movements ?? []);
-  }
-
-  async function overrideMovement(m: Movement, patch: { toTier?: number; type?: string }) {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/admin/seasons/movements", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: m.id, ...patch }),
-      });
-      if (res.ok) {
-        setMovements((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...patch, overridden: true } : x)));
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (loading) return <p className="text-sm text-muted">Chargement des saisons...</p>;
   if (seasons.length === 0)
     return <p className="text-sm text-muted">Aucune saison. Crée la première ci-dessous.</p>;
@@ -162,7 +116,7 @@ export default function SeasonManager() {
         <div className="rounded-lg border border-gold/30 bg-gold/[0.04] p-4 text-sm space-y-1">
           <p className="text-gold font-medium">Clôture {closeResult.seasonLabel} : palmarès figé.</p>
           <p className="text-foreground/80">
-            {closeResult.podiumCount} places de podium, {closeResult.movementCount} mouvements.
+            {closeResult.podiumCount} places de podium.
             {closeResult.cupWinner && ` Coupe : ${closeResult.cupWinner}`}
             {closeResult.cupFinalist && ` (finaliste ${closeResult.cupFinalist})`}.
           </p>
@@ -205,57 +159,8 @@ export default function SeasonManager() {
                       Clôturer la saison
                     </button>
                   )}
-                  {s.status === "CLOSED" && (
-                    <button className={btnGhost} onClick={() => loadMovements(s.id)} disabled={busy}>
-                      {openMovements === s.id ? "Masquer" : "Montées / descentes"}
-                    </button>
-                  )}
                 </div>
               </div>
-
-              {openMovements === s.id && (
-                <div className="mt-3 border-t border-border pt-3">
-                  {movements.length === 0 ? (
-                    <p className="text-xs text-muted">Aucun mouvement calculé pour cette saison.</p>
-                  ) : (
-                    <div className="space-y-1">
-                      <div className="grid grid-cols-[1fr_3rem_auto_auto] gap-2 px-1 text-[10px] uppercase tracking-wider text-muted">
-                        <span>Joueur</span>
-                        <span>Rang</span>
-                        <span>Type</span>
-                        <span>Tier cible</span>
-                      </div>
-                      {movements.map((m) => (
-                        <div key={m.id} className="grid grid-cols-[1fr_3rem_auto_auto] items-center gap-2 text-sm">
-                          <span className="text-foreground/90 truncate">
-                            {m.pseudo}
-                            {m.overridden && <span className="ml-1 text-[10px] text-gold">(modifié)</span>}
-                          </span>
-                          <span className="text-xs text-muted tabular-nums">{m.rankFinal}</span>
-                          <select
-                            className="rounded border border-border bg-surface-2 px-2 py-1 text-xs"
-                            value={m.type}
-                            onChange={(e) => overrideMovement(m, { type: e.target.value })}
-                            disabled={busy}
-                          >
-                            {Object.entries(TYPE_LABEL).map(([v, l]) => (
-                              <option key={v} value={v}>{l}</option>
-                            ))}
-                          </select>
-                          <input
-                            type="number"
-                            min={1}
-                            className="w-16 rounded border border-border bg-surface-2 px-2 py-1 text-xs"
-                            value={m.toTier}
-                            onChange={(e) => overrideMovement(m, { toTier: parseInt(e.target.value, 10) || m.toTier })}
-                            disabled={busy}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           );
         })}

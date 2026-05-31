@@ -1,6 +1,8 @@
-// Clôture de saison (chantier 3 + 4) : fige le palmarès et calcule les
-// montées/descentes. AUCUNE saisie manuelle. Idempotent : relancer la clôture
-// efface puis recrée les lignes PALMARES + SEASON_MOVEMENT de la saison.
+// Clôture de saison : fige le palmarès (podiums + coupe). AUCUNE saisie manuelle.
+// Idempotent : relancer la clôture efface puis recrée les lignes PALMARES.
+//
+// PAS de montées/descentes : les ligues sont par affinité (règle métier
+// confirmée 2026-05-31), elles ne changent pas d'une saison à l'autre.
 //
 // Dépend du modèle Season (migration sql/2026-05-machine-saisons.sql appliquée).
 // Le classement final = somme cumulée de STATS_USER.ptsTot (même logique que
@@ -8,12 +10,10 @@
 
 import { prisma } from "./prisma";
 import { getLeagueStandings } from "./db";
-import { computeMovement } from "./season-movement";
 
 export interface CloseSeasonResult {
   seasonLabel: string;
   podiumCount: number;
-  movementCount: number;
   cupWinner: string | null;
   cupFinalist: string | null;
   warnings: string[];
@@ -78,32 +78,20 @@ export async function closeSeason(seasonId: number): Promise<CloseSeasonResult> 
 
   const warnings: string[] = [];
 
-  // Ligues de la saison, triées par tier (1 = plus haut).
+  // Ligues de la saison, triées par tier (1 = plus haut) pour l'ordre d'affichage.
   const leagues = await prisma.league.findMany({
     where: { seasonId },
     orderBy: { tier: "asc" },
   });
   if (leagues.length === 0) {
-    warnings.push("Aucune ligue rattachée à cette saison : palmarès et mouvements vides.");
+    warnings.push("Aucune ligue rattachée à cette saison : palmarès vide.");
   }
 
-  const tiers = leagues.map((l) => l.tier).filter((t): t is number => t != null);
-  const minTier = tiers.length ? Math.min(...tiers) : 1;
-  const maxTier = tiers.length ? Math.max(...tiers) : 1;
-
   type PalmaresInsert = { seasonId: number; divisionLabel: string; position: string; pseudo: string };
-  type MovementInsert = {
-    seasonId: number; userId: number; fromLeagueId: number;
-    fromTier: number; toTier: number; type: "PROMOTION" | "RELEGATION" | "STAY";
-    rankFinal: number; pseudo: string;
-  };
-
   const palmares: PalmaresInsert[] = [];
-  const movements: MovementInsert[] = [];
 
   for (const league of leagues) {
     const divisionLabel = league.divisionLabel || league.name;
-    const tier = league.tier;
     const { standings } = await getLeagueStandings(league.id);
     const n = standings.length;
     if (n === 0) {
@@ -128,27 +116,6 @@ export async function closeSeason(seasonId: number): Promise<CloseSeasonResult> 
       .forEach((s) => {
         palmares.push({ seasonId, divisionLabel, position: String(s.finalRank), pseudo: s.userName });
       });
-
-    // Mouvements : top 3 montent (tier-1), bottom 3 descendent (tier+1).
-    // Bornés aux tiers existants ; promotion prioritaire si chevauchement
-    // (petite ligue). STAY sinon.
-    if (tier == null) {
-      warnings.push(`Ligue "${divisionLabel}" sans tier : mouvements non calculés.`);
-      continue;
-    }
-    ranked.forEach((s) => {
-      const { type, toTier } = computeMovement(s.finalRank, n, tier, minTier, maxTier);
-      movements.push({
-        seasonId,
-        userId: s.userId,
-        fromLeagueId: league.id,
-        fromTier: tier,
-        toTier,
-        type,
-        rankFinal: s.finalRank,
-        pseudo: s.userName,
-      });
-    });
   }
 
   // Coupe -> PALMARES (Vainqueur + Finaliste).
@@ -165,9 +132,7 @@ export async function closeSeason(seasonId: number): Promise<CloseSeasonResult> 
   // Écriture transactionnelle idempotente.
   await prisma.$transaction(async (tx) => {
     await tx.palmares.deleteMany({ where: { seasonId } });
-    await tx.seasonMovement.deleteMany({ where: { seasonId } });
     if (palmares.length) await tx.palmares.createMany({ data: palmares });
-    if (movements.length) await tx.seasonMovement.createMany({ data: movements });
     await tx.season.update({
       where: { id: seasonId },
       data: { status: "CLOSED", closedAt: new Date(), isCurrent: false },
@@ -177,7 +142,6 @@ export async function closeSeason(seasonId: number): Promise<CloseSeasonResult> 
   return {
     seasonLabel: season.label,
     podiumCount: palmares.filter((p) => p.divisionLabel !== "Coupe").length,
-    movementCount: movements.length,
     cupWinner: cup.winner,
     cupFinalist: cup.finalist,
     warnings,
