@@ -26,9 +26,15 @@ const clean = (n: string) => n.replace(/<[^>]*>/g, "").trim();
 async function getCupFinal(
   seasonLabel: string
 ): Promise<{ winner: string | null; finalist: string | null }> {
+  // Matching tolérant : le label de saison peut être "2026" alors que CUP.season
+  // est stocké "2025-2026" (saison à cheval). On tente l'égalité stricte, puis un
+  // LIKE sur l'année (dernier segment du label).
+  const year = seasonLabel.split(/[-/]/).map((s) => s.trim()).filter(Boolean).pop() || seasonLabel;
   const cups = await prisma.$queryRawUnsafe<{ id: number }[]>(
-    "SELECT id FROM CUP WHERE season = ? ORDER BY id DESC LIMIT 1",
-    seasonLabel
+    "SELECT id FROM CUP WHERE season = ? OR season LIKE ? OR season = ? ORDER BY id DESC LIMIT 1",
+    seasonLabel,
+    `%${year}%`,
+    year
   );
   if (cups.length === 0) return { winner: null, finalist: null };
   const cupId = cups[0].id;
@@ -105,15 +111,23 @@ export async function closeSeason(seasonId: number): Promise<CloseSeasonResult> 
       continue;
     }
 
-    // Podium 1/2/3 -> PALMARES.
-    standings.slice(0, 3).forEach((s) => {
-      palmares.push({
-        seasonId,
-        divisionLabel,
-        position: String(s.rank),
-        pseudo: s.userName,
+    // Rang tenant compte des ex-aequo (rang de compétition : 1,2,3,3,5).
+    // standings est déjà trié par total décroissant. Deux totaux égaux
+    // partagent le même rang ; le rang suivant saute en conséquence.
+    const ranked = standings.map((s, i) => ({ ...s, finalRank: i + 1 }));
+    for (let i = 1; i < ranked.length; i++) {
+      if (ranked[i].totalPoints === ranked[i - 1].totalPoints) {
+        ranked[i].finalRank = ranked[i - 1].finalRank;
+      }
+    }
+
+    // Podium -> PALMARES : tous les joueurs de rang <= 3 (donc 2 troisièmes en
+    // cas d'égalité, comme dans le palmarès officiel).
+    ranked
+      .filter((s) => s.finalRank <= 3)
+      .forEach((s) => {
+        palmares.push({ seasonId, divisionLabel, position: String(s.finalRank), pseudo: s.userName });
       });
-    });
 
     // Mouvements : top 3 montent (tier-1), bottom 3 descendent (tier+1).
     // Bornés aux tiers existants ; promotion prioritaire si chevauchement
@@ -122,8 +136,8 @@ export async function closeSeason(seasonId: number): Promise<CloseSeasonResult> 
       warnings.push(`Ligue "${divisionLabel}" sans tier : mouvements non calculés.`);
       continue;
     }
-    standings.forEach((s) => {
-      const { type, toTier } = computeMovement(s.rank, n, tier, minTier, maxTier);
+    ranked.forEach((s) => {
+      const { type, toTier } = computeMovement(s.finalRank, n, tier, minTier, maxTier);
       movements.push({
         seasonId,
         userId: s.userId,
@@ -131,7 +145,7 @@ export async function closeSeason(seasonId: number): Promise<CloseSeasonResult> 
         fromTier: tier,
         toTier,
         type,
-        rankFinal: s.rank,
+        rankFinal: s.finalRank,
         pseudo: s.userName,
       });
     });
