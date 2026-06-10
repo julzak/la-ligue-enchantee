@@ -298,6 +298,19 @@ export default function NouvelleSaisonPage() {
     if (pPrefill) setPAssignments(pPrefill);
   }
 
+  // Recharge uniquement la liste des comptes (après création d'un compte
+  // dans Admin → Utilisateurs), sans toucher aux affectations en cours.
+  async function refreshUsers() {
+    if (!season) return;
+    try {
+      const res = await fetch(`/api/admin/seasons/participants?seasonId=${season.id}`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.users)) setPUsers(data.users);
+    } catch {
+      /* silencieux */
+    }
+  }
+
   function addParticipant(leagueId: number, userId: number) {
     setPAssignments((prev) => {
       // Retire le user des autres ligues (1 ligue max par participant)
@@ -615,11 +628,24 @@ export default function NouvelleSaisonPage() {
               <span className="font-semibold text-gold">{season.label}</span>. Les ligues sont
               par affinité : pars des participants de la saison précédente puis ajuste.
             </p>
-            {pPrefill && pPrevLabel && (
-              <button className={btnGhost} onClick={applyParticipantsPrefill}>
-                Reprendre les participants de {pPrevLabel}
+            <div className="flex flex-wrap items-center gap-2">
+              {pPrefill && pPrevLabel && (
+                <button className={btnGhost} onClick={applyParticipantsPrefill}>
+                  Reprendre les participants de {pPrevLabel}
+                </button>
+              )}
+              <button
+                className={btnGhost}
+                onClick={refreshUsers}
+                title="À utiliser après avoir créé un compte dans Admin → Utilisateurs"
+              >
+                Actualiser la liste des comptes
               </button>
-            )}
+            </div>
+            <p className="text-xs text-muted">
+              Un participant absent de la liste n&apos;a pas encore de compte : crée-le dans
+              Admin → Utilisateurs (mot de passe initial &quot;ligue&quot;), puis actualise ici.
+            </p>
           </div>
 
           {pLeagues.map((league) => {

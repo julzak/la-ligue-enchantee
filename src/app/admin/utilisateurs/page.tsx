@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Loader2, Trash2, Plus, KeyRound } from "lucide-react";
+import { Shield, Loader2, Trash2, Plus, KeyRound, UserPlus } from "lucide-react";
 
 interface AdminUser {
   userId: number;
@@ -21,6 +21,8 @@ export default function AdminUsersPage() {
   const [resetUserId, setResetUserId] = useState(0);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
 
   async function loadData() {
     setLoading(true);
@@ -76,6 +78,31 @@ export default function AdminUsersPage() {
       const data = await res.json();
       if (data.ok) {
         setMessage("Admin retiré");
+        await loadData();
+      } else {
+        setMessage("Erreur: " + data.error);
+      }
+    } catch {
+      setMessage("Erreur réseau");
+    }
+    setSaving(false);
+  }
+
+  async function createAccount() {
+    if (newName.trim().length < 2) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName, email: newEmail }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessage(data.message);
+        setNewName("");
+        setNewEmail("");
         await loadData();
       } else {
         setMessage("Erreur: " + data.error);
@@ -162,6 +189,41 @@ export default function AdminUsersPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Create participant account */}
+          <div className="bg-surface rounded-lg border border-white/[0.07] p-5">
+            <h2 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-gold" />
+              Créer un compte participant
+            </h2>
+            <div className="flex items-center gap-3">
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Pseudo (sert à se connecter)"
+                className="flex-1 bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+              />
+              <input
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Email (optionnel)"
+                type="email"
+                className="flex-1 bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+              />
+              <button
+                onClick={createAccount}
+                disabled={newName.trim().length < 2 || saving}
+                className="h-9 px-4 bg-gold text-night font-semibold rounded text-sm hover:bg-gold/90 flex items-center gap-2 transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                Créer
+              </button>
+            </div>
+            <p className="text-[11px] text-muted mt-2">
+              Mot de passe initial : &quot;ligue&quot;. Le participant le change via /mon-compte.
+              Une fois créé, il apparaît dans l&apos;étape Participants de la nouvelle saison.
+            </p>
           </div>
 
           {/* Reset password */}

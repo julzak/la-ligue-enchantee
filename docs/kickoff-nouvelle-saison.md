@@ -7,8 +7,8 @@
 > **Tout le kick-off se fait en autonomie, depuis l'admin du site.**
 >
 > **Voie d'exception** (la seule raison de solliciter Julien) : un message
-> d'erreur inattendu, ou un des deux cas signalés « voie d'exception » plus
-> bas. Dans ce cas : ne forcez pas, notez le **libellé du bouton** cliqué et
+> d'erreur inattendu, ou le cas signalé « voie d'exception » plus bas.
+> Dans ce cas : ne forcez pas, notez le **libellé du bouton** cliqué et
 > le **message affiché** (capture d'écran idéale), et postez ça sur le groupe
 > admins. Tout est rejouable, rien n'est cassé définitivement.
 
@@ -57,9 +57,8 @@
 
 - Page **Admin → Nouvelle saison**, partie basse, étape 1 du stepper.
 - Saisir le libellé : **`2027`** (ou `2026-2027`, les deux marchent).
-  ⚠️ Ce format est obligatoire : il sert à retrouver le calendrier de la
-  Ligue 1 et les réglages de la saison. Pas de « Saison de la gagne » ici,
-  le système refusera de lancer plus tard.
+  Ce format est obligatoire : il sert à retrouver le calendrier de la
+  Ligue 1 et les réglages de la saison.
 - Cliquer sur **Créer la saison**.
 
 **Vérification :** le stepper passe à l'étape 2 et la saison apparaît dans
@@ -72,10 +71,9 @@
 **Qui : le pilote. Comptez 10-15 minutes.**
 
 - Étape 2 du stepper : cliquer sur **Récupérer les clubs de Ligue 1**.
-- La liste des clubs s'affiche, tous cochés. **Décocher** les clubs qu'on ne
-  veut pas (et garder la Légion étrangère si elle joue cette saison : elle
-  n'apparaîtra pas dans la liste de l'API, voir note ci-dessous).
-- Pour chaque club coché : cliquer sur **Charger l'effectif**.
+- La liste des 18 clubs de Ligue 1 s'affiche, tous cochés : c'est ce qu'on
+  veut, ne décochez rien.
+- Pour chaque club : cliquer sur **Charger l'effectif**.
 - Contrôler le **poste** de chaque joueur (Gardien / Défense / Milieu /
   Attaque) : le menu déroulant est modifiable et c'est la classification de
   la Ligue qui fait foi, pas celle de l'API. (Avec les joueurs simulés
@@ -103,8 +101,9 @@ clubs et joueurs.
 
 - Étape 3 du stepper : cliquer sur **Reprendre depuis 2026** (ça recopie la
   structure de l'an dernier) ou sur **Pré-remplir 3 ligues (Ligue 1/2/3)**.
-- Les ligues sont **par affinité** : mêmes ligues, mêmes noms qu'avant. Ne
-  changez les noms que si tout le monde est d'accord.
+- Les ligues sont **par affinité** : mêmes ligues, mêmes noms qu'avant.
+- S'il y a assez de participants pour ouvrir une 4e ligue : **« + Ajouter
+  une ligue »**, lui donner un nom et un label de division.
 - Le « tier » sert uniquement à l'ordre d'affichage (1 = en haut).
 - Cliquer sur **Créer les ligues**.
 
@@ -133,9 +132,15 @@ repassez par ici après la phase 4, refaites la phase 4 derrière.
 **Vérification :** le message « X participants inscrits » s'affiche, et le
 compteur par ligue correspond à votre liste.
 
-**Note :** un nouveau participant doit d'abord avoir un compte sur le site.
-S'il n'apparaît pas dans le menu déroulant : **voie d'exception**, la création
-de compte n'est pas encore self-service.
+**Nouveau participant sans compte ?** S'il n'apparaît pas dans le menu
+déroulant :
+- aller dans **Admin → Utilisateurs**, section « Créer un compte
+  participant » : saisir son pseudo (c'est avec ça qu'il se connectera) et
+  son email,
+- revenir à l'étape 4 et cliquer sur **« Actualiser la liste des comptes »** :
+  il apparaît dans le menu déroulant,
+- lui communiquer son pseudo et le mot de passe initial **`ligue`**, qu'il
+  changera à sa première connexion (page Mon compte).
 
 ---
 
@@ -209,8 +214,6 @@ de compte n'est pas encore self-service.
    de confirmer.
 4. **Mercato d'hiver** : rien à faire maintenant, la config se saisit en
    cours de saison dans Admin → Configuration.
-5. **Cotisations** : le module paiements n'est pas encore raccordé à la
-   nouvelle saison, gestion à l'ancienne pour l'instant.
 
 ---
 
