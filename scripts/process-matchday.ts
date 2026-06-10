@@ -11,6 +11,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { resolveSeasonKey } from "./lib/season";
 import { chromium } from "playwright";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
@@ -548,7 +549,7 @@ async function main() {
 
   // Step 1: Match info
   console.log("\n📅 Step 1: Match info from TheSportsDB...");
-  const matches = await getMatchday(matchday);
+  const matches = await getMatchday(matchday, await resolveSeasonKey(prisma));
   matches.forEach(m => {
     const score = m.homeScore !== null ? `${m.homeScore}-${m.awayScore}` : "TBD";
     console.log(`  ${m.homeTeam} ${score} ${m.awayTeam}`);

@@ -121,7 +121,7 @@ export default function AdminConfigPage() {
           <Settings className="w-6 h-6 text-gold" />
           Configuration
         </h1>
-        <p className="text-sm text-muted">Parametres de la saison 2025-2026</p>
+        <p className="text-sm text-muted">Parametres de la saison courante</p>
       </div>
 
       {/* Section 1: Jokers */}

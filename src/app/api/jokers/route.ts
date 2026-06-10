@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAuth } from "@/lib/admin-auth";
 import { getLeagues } from "@/lib/db";
 
@@ -80,7 +81,8 @@ export async function GET(request: Request) {
 
   // Joker config
   const configs = await prisma.$queryRawUnsafe<{ type: string; max_count: number; deadline: string | null }[]>(
-    "SELECT type, max_count, deadline FROM JOKER_CONFIG WHERE season = '2025-2026' AND is_active = 1"
+    "SELECT type, max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1",
+    await getCurrentSeasonKey()
   );
   const totalMax = configs.reduce((sum, c) => {
     if (c.deadline && new Date(c.deadline) < new Date()) return sum;
@@ -131,7 +133,8 @@ export async function POST(request: Request) {
     const used = Number(jokerCount[0]?.cnt ?? 0);
 
     const configs = await prisma.$queryRawUnsafe<{ max_count: number; deadline: string | null }[]>(
-      "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = '2025-2026' AND is_active = 1"
+      "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1",
+      await getCurrentSeasonKey()
     );
     const maxJokers = configs.reduce((sum, c) => {
       if (c.deadline && new Date(c.deadline) < new Date()) return sum;

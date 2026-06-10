@@ -3,7 +3,7 @@ import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
 import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "./assets";
 import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
-import { getSeasonScope } from "./season";
+import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { leagueSlug } from "./season-key";
 
 // ── Request-scoped caches (dedup within same render) ────
@@ -188,12 +188,13 @@ export async function getCurrentMatchday(): Promise<number> {
 //     avancee a (heure_match - early_match_offset_hours) si match avant
 //     early_match_hour (17h)
 export async function getLockedClubIds(day: number): Promise<Set<number>> {
+  const seasonKey = await getCurrentSeasonKey();
   const matches = await prisma.$queryRawUnsafe<{
     home_team: string; away_team: string; match_date: string; match_time: string;
     is_postponed: number | null; admin_override_date: string | null; home_score: number | null;
   }[]>(
-    "SELECT home_team, away_team, match_date, match_time, is_postponed, admin_override_date, home_score FROM MATCH_SCHEDULE WHERE matchday = ?",
-    day
+    "SELECT home_team, away_team, match_date, match_time, is_postponed, admin_override_date, home_score FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ?",
+    seasonKey, day
   );
 
   if (matches.length === 0) return new Set();
@@ -201,7 +202,8 @@ export async function getLockedClubIds(day: number): Promise<Set<number>> {
   const cfgRows = await prisma.$queryRawUnsafe<{
     deadline_hour: number; early_match_hour: number; early_match_offset_hours: number;
   }[]>(
-    "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = '2025-2026' LIMIT 1"
+    "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = ? LIMIT 1",
+    seasonKey
   );
   const cfg = cfgRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
 
@@ -1139,7 +1141,8 @@ export async function getLeagueStats(leagueDbId: number) {
 export async function getLeagueJokersRemaining(leagueDbId: number): Promise<Map<number, number>> {
   // Get max jokers from config
   const configs = await prisma.$queryRawUnsafe<{ max_count: number; deadline: string | null }[]>(
-    "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = '2025-2026' AND is_active = 1"
+    "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1",
+    await getCurrentSeasonKey()
   );
   const maxJokers = configs.reduce((sum, c) => {
     if (c.deadline && new Date(c.deadline) < new Date()) return sum;
@@ -1168,8 +1171,8 @@ export async function getLeaguePayments(leagueDbId: number): Promise<Map<number,
   const rows = await prisma.$queryRawUnsafe<{ user_id: number; paid: number }[]>(
     `SELECT p.user_id, p.paid FROM PAYMENT p
      JOIN LEAGUE_USER lu ON lu.ID_USER = p.user_id AND lu.ID_LEAGUE = ?
-     WHERE p.season = '2025-2026'`,
-    leagueDbId
+     WHERE p.season = ?`,
+    leagueDbId, await getCurrentSeasonKey()
   );
   return new Map(rows.map(r => [Number(r.user_id), r.paid === 1]));
 }

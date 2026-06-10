@@ -49,8 +49,13 @@ async function buildChecklist(seasonId: number) {
     ? await prisma.$queryRawUnsafe<{ n: bigint }[]>(
         "SELECT COUNT(*) AS n FROM JOKER_CONFIG WHERE season = ?", seasonKey)
     : [];
+  const scheduleRows = seasonKey
+    ? await prisma.$queryRawUnsafe<{ n: bigint }[]>(
+        "SELECT COUNT(*) AS n FROM MATCH_SCHEDULE WHERE season = ?", seasonKey)
+    : [];
   const hasScoring = Number(scoringRows[0]?.n ?? 0) > 0;
   const hasJokers = Number(jokerRows[0]?.n ?? 0) > 0;
+  const scheduleCount = Number(scheduleRows[0]?.n ?? 0);
 
   const items: ChecklistItem[] = [
     {
@@ -100,6 +105,13 @@ async function buildChecklist(seasonId: number) {
       detail: hasJokers
         ? "JOKER_CONFIG présente"
         : "Sera clonée au lancement (dates de deadline à re-saisir dans Admin → Jokers)",
+    },
+    {
+      key: "schedule", label: "Calendrier Ligue 1 synchronisé", blocking: false,
+      ok: scheduleCount > 0,
+      detail: scheduleCount > 0
+        ? `${scheduleCount} matchs en base`
+        : "À synchroniser sur le serveur : ./node_modules/.bin/tsx scripts/sync-match-schedule.ts --all (après lancement)",
     },
   ];
 

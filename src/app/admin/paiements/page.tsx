@@ -76,7 +76,7 @@ export default function PaiementsPage() {
           <CreditCard className="w-6 h-6 text-gold" />
           Paiements
         </h1>
-        <p className="text-sm text-muted">Cotisation 30€ — Saison 2025-2026</p>
+        <p className="text-sm text-muted">Cotisation 30€ — saison courante</p>
       </div>
 
       {/* Stats */}

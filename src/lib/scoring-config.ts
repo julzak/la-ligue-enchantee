@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "./prisma";
+import { getCurrentSeasonKey } from "./season";
 
 export interface ScoringConfig {
   goalBonusGk: number;
@@ -40,8 +41,10 @@ interface ScoringConfigRow {
  */
 export const getScoringConfig = cache(async (): Promise<ScoringConfig> => {
   try {
+    const seasonKey = await getCurrentSeasonKey();
     const rows = await prisma.$queryRawUnsafe<ScoringConfigRow[]>(
-      "SELECT goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att, csc_malus, penalty_saved_bonus, red_card_note_zero, min_note FROM SCORING_CONFIG WHERE season = '2025-2026' LIMIT 1"
+      "SELECT goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att, csc_malus, penalty_saved_bonus, red_card_note_zero, min_note FROM SCORING_CONFIG WHERE season = ? LIMIT 1",
+      seasonKey
     );
     if (!rows.length) return DEFAULTS;
     const r = rows[0];

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma, inParams } from "@/lib/prisma";
+import { getCurrentSeasonKey } from "@/lib/season";
 import { getLeagueBySlug, getLeagueStandings, getBestPerformances, getWorstPerformances, getCurrentMatchday, getParticipantDayScores, getCupContextForDay } from "@/lib/db";
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY ?? "";
@@ -94,8 +95,8 @@ export async function POST(request: Request) {
 
     // Check how many matches are played this matchday
     const matchCounts = await prisma.$queryRawUnsafe<{ total: number; played: number }[]>(
-      "SELECT COUNT(*) as total, SUM(home_score IS NOT NULL) as played FROM MATCH_SCHEDULE WHERE matchday = ?",
-      currentDay
+      "SELECT COUNT(*) as total, SUM(home_score IS NOT NULL) as played FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ?",
+      await getCurrentSeasonKey(), currentDay
     );
     const totalMatches = Number(matchCounts[0]?.total ?? 9);
     const playedMatches = Number(matchCounts[0]?.played ?? 0);

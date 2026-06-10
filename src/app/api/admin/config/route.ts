@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
-
-const CURRENT_SEASON = "2025-2026";
+import { getCurrentSeasonKey } from "@/lib/season";
 
 interface ScoringConfigRow {
   goal_bonus_gk: number;
@@ -38,6 +37,7 @@ export async function GET() {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
+  const CURRENT_SEASON = await getCurrentSeasonKey();
   const [scoringRows, jokerRows, mercatoRows] = await Promise.all([
     prisma.$queryRawUnsafe<ScoringConfigRow[]>(
       "SELECT goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att, csc_malus, penalty_saved_bonus, red_card_note_zero, min_note, deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = ?",
@@ -113,6 +113,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const { section, data } = body;
+  const CURRENT_SEASON = await getCurrentSeasonKey();
 
   if (!section || !data) {
     return NextResponse.json({ error: "section and data required" }, { status: 400 });

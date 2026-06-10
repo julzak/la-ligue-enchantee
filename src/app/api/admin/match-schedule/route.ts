@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(request: Request) {
@@ -22,8 +23,8 @@ export async function GET(request: Request) {
     admin_override_date: Date | null;
     infographic_url: string | null;
   }[]>(
-    "SELECT id, home_team, away_team, match_date, match_time, home_score, away_score, is_postponed, admin_override_date, infographic_url FROM MATCH_SCHEDULE WHERE matchday = ? ORDER BY COALESCE(admin_override_date, match_date), match_time",
-    day
+    "SELECT id, home_team, away_team, match_date, match_time, home_score, away_score, is_postponed, admin_override_date, infographic_url FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ? ORDER BY COALESCE(admin_override_date, match_date), match_time",
+    await getCurrentSeasonKey(), day
   );
 
   // MATCH_SCHEDULE.id est BIGINT cote MySQL : Prisma raw renvoie BigInt,

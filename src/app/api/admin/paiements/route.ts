@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getCurrentSeasonKey } from "@/lib/season";
 
 // GET: list all payments
 export async function GET() {
@@ -43,8 +44,8 @@ export async function POST(request: Request) {
   const { userId, paid, notes } = await request.json() as { userId: number; paid: boolean; notes?: string };
 
   await prisma.$executeRawUnsafe(
-    "UPDATE PAYMENT SET paid = ?, paid_at = ?, notes = COALESCE(?, notes) WHERE user_id = ? AND season = '2025-2026'",
-    paid ? 1 : 0, paid ? new Date() : null, notes ?? null, userId
+    "UPDATE PAYMENT SET paid = ?, paid_at = ?, notes = COALESCE(?, notes) WHERE user_id = ? AND season = ?",
+    paid ? 1 : 0, paid ? new Date() : null, notes ?? null, userId, await getCurrentSeasonKey()
   );
 
   return NextResponse.json({ ok: true });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma, inParams } from "@/lib/prisma";
+import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAdmin } from "@/lib/admin-auth";
 
 function nextPowerOf2(n: number): number {
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
       );
       userIds = participants.map((p) => Number(p.ID_USER));
     }
-    const cupSeason = season ?? "2025-2026";
+    const cupSeason = season ?? (await getCurrentSeasonKey());
     const total = userIds.length;
 
     // Shuffle for random draw

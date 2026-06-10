@@ -11,11 +11,12 @@
 
 import { PrismaClient } from "@prisma/client";
 import { getMatchday } from "./lib/sportsdb";
+import { resolveSeasonKey } from "./lib/season";
 
 const prisma = new PrismaClient();
 
-async function syncMatchday(day: number) {
-  const matches = await getMatchday(day);
+async function syncMatchday(day: number, seasonKey: string) {
+  const matches = await getMatchday(day, seasonKey);
   if (matches.length === 0) {
     console.log(`  J${day}: no data from TheSportsDB`);
     return 0;
@@ -25,8 +26,8 @@ async function syncMatchday(day: number) {
   for (const m of matches) {
     // Check if admin has overridden this match
     const existing = await prisma.$queryRawUnsafe<{ admin_override_date: string | null }[]>(
-      "SELECT admin_override_date FROM MATCH_SCHEDULE WHERE matchday = ? AND home_team = ? AND away_team = ? LIMIT 1",
-      day, m.homeTeam, m.awayTeam
+      "SELECT admin_override_date FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ? AND home_team = ? AND away_team = ? LIMIT 1",
+      seasonKey, day, m.homeTeam, m.awayTeam
     );
 
     if (existing.length > 0 && existing[0].admin_override_date) {
@@ -34,8 +35,8 @@ async function syncMatchday(day: number) {
       // But still update the score if available
       if (m.homeScore !== null) {
         await prisma.$executeRawUnsafe(
-          "UPDATE MATCH_SCHEDULE SET home_score = ?, away_score = ? WHERE matchday = ? AND home_team = ? AND away_team = ?",
-          m.homeScore, m.awayScore, day, m.homeTeam, m.awayTeam
+          "UPDATE MATCH_SCHEDULE SET home_score = ?, away_score = ? WHERE season = ? AND matchday = ? AND home_team = ? AND away_team = ?",
+          m.homeScore, m.awayScore, seasonKey, day, m.homeTeam, m.awayTeam
         );
       }
       continue;
@@ -45,8 +46,8 @@ async function syncMatchday(day: number) {
     const isPostponed = m.homeScore === null && m.date < new Date().toISOString().slice(0, 10) ? 1 : 0;
 
     await prisma.$executeRawUnsafe(
-      `INSERT INTO MATCH_SCHEDULE (matchday, home_team, away_team, match_date, match_time, edition_date, home_score, away_score, is_postponed, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'thesportsdb')
+      `INSERT INTO MATCH_SCHEDULE (season, matchday, home_team, away_team, match_date, match_time, edition_date, home_score, away_score, is_postponed, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'thesportsdb')
        ON DUPLICATE KEY UPDATE
          match_date = VALUES(match_date),
          match_time = VALUES(match_time),
@@ -54,7 +55,7 @@ async function syncMatchday(day: number) {
          home_score = COALESCE(VALUES(home_score), home_score),
          away_score = COALESCE(VALUES(away_score), away_score),
          is_postponed = VALUES(is_postponed)`,
-      day, m.homeTeam, m.awayTeam, m.date, m.time + ":00", editionDate,
+      seasonKey, day, m.homeTeam, m.awayTeam, m.date, m.time + ":00", editionDate,
       m.homeScore, m.awayScore, isPostponed
     );
     synced++;
@@ -82,11 +83,12 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`Syncing matchdays ${startDay}-${endDay} from TheSportsDB...\n`);
+  const seasonKey = await resolveSeasonKey(prisma);
+  console.log(`Syncing matchdays ${startDay}-${endDay} (saison ${seasonKey}) from TheSportsDB...\n`);
 
   let total = 0;
   for (let day = startDay; day <= endDay; day++) {
-    total += await syncMatchday(day);
+    total += await syncMatchday(day, seasonKey);
     // Rate limit: TheSportsDB is free, be nice
     if (endDay - startDay > 2) {
       await new Promise((r) => setTimeout(r, 500));
@@ -98,8 +100,8 @@ async function main() {
   // Show edition dates for the requested matchdays
   if (endDay === startDay) {
     const matches = await prisma.$queryRawUnsafe<{ edition_date: string; is_postponed: number; admin_override_date: string | null }[]>(
-      "SELECT DISTINCT edition_date, is_postponed, admin_override_date FROM MATCH_SCHEDULE WHERE matchday = ? ORDER BY edition_date",
-      startDay
+      "SELECT DISTINCT edition_date, is_postponed, admin_override_date FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ? ORDER BY edition_date",
+      seasonKey, startDay
     );
     console.log(`\nEditions to scrape for J${startDay}:`);
     matches.forEach((m) => {

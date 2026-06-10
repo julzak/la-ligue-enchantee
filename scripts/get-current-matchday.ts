@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { resolveCurrentMatchday } from "./lib/season";
 
 async function main() {
   const prisma = new PrismaClient();
-  const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
-  console.log(latest?.day ?? 27);
+  console.log(await resolveCurrentMatchday(prisma));
   await prisma.$disconnect();
 }
 

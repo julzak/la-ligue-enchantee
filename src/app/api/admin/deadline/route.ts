@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentSeasonKey } from "@/lib/season";
+import { getCurrentMatchday } from "@/lib/db";
 
 // Deadline config (loaded from DB, with defaults)
 interface DeadlineConfig {
@@ -21,7 +23,8 @@ async function getDeadlineConfig(): Promise<DeadlineConfig> {
     const rows = await prisma.$queryRawUnsafe<{
       deadline_hour: number; early_match_hour: number; early_match_offset_hours: number;
     }[]>(
-      "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = '2025-2026' LIMIT 1"
+      "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = ? LIMIT 1",
+      await getCurrentSeasonKey()
     );
     if (rows.length > 0) {
       return {
@@ -76,9 +79,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dayParam = Number(searchParams.get("day") ?? 0);
 
-  // Get current matchday
-  const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
-  const currentDay = dayParam > 0 ? dayParam : (latest?.day ?? 26) + 1;
+  // Get current matchday (scopé saison courante)
+  const currentDay = dayParam > 0 ? dayParam : (await getCurrentMatchday()) + 1;
 
   // Check if admin set a manual deadline
   const config = await prisma.$queryRawUnsafe<{ day: number; lock_at: Date | null }[]>(
@@ -95,7 +97,7 @@ export async function GET(request: Request) {
   // Auto-calculate: fetch match dates/times from TheSportsDB
   try {
     const res = await fetch(
-      `https://www.thesportsdb.com/api/v1/json/3/eventsround.php?id=4334&r=${currentDay}&s=2025-2026`,
+      `https://www.thesportsdb.com/api/v1/json/3/eventsround.php?id=4334&r=${currentDay}&s=${await getCurrentSeasonKey()}`,
       { next: { revalidate: 3600 } } // cache 1h
     );
     const data = await res.json();
