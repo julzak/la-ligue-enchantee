@@ -34,10 +34,11 @@ Aucune saisie technique, tout se fait en quelques clics.
 
 ## B. Démarrer la nouvelle saison
 
-> Se fait dans la même page, partie basse, en 3 étapes guidées (stepper).
+> Se fait dans la même page, partie basse, en 4 étapes guidées (stepper).
 
 ### Étape 1 : créer la saison
-- Renseigner le **libellé** de la saison (ex : `2026-2027`).
+- Renseigner le **libellé** de la saison : `2026-2027` ou `2027` (l'année de fin).
+  Ce format est obligatoire, il sert à retrouver le calendrier et les configs.
 - Cliquer sur **Créer la saison**. Elle démarre au statut `SETUP` (préparation).
 
 ### Étape 2 : importer les clubs et les joueurs
@@ -51,13 +52,37 @@ Aucune saisie technique, tout se fait en quelques clics.
 - Cliquer sur **Pré-remplir 3 ligues (Ligue 1/2/3)** pour partir de la structure habituelle.
   - (ou **Reprendre depuis la saison précédente**, ou **+ Ajouter une ligue** pour faire à la main)
 - Pour chaque ligue : un **nom** et un **label de division** (ex : Ligue 1). Le **niveau** sert juste à l'ordre d'affichage (1 = division la plus haute). Les libellés sont libres.
-- Cliquer sur **Créer les ligues**. La saison est prête.
+- Cliquer sur **Créer les ligues**, puis passer à l'étape suivante.
+
+### Étape 4 : inscrire les participants
+- Cliquer sur **Reprendre les participants de [saison précédente]** : chaque ligue
+  est pré-remplie avec ses participants de l'an dernier (les ligues sont par
+  affinité, elles ne bougent pas).
+- Ajuster si besoin : retirer un participant (croix sur son nom), en ajouter un
+  via le menu déroulant. Un participant ne peut être que dans une seule ligue.
+- Cliquer sur **Enregistrer les participants**. Rejouable sans risque.
 
 ### Faire avancer la saison
 Dans **Saisons existantes**, un bouton fait passer la saison à l'étape suivante :
 - `SETUP` → **Ouvrir les enchères** (mercato d'été)
-- `AUCTION` → **Démarrer la saison** (la saison devient "courante")
+- `AUCTION` → **Démarrer la saison** : le système vérifie d'abord une
+  **checklist** (ligues créées, clubs et joueurs importés, participants inscrits
+  dans chaque ligue). Si quelque chose manque, rien n'est lancé et la liste
+  s'affiche avec ✓/✗ pour dire quoi corriger. Si tout est bon :
+  - les configs de la saison (barème de scoring, jokers) sont créées
+    automatiquement en copiant celles de l'an dernier — **les dates de deadline
+    des jokers sont à re-saisir** dans Admin → Configuration ;
+  - la saison devient **courante** : tout le site (classements, listes de
+    joueurs, mon équipe...) bascule sur ses ligues, clubs et joueurs.
 - `ACTIVE` → **Passer en mercato d'hiver** puis **Reprendre la saison**
+
+### Après le lancement
+- **Synchroniser le calendrier** Ligue 1 (dates des matchs, indispensable pour
+  les deadlines de compo) : demander à l'admin technique de lancer
+  `scripts/sync-match-schedule.ts --all` sur le serveur. La checklist du
+  lancement rappelle ce point.
+- Vérifier dans Admin → Configuration les valeurs reprises de l'an dernier
+  (barème, jokers, deadlines).
 
 ---
 

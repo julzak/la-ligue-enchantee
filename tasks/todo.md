@@ -263,15 +263,38 @@ actuelle :
       saisons) au lieu de l'id numérique. Lookup id→name via cache clubs.
 
 ### F — Doc + tests + recette
-- [ ] `scripts/test-season-scoping.ts` : fallback legacy (saison sans données scopées
-      = comportement actuel) + scoping effectif (saison avec données) + sanity-check.
-- [ ] `docs/mode-emploi-saisons.md` : étape 4 participants + checklist lancement.
-- [ ] Recette : créer une saison de test complète en local/préprod, la lancer,
-      vérifier bascule du site, puis la supprimer (ou flag de test).
+- [x] `scripts/test-season-scoping.ts` : slugs ligues, clés saison, mapping clubs
+      par nom + alias TheSportsDB, sanity-check anti-régression (ancien hardcode).
+- [x] `docs/mode-emploi-saisons.md` : étape 4 participants + checklist lancement
+      + actions post-lancement (sync calendrier, vérif configs).
+- [ ] **Recette de bout en bout À FAIRE avant l'été** : créer une saison de test
+      complète (stepper 4 étapes + launch) sur une copie locale de la DB (dump +
+      mysql local), vérifier la bascule du site, les deadlines, la saisie de
+      notes et une publication de journée. NE PAS lancer une saison de test sur
+      la prod (le launch bascule le site immédiatement).
+
+## Review session 2026-06-10 (chantiers A-E livrés, déployés en prod)
+
+Commits : c39c3d5 (A fondation), 096bcab (B+C participants+launch), puis D
+(dé-hardcodage + migration MATCH_SCHEDULE appliquée en prod) et E (assets par
+nom). Build + tests verts, smoke-test prod OK (fallback legacy strictement
+identique : aucune saison isCurrent en base aujourd'hui).
+
+Restes à faire (hors périmètre de cette session) :
+- [ ] Recette complète du flux de lancement (ci-dessus).
+- [ ] `scripts/get-matchday-info.ts` et `scripts/scrape-notes-web.ts` utilisent
+      encore le défaut "2025-2026" de `scripts/lib/sportsdb.ts` : à passer sur
+      `resolveSeasonKey` lors du chantier effectifs/scraping de la nouvelle saison.
+- [ ] MERCATO_CONFIG n'est pas cloné au lancement (saisie admin volontaire).
+- [ ] `/api/admin/paiements` GET liste toutes saisons confondues (module
+      cotisations explicitement hors scope).
+- [ ] Effectifs joueurs toujours MOCK (TheSportsDB premium) : brancher une vraie
+      source avant les enchères d'août.
+- [ ] Page `/reglement` mentionne "Saison 2025-2026" en dur (contenu éditorial).
 
 ## Contraintes
-- `.env` local pointe encore l'IP Scaleway morte (51.15.205.26) : à corriger vers
-  la DB OVH avant tout test runtime local (ou tests via SSH ligue-ovh).
-- Migration DDL éventuelle (MATCH_SCHEDULE.season) = acte manuel AVANT push (auto-deploy).
-
-## Review (à remplir en fin)
+- `.env` local pointe désormais sur la DB OVH via tunnel : lancer
+  `ssh -N -L 3307:127.0.0.1:3306 ligue-ovh` avant tout build/test local
+  (ancien .env Scaleway sauvegardé dans `.env.bak-scaleway`).
+- Migration DDL = acte manuel AVANT push (auto-deploy). La migration
+  `sql/2026-06-match-schedule-season.sql` a été appliquée le 2026-06-10.
