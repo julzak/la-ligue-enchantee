@@ -172,9 +172,6 @@ export default function AdminEncheresPage() {
                 <button onClick={() => handleAction("resolve-round")} className="h-9 px-4 bg-gold text-night rounded text-sm flex items-center gap-2 hover:bg-gold/80">
                   <CheckCircle className="w-4 h-4" /> Résoudre le tour
                 </button>
-                <button onClick={() => handleAction("resolve-tiebreak")} className="h-9 px-4 bg-surface-2 border border-gold/30 text-gold rounded text-sm flex items-center gap-2 hover:bg-gold/10">
-                  Tirage au sort (égalités)
-                </button>
               </>
             )}
             {(auction?.status === "closed" || auction?.status === "resolved") && (

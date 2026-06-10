@@ -298,3 +298,79 @@ Restes à faire (hors périmètre de cette session) :
   (ancien .env Scaleway sauvegardé dans `.env.bak-scaleway`).
 - Migration DDL = acte manuel AVANT push (auto-deploy). La migration
   `sql/2026-06-match-schedule-season.sql` a été appliquée le 2026-06-10.
+
+---
+
+# Module Enchères été (zone à HAUT RISQUE, démarrage août 2026)
+
+Source de vérité : `docs/regles-encheres.md` (à committer, encore untracked).
+Contrat de tests obligatoire avant déploiement : 7 scripts test-encheres-*.ts
+(cf CLAUDE.md). Vision Julien : le kick-off de saison intègre les enchères
+comme étape finale (création → effectifs/photos → ligues/participants →
+enchères → équipes constituées).
+
+## État des lieux (constaté le 2026-06-10)
+
+EXISTE déjà (socle réel, jamais utilisé en prod) :
+- Tables AUCTION (par ligue, type summer/winter, budget_per_user,
+  players_per_user, current_round), AUCTION_BID (round, statuts
+  pending/won/lost/tie, player_out_id pour l'hiver), AUCTION_BUDGET (hiver).
+- `/api/auction` GET/POST : mise par tour (remplacement), contrôle budget
+  (130 - somme des won = report automatique des points non dépensés ✓).
+- `/api/admin/auction` : open/next round, close-round, resolve-round
+  (plus haute mise gagne, égalité → statut 'tie', personne ne l'obtient ✓),
+  resolve-tiebreak (TIRAGE AU SORT : contraire au règlement), close-auction.
+- Pages `/ligue/[slug]/encheres` (mise + recherche joueurs libres via
+  /api/admin/jokers/free) et `/admin/encheres`.
+
+MANQUE (écarts au règlement) :
+1. **Deadline par tour** : fermeture 100% manuelle, aucun timestamp butoir,
+   aucun rejet à T+1s (règle 3.1, tolérance zéro).
+2. **Pénalités de composition** : AUCUNE (règle 3.2.c : mise sans gardien,
+   quotas par ligne, ≠13 joueurs, dépassement 130 pts → retraits sur les
+   acquisitions les plus chères, ordre alphabétique en cas d'égalité, par
+   ligne pour les excès de ligne, jamais de dette).
+3. **Gardien par CLUB** (piège n°1 du CLAUDE.md) : les mises sont par
+   player_id, gardiens inclus. Impact scoring (gardien aligné du club).
+4. **Exclusion des joueurs déjà attribués** : on peut miser sur un joueur
+   déjà won par un autre participant.
+5. **Report des acquis dans la mise** : l'UI ne pré-remplit pas les 13 avec
+   les joueurs déjà acquis (règle 3.1).
+6. **Pont enchères → TEAM** : RIEN ne crée les effectifs en fin de phase
+   (seuls les jokers écrivent dans TEAM). Sans ça, pas d'équipes, pas de
+   scoring.
+7. **Complétion d'office à 1 pt** (règle 4) : non implémentée.
+8. **Notifications email** des résultats (règle 3.2.d) : non implémentées.
+9. **Tests** : 0 des 7 scripts du contrat.
+10. **Tirage au sort** (resolve-tiebreak) : n'existe pas dans le règlement,
+    à retirer ou à tracer comme amendement (section 7 du règlement).
+
+Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
+
+## Chantiers (ordre proposé)
+
+- [ ] **E0 — Committer docs/regles-encheres.md** (source de vérité non versionnée !).
+- [ ] **E1 — Moteur pur `src/lib/auction-engine.ts`** : attribution, égalités,
+      restitution, pénalités/retraits, complétion 1 pt. Zéro dépendance DB,
+      testable hors RSC. + les 7 tests du contrat (avec sanity-checks).
+- [ ] **E2 — Deadline par tour** : colonne deadline sur AUCTION, rejet serveur
+      au timestamp (tolérance 0), compte à rebours UI, message clair.
+- [ ] **E3 — Gardien par club** : modélisation + impact scoring (décision archi).
+- [ ] **E4 — Soumission conforme** : 13 joueurs dont acquis pré-remplis,
+      exclusion des joueurs attribués, avertissements de quota AVANT la
+      deadline (la pénalité reste appliquée au dépouillement si ignoré).
+- [ ] **E5 — Dépouillement branché sur le moteur** + retraits motivés +
+      pont TEAM en fin de phase + complétion d'office.
+- [ ] **E6 — Résultats** : page de résultats par tour (acquisitions, budget,
+      retraits avec motif) + email automatique.
+- [ ] **E7 — Recette** : simulation interne 3-5 participants fictifs sur 2
+      tours complets (exigée par CLAUDE.md), chaque divergence loguée.
+- [ ] **E8 — Runbook** : le kick-off intègre la phase enchères (remplace
+      l'encart « module à venir »).
+- [ ] **Prérequis parallèle — effectifs réels + photos** : source à choisir.
+
+## Décisions à valider avec Julien (avant E1)
+1. Modélisation gardien par club.
+2. Dépouillement : bouton admin après deadline vs cron automatique.
+3. Sort du tirage au sort existant.
+4. Source des effectifs réels + photos.
