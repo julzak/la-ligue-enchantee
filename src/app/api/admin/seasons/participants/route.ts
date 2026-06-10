@@ -89,6 +89,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Aucune affectation" }, { status: 400 });
   }
 
+  // Garde-fou : modifiable uniquement avant le lancement. Une fois la saison
+  // ACTIVE, les inscriptions ne se réécrivent plus en masse (STATS_USER et
+  // les classements référencent ces ligues).
+  const season = await prisma.season.findUnique({ where: { id: Number(seasonId) } });
+  if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
+  if (season.status !== "SETUP" && season.status !== "AUCTION") {
+    return NextResponse.json(
+      { error: "Participants modifiables uniquement avant le lancement (SETUP ou AUCTION)" },
+      { status: 409 }
+    );
+  }
+
   // Garde-fou : on ne touche QUE les ligues appartenant à cette saison
   // (jamais les ligues legacy ou d'une autre saison).
   const seasonLeagues = await prisma.league.findMany({

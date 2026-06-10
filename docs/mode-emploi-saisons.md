@@ -3,6 +3,10 @@
 Tout se passe dans l'admin, page **Nouvelle saison** (menu de gauche).
 Aucune saisie technique, tout se fait en quelques clics.
 
+> Pour le démarrage d'une saison en conditions réelles avec l'équipe d'admins,
+> suivre plutôt le runbook pas à pas : **`docs/kickoff-nouvelle-saison.md`**
+> (mêmes étapes, avec les vérifications et les points d'attention).
+
 > Important : il **n'y a pas de montées/descentes**. Les ligues sont par
 > affinité et restent les mêmes d'une saison à l'autre. La clôture sert
 > uniquement à figer le palmarès (podiums + coupe).

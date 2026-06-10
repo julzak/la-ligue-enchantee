@@ -76,19 +76,38 @@ export async function POST(req: Request) {
 
   const season = await prisma.season.findUnique({ where: { id: Number(seasonId) } });
   if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
+  if (season.status !== "SETUP") {
+    return NextResponse.json(
+      { error: "Ligues modifiables uniquement en statut SETUP" },
+      { status: 409 }
+    );
+  }
 
-  await prisma.$transaction(
-    leagues.map((l) =>
-      prisma.league.create({
+  await prisma.$transaction(async (tx) => {
+    // Idempotent : re-sauver REMPLACE les ligues de la saison, y compris les
+    // inscriptions de participants qui y étaient rattachées (à refaire à
+    // l'étape 4 si on repasse par ici).
+    const existing = await tx.league.findMany({
+      where: { seasonId: Number(seasonId) },
+      select: { id: true },
+    });
+    if (existing.length > 0) {
+      await tx.leagueUser.deleteMany({
+        where: { leagueId: { in: existing.map((l) => l.id) } },
+      });
+      await tx.league.deleteMany({ where: { seasonId: Number(seasonId) } });
+    }
+    for (const l of leagues) {
+      await tx.league.create({
         data: {
           name: l.name.trim(),
           divisionLabel: l.divisionLabel.trim(),
           tier: l.tier,
           seasonId: Number(seasonId),
         },
-      })
-    )
-  );
+      });
+    }
+  });
 
   const created = await prisma.league.findMany({
     where: { seasonId: Number(seasonId) },

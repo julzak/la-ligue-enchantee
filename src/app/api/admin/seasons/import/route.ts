@@ -60,6 +60,12 @@ export async function POST(req: Request) {
   let playerCount = 0;
 
   await prisma.$transaction(async (tx) => {
+    // Idempotent : re-importer REMPLACE l'import précédent de la saison
+    // (sans danger : l'import n'est autorisé qu'en SETUP, avant que TEAM/SCORE
+    // ne référencent ces joueurs).
+    await tx.player.deleteMany({ where: { seasonId: Number(seasonId) } });
+    await tx.club.deleteMany({ where: { seasonId: Number(seasonId) } });
+
     for (const club of clubs) {
       const created = await tx.club.create({
         data: {
