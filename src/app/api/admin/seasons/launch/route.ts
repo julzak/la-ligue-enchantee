@@ -111,7 +111,7 @@ async function buildChecklist(seasonId: number) {
       ok: scheduleCount > 0,
       detail: scheduleCount > 0
         ? `${scheduleCount} matchs en base`
-        : "À synchroniser sur le serveur : ./node_modules/.bin/tsx scripts/sync-match-schedule.ts --all (après lancement)",
+        : "Utiliser le bouton « Synchroniser le calendrier » de la saison (rejouable, avant ou après lancement)",
     },
   ];
 

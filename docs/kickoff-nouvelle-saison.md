@@ -4,9 +4,13 @@
 > Chaque phase dit : qui la fait, comment la faire, et comment vérifier
 > qu'elle est bien faite avant de passer à la suivante.
 >
-> En cas de pépin à n'importe quelle étape : ne forcez pas, notez le **libellé
-> du bouton** cliqué et le **message affiché** (capture d'écran idéale), et
-> envoyez ça à Julien. Tout est rejouable, rien n'est cassé définitivement.
+> **Tout le kick-off se fait en autonomie, depuis l'admin du site.**
+>
+> **Voie d'exception** (la seule raison de solliciter Julien) : un message
+> d'erreur inattendu, ou un des deux cas signalés « voie d'exception » plus
+> bas. Dans ce cas : ne forcez pas, notez le **libellé du bouton** cliqué et
+> le **message affiché** (capture d'écran idéale), et postez ça sur le groupe
+> admins. Tout est rejouable, rien n'est cassé définitivement.
 
 **Les deux règles d'or :**
 
@@ -27,8 +31,12 @@
 - Dans « Saisons existantes », vérifier que la saison passée est bien marquée
   **clôturée** (bouton grisé « Saison 2026 clôturée »). C'est déjà fait pour
   2026 : son palmarès est figé et visible sur la page publique `/palmares`.
-- Si une saison apparaît encore en ACTIVE ou WINTER : STOP, prévenir Julien
-  (il faut d'abord la clôturer, voir le mode d'emploi général).
+- Si une saison apparaît encore en ACTIVE ou WINTER (saison finie sur le
+  terrain mais pas finie côté site) : cliquer sur son bouton rouge
+  **« Clôturer la saison XXX »** et confirmer. Ça fige le palmarès (podiums
+  de chaque ligue + vainqueur et finaliste de la coupe), c'est rejouable sans
+  risque, et la page `/palmares` se met à jour immédiatement. À ne faire
+  qu'une fois la dernière journée jouée et les notes saisies.
 
 **À savoir avant de commencer :**
 
@@ -83,7 +91,9 @@ clubs et joueurs.
 - L'import est rejouable sans danger : re-cliquer **remplace** l'import
   précédent (pas de doublons). Si vous avez oublié un club, recommencez
   l'étape en entier (re-cocher les clubs, recharger les effectifs, ré-importer).
-- Club hors API (promu, club fantaisie) : prévenir Julien, il l'ajoutera.
+- Club absent de la liste (promu manquant, club fantaisie type Légion
+  étrangère) : **voie d'exception**, l'ajout manuel n'est pas encore dans
+  l'admin.
 
 ---
 
@@ -124,8 +134,8 @@ repassez par ici après la phase 4, refaites la phase 4 derrière.
 compteur par ligue correspond à votre liste.
 
 **Note :** un nouveau participant doit d'abord avoir un compte sur le site.
-S'il n'apparaît pas dans le menu déroulant, prévenir Julien (création de
-compte, pas encore self-service).
+S'il n'apparaît pas dans le menu déroulant : **voie d'exception**, la création
+de compte n'est pas encore self-service.
 
 ---
 
@@ -142,7 +152,13 @@ compte, pas encore self-service).
     jokers, elles seront recopiées pour la nouvelle saison au lancement.
 - Tant que vous êtes en phase 5, les **participants** restent ajustables
   (étape 4 du stepper). Pour retoucher les clubs, joueurs ou ligues, c'est
-  bloqué à ce stade : demander à Julien de repasser la saison en préparation.
+  bloqué à ce stade : cliquer sur **« Revenir en préparation »** sur la ligne
+  de la saison, refaire l'étape voulue, puis re-cliquer **« Ouvrir les
+  enchères »**.
+- Bonus recommandé : cliquer dès maintenant sur **« Synchroniser le
+  calendrier »** (ligne de la saison). Si le calendrier de la Ligue 1 est déjà
+  publié, autant l'avoir avant le lancement ; sinon le message vous dira de
+  réessayer plus tard, sans conséquence.
 
 **STOP ici tant que tout le monde n'a pas validé.** La phase 6 bascule le site.
 
@@ -174,19 +190,23 @@ compte, pas encore self-service).
 
 ## Phase 7 : juste après le lancement
 
-**Qui : indiqué pour chaque point.**
+**Qui : le pilote (ou n'importe quel admin), tout se fait dans l'admin.**
 
 1. **Synchroniser le calendrier de la Ligue 1** (dates des matchs,
-   indispensable pour les deadlines de composition) : **Julien**, commande
-   serveur. La checklist de lancement le rappelle. Sans ça, pas de deadlines
-   automatiques.
-2. **Re-saisir les dates des jokers** : un admin, dans **Admin →
-   Configuration**. Les quotas de jokers sont recopiés de l'an dernier mais
-   les **dates de deadline sont volontairement vidées** (les dates de l'an
-   passé seraient fausses). Saisir la nouvelle date limite des jokers d'été.
-3. **Vérifier le barème** : un admin, même page. Confirmer bonus buts par
-   poste, malus CSC, heure de deadline. Tout est repris de l'an dernier,
-   il s'agit juste de confirmer.
+   indispensable pour les deadlines de composition) : bouton
+   **« Synchroniser le calendrier »** sur la ligne de la saison, page
+   Nouvelle saison. Compter 30 à 60 secondes, rejouable à volonté (à
+   re-cliquer en cours de saison si des matchs sont déplacés). Si le message
+   dit qu'aucun match n'a été trouvé, le calendrier n'est pas encore publié :
+   réessayer quelques jours plus tard, et ne pas oublier de le refaire avant
+   la J1.
+2. **Re-saisir les dates des jokers** : **Admin → Configuration**. Les quotas
+   de jokers sont recopiés de l'an dernier mais les **dates de deadline sont
+   volontairement vidées** (les dates de l'an passé seraient fausses).
+   Saisir la nouvelle date limite des jokers d'été.
+3. **Vérifier le barème** : même page. Confirmer bonus buts par poste, malus
+   CSC, heure de deadline. Tout est repris de l'an dernier, il s'agit juste
+   de confirmer.
 4. **Mercato d'hiver** : rien à faire maintenant, la config se saisit en
    cours de saison dans Admin → Configuration.
 5. **Cotisations** : le module paiements n'est pas encore raccordé à la
@@ -210,14 +230,15 @@ compte, pas encore self-service).
 
 | Phase | Action | Risque |
 |---|---|---|
-| 0 | Vérifier que l'ancienne saison est clôturée | aucun |
+| 0 | Clôturer l'ancienne saison si ce n'est pas déjà fait | aucun |
 | 1 | Créer la saison (libellé `2027`) | aucun |
 | 2 | Importer clubs + joueurs | aucun |
 | 3 | Créer les 3 ligues (reprise de 2026) | aucun |
 | 4 | Inscrire les participants (reprise + ajustements) | aucun |
 | 5 | Ouvrir les enchères + revue collective | aucun |
 | 6 | **Démarrer la saison** | **bascule le site** |
-| 7 | Calendrier (Julien) + dates jokers + vérif barème | à faire vite |
+| 7 | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
 
-*En cas de doute à n'importe quelle étape : capture d'écran + message à
-Julien. Tout est prévu pour être rejouable.*
+*En cas de doute à n'importe quelle étape : capture d'écran sur le groupe
+admins (voir « voie d'exception » en tête de doc). Tout est prévu pour être
+rejouable.*

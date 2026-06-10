@@ -102,6 +102,27 @@ export default function SeasonManager() {
     }
   }
 
+  async function syncSchedule(season: Season) {
+    setBusy(true);
+    setErr("");
+    setMsg(`Synchronisation du calendrier ${season.label} en cours (30 à 60 secondes)...`);
+    try {
+      const res = await fetch("/api/admin/seasons/sync-schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seasonId: season.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setMsg(data.message);
+    } catch (e) {
+      setMsg("");
+      setErr(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function close(season: Season) {
     if (
       !confirm(
@@ -203,9 +224,26 @@ export default function SeasonManager() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Retour arrière : une saison en enchères peut revenir en préparation
+                      pour retoucher clubs/joueurs/ligues (bloqués hors SETUP). */}
+                  {s.status === "AUCTION" && (
+                    <button className={btnGhost} onClick={() => changeStatus(s, "SETUP")} disabled={busy}>
+                      Revenir en préparation
+                    </button>
+                  )}
                   {next && (
                     <button className={btnGhost} onClick={() => changeStatus(s, next.to)} disabled={busy}>
                       {next.label}
+                    </button>
+                  )}
+                  {s.status !== "CLOSED" && (
+                    <button
+                      className={btnGhost}
+                      onClick={() => syncSchedule(s)}
+                      disabled={busy}
+                      title="Récupère les dates des matchs de Ligue 1 (J1 à J38) depuis TheSportsDB. Rejouable à volonté, indispensable pour les deadlines de composition."
+                    >
+                      Synchroniser le calendrier
                     </button>
                   )}
                   {/* Bouton clôture toujours visible avec le libellé de la saison.

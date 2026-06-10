@@ -82,11 +82,11 @@ Dans **Saisons existantes**, un bouton fait passer la saison à l'étape suivant
 
 ### Après le lancement
 - **Synchroniser le calendrier** Ligue 1 (dates des matchs, indispensable pour
-  les deadlines de compo) : demander à l'admin technique de lancer
-  `scripts/sync-match-schedule.ts --all` sur le serveur. La checklist du
-  lancement rappelle ce point.
+  les deadlines de compo) : bouton **« Synchroniser le calendrier »** sur la
+  ligne de la saison, dans « Saisons existantes ». Rejouable à volonté ; la
+  checklist du lancement rappelle ce point.
 - Vérifier dans Admin → Configuration les valeurs reprises de l'an dernier
-  (barème, jokers, deadlines).
+  (barème, jokers, deadlines). Les dates des jokers sont à re-saisir.
 
 ---
 
