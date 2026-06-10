@@ -367,7 +367,18 @@ Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
       tours complets (exigée par CLAUDE.md), chaque divergence loguée.
 - [ ] **E8 — Runbook** : le kick-off intègre la phase enchères (remplace
       l'encart « module à venir »).
-- [ ] **Prérequis parallèle — effectifs réels + photos** : source à choisir.
+- [ ] **Prérequis parallèle — effectifs réels + photos**. Architecture décidée
+      (2026-06-10, leçon des tentatives 2025-2026, cf mémoire
+      photos-joueurs-historique-sources) : UN fournisseur (TheSportsDB premium
+      9$/mois, abonnement SAISONNIER juillet-août + janvier, ~27$/an ; bascule
+      API-Football 19$/mois si fraîcheur mercato insuffisante au contrôle de
+      juillet), et photos TÉLÉCHARGÉES en local à l'import (modèle logos
+      clubs Wikipedia : fiable, zéro CORS, zéro hotlink, résiliation sans
+      risque). L'existant 2025-2026 = patchwork 46% hotlinké (409 Sportmonks
+      abandonné + 50 TheSportsDB + 13 API-Football) : ne pas reproduire.
+- [ ] **Sécurité — token Sportmonks en clair** dans
+      `scripts/import-photos-sportmonks.ts` (committé) : révoquer le token et
+      purger/déplacer en env var, le fournisseur n'est plus utilisé.
 
 ## Décisions à valider avec Julien (avant E1)
 1. Modélisation gardien par club.
