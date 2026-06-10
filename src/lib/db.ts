@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
-import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "./assets";
+import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "./assets";
 import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { leagueSlug } from "./season-key";
@@ -199,6 +199,14 @@ export async function getLockedClubIds(day: number): Promise<Set<number>> {
 
   if (matches.length === 0) return new Set();
 
+  // Apparie les noms d'équipes MATCH_SCHEDULE aux clubs de la saison courante
+  // par clé canonique (les IDs changent à chaque saison, pas les noms).
+  const clubsCache = await getCachedClubs();
+  const clubIdByKey = new Map<string, number>();
+  for (const c of Array.from(clubsCache.values())) {
+    clubIdByKey.set(canonicalClubKey(c.name), c.id);
+  }
+
   const cfgRows = await prisma.$queryRawUnsafe<{
     deadline_hour: number; early_match_hour: number; early_match_offset_hours: number;
   }[]>(
@@ -220,8 +228,8 @@ export async function getLockedClubIds(day: number): Promise<Set<number>> {
     const date = effectiveDate.toISOString().slice(0, 10);
     const timeObj = m.match_time ? new Date(m.match_time as unknown as string) : null;
     const hour = timeObj ? timeObj.getUTCHours() + 2 : 20; // stored as UTC, Paris = +2
-    const homeId = getClubIdByTeamName(m.home_team);
-    const awayId = getClubIdByTeamName(m.away_team);
+    const homeId = clubIdByKey.get(canonicalClubKey(m.home_team)) ?? null;
+    const awayId = clubIdByKey.get(canonicalClubKey(m.away_team)) ?? null;
     if (homeId === null || awayId === null) {
       console.warn(`[getLockedClubIds] Unknown team J${day}: "${m.home_team}" / "${m.away_team}"`);
       continue;
@@ -587,8 +595,8 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
       playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${t.playerId}`,
       position: player ? mapPosition(player.position) : "MID" as Position,
       clubName: club?.name ?? "",
-      clubShort: getClubShortName(player?.clubId ?? 0, club?.name),
-      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
+      clubShort: getClubShortNameByName(club?.name),
+      clubLogo: getClubLogoUrlByName(club?.name),
       clubId: player?.clubId ?? 0,
       isStarter,
       indx: lineupEntry?.indx ?? 99,
@@ -623,8 +631,8 @@ export async function getFormerPlayers(leagueDbId: number, userId: number, day?:
       playerId: t.playerId,
       playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${t.playerId}`,
       position: player ? mapPosition(player.position) : "MID" as Position,
-      clubShort: getClubShortName(player?.clubId ?? 0, club?.name),
-      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
+      clubShort: getClubShortNameByName(club?.name),
+      clubLogo: getClubLogoUrlByName(club?.name),
       dayFirst: t.dayFirst,
       dayLast: t.dayLast,
     };
@@ -669,8 +677,8 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
       playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${l.playerId}`,
       position: player ? mapPosition(player.position) : "MID" as Position,
       clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
-      clubShort: getClubShortName(player?.clubId ?? 0),
-      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
+      clubShort: getClubShortNameByName(player ? clubMap.get(player.clubId) : null),
+      clubLogo: getClubLogoUrlByName(player ? clubMap.get(player.clubId) : null),
       indx: l.indx,
       rating: score ? dec(score.points) : null,
       goals: score?.goals ?? 0,
@@ -781,8 +789,8 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
       playerName: player ? `${player.fname} ${player.lname}`.trim() : `Player ${playerId}`,
       position: player ? mapPosition(player.position) : "MID" as Position,
       clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
-      clubShort: getClubShortName(player?.clubId ?? 0),
-      clubLogo: getClubLogoUrl(player?.clubId ?? 0),
+      clubShort: getClubShortNameByName(player ? clubMap.get(player.clubId) : null),
+      clubLogo: getClubLogoUrlByName(player ? clubMap.get(player.clubId) : null),
       daysPlayed: stats.daysPlayed,
       daysInLineup,
       notes: Math.round(stats.notes * 10) / 10,
@@ -954,9 +962,10 @@ export async function getPlayerStats(limit = 10) {
   // Aggregate per player
   const agg = new Map<number, { totalPts: number; goals: number; passes: number; days: number }>();
   scores.forEach((s) => {
-    const prev = agg.get(s.playerId) ?? { totalPts: 0, goals: 0, passes: 0, days: 0 };
     const player = playerMap.get(s.playerId);
-    const pos = player?.position ?? "";
+    if (!player) return; // score d'un joueur hors saison courante (ou supprimé)
+    const prev = agg.get(s.playerId) ?? { totalPts: 0, goals: 0, passes: 0, days: 0 };
+    const pos = player.position;
     const dayTotal = calcPlayerTotal(dec(s.points), s.goals, s.passes, pos, s.redCard, s.ownGoals, s.penaltySaved, scoringCfg);
     agg.set(s.playerId, {
       totalPts: prev.totalPts + dayTotal,
@@ -1007,20 +1016,26 @@ export interface MatchPlayerRating {
   clubId: number;
 }
 
-export async function getMatchPlayerRatings(day: number): Promise<Map<number, MatchPlayerRating[]>> {
+// Map keyée par clé canonique du nom de club (canonicalClubKey) : permet
+// l'appariement direct avec les noms d'équipes de MATCH_SCHEDULE, dont les
+// ids de clubs DB changent à chaque saison.
+export async function getMatchPlayerRatings(day: number): Promise<Map<string, MatchPlayerRating[]>> {
   const scores = await prisma.score.findMany({
     where: { day, used: { gt: 0 } },
   });
 
   const playerMap = await getCachedPlayers();
+  const clubNames = await getCachedClubNames();
 
-  const byClub = new Map<number, MatchPlayerRating[]>();
+  const byClub = new Map<string, MatchPlayerRating[]>();
 
   scores.forEach((s) => {
     const player = playerMap.get(s.playerId);
     if (!player) return;
-    const clubId = player.clubId;
-    const arr = byClub.get(clubId) ?? [];
+    const clubName = clubNames.get(player.clubId);
+    if (!clubName) return;
+    const clubKey = canonicalClubKey(clubName);
+    const arr = byClub.get(clubKey) ?? [];
     arr.push({
       playerId: s.playerId,
       playerName: `${player.fname} ${player.lname}`.trim(),
@@ -1029,9 +1044,9 @@ export async function getMatchPlayerRatings(day: number): Promise<Map<number, Ma
       goals: s.goals,
       passes: s.passes,
       redCard: s.redCard > 0,
-      clubId,
+      clubId: player.clubId,
     });
-    byClub.set(clubId, arr);
+    byClub.set(clubKey, arr);
   });
 
   // Sort each club's players by position order: GK, DEF, MID, ATT

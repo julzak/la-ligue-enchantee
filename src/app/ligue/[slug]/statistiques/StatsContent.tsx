@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
-import { getClubLogoUrl } from "@/lib/assets";
+import { getClubLogoUrlByName } from "@/lib/assets";
 
 interface StatEntry {
   rank: number;
@@ -174,7 +174,7 @@ function StatCard({
       {top && (
         <div className="px-4 py-4 bg-gold/[0.04] border-b border-gold/10">
           <div className="flex items-center gap-3">
-            <PlayerAvatar playerId={top.playerId} name={top.name} size={36} clubLogoUrl={getClubLogoUrl(top.clubId)} />
+            <PlayerAvatar playerId={top.playerId} name={top.name} size={36} clubLogoUrl={getClubLogoUrlByName(top.club)} />
             <div className="flex-1 min-w-0">
               <div className="text-white font-semibold truncate">{top.name}</div>
               <div className="text-muted text-xs">{top.club} - {top.days} matchs</div>
@@ -196,7 +196,7 @@ function StatCard({
                 <span className={`w-5 text-xs font-medium shrink-0 ${entry.rank <= 3 ? "text-gold" : "text-muted"}`}>
                   {entry.rank}
                 </span>
-                <PlayerAvatar playerId={entry.playerId} name={entry.name} size={24} clubLogoUrl={getClubLogoUrl(entry.clubId)} />
+                <PlayerAvatar playerId={entry.playerId} name={entry.name} size={24} clubLogoUrl={getClubLogoUrlByName(entry.club)} />
                 <span className="flex-1 text-sm text-white truncate">{entry.name}</span>
                 <span className="text-white font-medium text-sm tabular-nums shrink-0 w-12 text-right">
                   {formatValue(entry.value)}

@@ -11,6 +11,7 @@
  */
 
 import { leagueSlug, seasonKeyFromLabel, LEGACY_SEASON_KEY } from "../src/lib/season-key";
+import { canonicalClubKey, getClubLogoUrlByName, getClubShortNameByName } from "../src/lib/assets";
 
 let failures = 0;
 function check(label: string, actual: unknown, expected: unknown) {
@@ -43,6 +44,29 @@ check("label complet", seasonKeyFromLabel("2026-2027"), "2026-2027");
 check("label avec espaces", seasonKeyFromLabel(" 2026 "), "2025-2026");
 check("label legacy 2026 = clé actuelle", seasonKeyFromLabel("2026"), LEGACY_SEASON_KEY);
 check("label invalide", seasonKeyFromLabel("saison de ouf"), null);
+
+console.log("── Assets clubs par nom : noms DB legacy");
+check("MARSEILLE (OM) → logo", getClubLogoUrlByName("MARSEILLE (OM)"), "/clubs/marseille.png");
+check("PARIS-SG (PSG) → short", getClubShortNameByName("PARIS-SG (PSG)"), "PSG");
+check("Légion étrangère → logo", getClubLogoUrlByName("Légion étrangère"), "/clubs/legion-etrangere.png");
+check("LYON (OL) → short", getClubShortNameByName("LYON (OL)"), "OL");
+
+console.log("── Assets clubs par nom : variantes TheSportsDB (MATCH_SCHEDULE)");
+check("Olympique Marseille → logo", getClubLogoUrlByName("Olympique Marseille"), "/clubs/marseille.png");
+check("Paris SG → logo", getClubLogoUrlByName("Paris SG"), "/clubs/psg.png");
+check("Paris Saint Germain → short", getClubShortNameByName("Paris Saint Germain"), "PSG");
+check("Paris (= Paris FC) → short", getClubShortNameByName("Paris"), "PFC");
+check("Angers SCO → logo", getClubLogoUrlByName("Angers SCO"), "/clubs/angers.png");
+
+console.log("── Appariement MATCH_SCHEDULE ↔ CLUB (clé canonique)");
+// Le nom DB et le nom TheSportsDB du même club doivent donner la MÊME clé :
+// c'est ce qui permet à getLockedClubIds de retrouver le club de la saison.
+check("OM : DB == TheSportsDB", canonicalClubKey("MARSEILLE (OM)") === canonicalClubKey("Olympique Marseille"), true);
+check("PSG : DB == TheSportsDB", canonicalClubKey("PARIS-SG (PSG)") === canonicalClubKey("Paris SG"), true);
+check("Paris FC ≠ PSG", canonicalClubKey("Paris") !== canonicalClubKey("Paris SG"), true);
+check("club inconnu : clé normalisée", canonicalClubKey("Saint-Étienne"), "SAINT ETIENNE");
+check("club inconnu : logo null", getClubLogoUrlByName("Saint-Étienne"), null);
+check("club inconnu : short = fallback", getClubShortNameByName("Saint-Étienne", "ASSE"), "ASSE");
 
 if (failures > 0) {
   console.error(`\n${failures} échec(s)`);

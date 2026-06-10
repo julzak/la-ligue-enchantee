@@ -14,7 +14,7 @@ import {
   getCupContextForDay,
   getCupChampion,
 } from "@/lib/db";
-import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "@/lib/assets";
+import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "@/lib/assets";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
 import { ChevronRight, Flame, ThumbsDown, Skull, Trophy } from "lucide-react";
@@ -209,19 +209,18 @@ async function MatchResultsSection() {
       </summary>
       <div className="grid gap-4 sm:grid-cols-2 mt-4">
         {dbMatches.map((m) => {
-          const homeId = getClubIdByTeamName(m.home_team);
-          const awayId = getClubIdByTeamName(m.away_team);
+
           return (
             <MatchCard
               key={`${m.home_team}-${m.away_team}`}
-              homeClub={homeId ? getClubShortName(homeId) : m.home_team}
-              awayClub={awayId ? getClubShortName(awayId) : m.away_team}
-              homeLogo={homeId ? getClubLogoUrl(homeId) : null}
-              awayLogo={awayId ? getClubLogoUrl(awayId) : null}
+              homeClub={getClubShortNameByName(m.home_team, m.home_team)}
+              awayClub={getClubShortNameByName(m.away_team, m.away_team)}
+              homeLogo={getClubLogoUrlByName(m.home_team)}
+              awayLogo={getClubLogoUrlByName(m.away_team)}
               homeScore={m.home_score ?? 0}
               awayScore={m.away_score ?? 0}
-              homeRatings={homeId ? (matchRatings.get(homeId) ?? []) : []}
-              awayRatings={awayId ? (matchRatings.get(awayId) ?? []) : []}
+              homeRatings={matchRatings.get(canonicalClubKey(m.home_team)) ?? []}
+              awayRatings={matchRatings.get(canonicalClubKey(m.away_team)) ?? []}
             />
           );
         })}

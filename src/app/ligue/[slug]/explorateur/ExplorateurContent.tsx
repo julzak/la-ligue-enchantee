@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PositionBadge } from "@/components/ui/PositionBadge";
-import { getClubLogoUrl } from "@/lib/assets";
+import { getClubLogoUrlByName } from "@/lib/assets";
 import type { Position } from "@/lib/types";
 
 interface ClubPlayer {
@@ -39,7 +39,7 @@ export function ExplorateurContent({ clubs }: { clubs: ClubWithStats[] }) {
             (a, b) => posOrder[a.position] - posOrder[b.position]
           );
           const isOpen = openClubId === club.id;
-          const logoUrl = getClubLogoUrl(club.id);
+          const logoUrl = getClubLogoUrlByName(club.name);
 
           return (
             <div key={club.id} className="flex flex-col">

@@ -1,89 +1,74 @@
-// ── Club logos (Sofascore team IDs) ───────────────────────
-// Mapping DB CLUB.ID_CLUB -> Sofascore image URL
-// Will be replaced by CLUB.LOGO_URL column when we evolve the DB schema
-// Logos disponibles localement (public/clubs/)
-// Pour ajouter un logo manquant: télécharger le PNG manuellement depuis Google Images
-// et le placer dans public/clubs/[nom].png puis ajouter l'entrée ici
-export const clubLogos: Record<number, string> = {
-  241: "/clubs/angers.png",       // ANGERS
-  243: "/clubs/auxerre.png",      // AUXERRE
-  201: "/clubs/brest.png",        // BREST
-  242: "/clubs/le-havre.png",     // LE HAVRE
-  217: "/clubs/legion-etrangere.png", // LEGION ETRANGERE
-  232: "/clubs/lens.png",         // LENS
-  203: "/clubs/lille.png",        // LILLE
-  245: "/clubs/lorient.png",      // LORIENT
-  205: "/clubs/lyon.png",         // LYON
-  206: "/clubs/marseille.png",    // MARSEILLE
-  244: "/clubs/metz.png",         // METZ
-  208: "/clubs/monaco.png",       // MONACO
-  210: "/clubs/nantes.png",       // NANTES
-  211: "/clubs/nice.png",         // NICE
-  246: "/clubs/parisfc.png",      // PARIS FC
-  212: "/clubs/psg.png",          // PSG
-  214: "/clubs/rennes.png",       // RENNES
-  230: "/clubs/strasbourg.png",   // STRASBOURG
-  199: "/clubs/toulouse.png",     // TOULOUSE
-};
+// ── Club assets (logos, shortnames) keyés par NOM de club ─────────────────
+// Les IDs de clubs changent à chaque saison (réimport) : le nom est la seule
+// clé stable. On normalise (majuscules, sans accents, sans parenthèses) et on
+// gère les alias TheSportsDB ("Olympique Marseille") vers le nom canonique.
+//
+// Pour ajouter un logo manquant : télécharger le PNG manuellement (Google
+// Images), le placer dans public/clubs/[nom].png puis ajouter l'entrée ici.
 
-// Shortnames for display
-export const clubShortNames: Record<number, string> = {
-  241: "SCO",
-  243: "AJA",
-  201: "SB29",
-  242: "HAC",
-  217: "LEG",
-  232: "RCL",
-  203: "LOSC",
-  245: "FCL",
-  205: "OL",
-  206: "OM",
-  244: "FCM",
-  208: "ASM",
-  210: "FCN",
-  211: "OGCN",
-  246: "PFC",
-  212: "PSG",
-  214: "SRFC",
-  230: "RCSA",
-  199: "TFC",
-};
-
-// ── Player photos ─────────────────────────────────────────
-// For players, we can't map 1000+ IDs statically.
-// Instead, we'll use a search-based approach: try Sofascore player search API
-// or return a placeholder. For now, no player photos.
-export function getClubLogoUrl(clubId: number): string | null {
-  return clubLogos[clubId] ?? null;
+interface ClubAsset {
+  canonical: string; // nom normalisé de référence (forme DB : "MARSEILLE")
+  short: string;
+  logo: string | null;
+  aliases?: string[]; // variantes TheSportsDB / MATCH_SCHEDULE, normalisées
 }
 
-export function getClubShortName(clubId: number, fallbackName?: string): string {
-  return clubShortNames[clubId] ?? fallbackName ?? "";
+const CLUB_ASSETS: ClubAsset[] = [
+  { canonical: "ANGERS", short: "SCO", logo: "/clubs/angers.png", aliases: ["ANGERS SCO"] },
+  { canonical: "AUXERRE", short: "AJA", logo: "/clubs/auxerre.png", aliases: ["AJ AUXERRE"] },
+  { canonical: "BREST", short: "SB29", logo: "/clubs/brest.png", aliases: ["STADE BRESTOIS"] },
+  { canonical: "LE HAVRE", short: "HAC", logo: "/clubs/le-havre.png" },
+  { canonical: "LEGION ETRANGERE", short: "LEG", logo: "/clubs/legion-etrangere.png" },
+  { canonical: "LENS", short: "RCL", logo: "/clubs/lens.png", aliases: ["RC LENS"] },
+  { canonical: "LILLE", short: "LOSC", logo: "/clubs/lille.png", aliases: ["LOSC LILLE"] },
+  { canonical: "LORIENT", short: "FCL", logo: "/clubs/lorient.png" },
+  { canonical: "LYON", short: "OL", logo: "/clubs/lyon.png", aliases: ["OLYMPIQUE LYONNAIS"] },
+  { canonical: "MARSEILLE", short: "OM", logo: "/clubs/marseille.png", aliases: ["OLYMPIQUE MARSEILLE"] },
+  { canonical: "METZ", short: "FCM", logo: "/clubs/metz.png" },
+  { canonical: "MONACO", short: "ASM", logo: "/clubs/monaco.png", aliases: ["AS MONACO"] },
+  { canonical: "NANTES", short: "FCN", logo: "/clubs/nantes.png" },
+  { canonical: "NICE", short: "OGCN", logo: "/clubs/nice.png", aliases: ["OGC NICE"] },
+  { canonical: "PARIS FC", short: "PFC", logo: "/clubs/parisfc.png", aliases: ["PARIS"] },
+  { canonical: "PARIS SG", short: "PSG", logo: "/clubs/psg.png", aliases: ["PSG", "PARIS SAINT GERMAIN"] },
+  { canonical: "RENNES", short: "SRFC", logo: "/clubs/rennes.png", aliases: ["STADE RENNAIS"] },
+  { canonical: "STRASBOURG", short: "RCSA", logo: "/clubs/strasbourg.png" },
+  { canonical: "TOULOUSE", short: "TFC", logo: "/clubs/toulouse.png" },
+];
+
+// "PARIS-SG (PSG)" -> "PARIS SG" ; "Légion étrangère" -> "LEGION ETRANGERE"
+export function normalizeClubName(name: string): string {
+  return name
+    .replace(/\([^)]*\)/g, " ") // retire les parenthèses ("MARSEILLE (OM)")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // diacritiques décomposés par NFD
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
 }
 
-// TheSportsDB / MATCH_SCHEDULE team name → DB club ID
-const teamNameToClubId: Record<string, number> = {
-  "Marseille": 206, "Olympique Marseille": 206,
-  "Lyon": 205, "Olympique Lyonnais": 205,
-  "Monaco": 208,
-  "Lille": 203, "LOSC Lille": 203,
-  "Rennes": 214,
-  "Le Havre": 242,
-  "Metz": 244,
-  "Toulouse": 199,
-  "Strasbourg": 230,
-  "Paris FC": 246, "Paris": 246,
-  "Lens": 232,
-  "Lorient": 245,
-  "Brest": 201,
-  "Angers": 241, "Angers SCO": 241,
-  "Nice": 211,
-  "Auxerre": 243,
-  "Nantes": 210,
-  "Paris SG": 212, "Paris Saint Germain": 212, "PSG": 212,
-};
-
-export function getClubIdByTeamName(teamName: string): number | null {
-  return teamNameToClubId[teamName] ?? null;
+const byKey = new Map<string, ClubAsset>();
+for (const asset of CLUB_ASSETS) {
+  byKey.set(asset.canonical, asset);
+  for (const alias of asset.aliases ?? []) byKey.set(alias, asset);
 }
 
+// Clé canonique d'un nom de club, quelle que soit sa variante d'origine
+// (nom DB legacy, nom TheSportsDB, MATCH_SCHEDULE). Deux noms du même club
+// donnent la même clé : sert à apparier MATCH_SCHEDULE avec la table CLUB.
+export function canonicalClubKey(name: string): string {
+  const normalized = normalizeClubName(name);
+  return byKey.get(normalized)?.canonical ?? normalized;
+}
+
+export function getClubLogoUrlByName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  return byKey.get(normalizeClubName(name))?.logo ?? null;
+}
+
+export function getClubShortNameByName(
+  name: string | null | undefined,
+  fallback?: string
+): string {
+  if (!name) return fallback ?? "";
+  return byKey.get(normalizeClubName(name))?.short ?? fallback ?? name;
+}
