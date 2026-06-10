@@ -180,6 +180,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // Compta des cotisations : une ligne de suivi par participant (30€ par
+    // défaut, non payé), pour la page Admin → Paiements. Le paiement lui-même
+    // se fait hors plateforme (PayPal), on ne tient que le pointage.
+    await tx.$executeRawUnsafe(
+      `INSERT IGNORE INTO PAYMENT (user_id, season)
+       SELECT lu.ID_USER, ? FROM LEAGUE_USER lu
+       JOIN LEAGUE l ON l.ID_LEAGUE = lu.ID_LEAGUE
+       WHERE l.ID_SEASON = ?`,
+      seasonKey, season.id
+    );
+
     // Une seule saison courante.
     await tx.season.updateMany({ where: { isCurrent: true }, data: { isCurrent: false } });
     await tx.season.update({
