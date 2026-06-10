@@ -33,6 +33,16 @@ interface LeagueRow {
   divisionLabel: string;
   tier: number;
 }
+interface ParticipantLeague {
+  id: number;
+  name: string;
+  tier: number | null;
+}
+interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+}
 
 const btn = "rounded bg-gold px-4 py-2 text-sm font-medium text-night hover:bg-gold-dim disabled:opacity-40 disabled:cursor-not-allowed";
 const btnGhost = "rounded border border-border bg-surface px-3 py-1.5 text-sm text-foreground hover:bg-surface-2 disabled:opacity-40";
@@ -59,6 +69,15 @@ export default function NouvelleSaisonPage() {
   const [prefillLabel, setPrefillLabel] = useState<string | null>(null);
   const [savingLeagues, setSavingLeagues] = useState(false);
   const [leaguesSaved, setLeaguesSaved] = useState(false);
+
+  // Étape 4 : participants
+  const [pLeagues, setPLeagues] = useState<ParticipantLeague[]>([]);
+  const [pAssignments, setPAssignments] = useState<Record<number, number[]>>({});
+  const [pUsers, setPUsers] = useState<AdminUser[]>([]);
+  const [pPrefill, setPPrefill] = useState<Record<number, number[]> | null>(null);
+  const [pPrevLabel, setPPrevLabel] = useState<string | null>(null);
+  const [savingParticipants, setSavingParticipants] = useState(false);
+  const [participantsSaved, setParticipantsSaved] = useState<string>("");
 
   // ── Étape 1 ────────────────────────────────────────────────────────────
   async function createSeason() {
@@ -246,6 +265,83 @@ export default function NouvelleSaisonPage() {
     }
   }
 
+  // ── Étape 4 : participants ─────────────────────────────────────────────
+  async function goToParticipants() {
+    if (!season) return;
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/seasons/participants?seasonId=${season.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setPLeagues(data.leagues);
+      setPUsers(data.users);
+      setPPrevLabel(data.prevSeasonLabel);
+      const currentMap: Record<number, number[]> = {};
+      for (const c of data.current as { leagueId: number; userIds: number[] }[]) {
+        currentMap[c.leagueId] = c.userIds;
+      }
+      setPAssignments(currentMap);
+      if (Array.isArray(data.prefill) && data.prefill.length > 0) {
+        const prefillMap: Record<number, number[]> = {};
+        for (const p of data.prefill as { leagueId: number; userIds: number[] }[]) {
+          prefillMap[p.leagueId] = p.userIds;
+        }
+        setPPrefill(prefillMap);
+      }
+      setStep(4);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    }
+  }
+
+  function applyParticipantsPrefill() {
+    if (pPrefill) setPAssignments(pPrefill);
+  }
+
+  function addParticipant(leagueId: number, userId: number) {
+    setPAssignments((prev) => {
+      // Retire le user des autres ligues (1 ligue max par participant)
+      const next: Record<number, number[]> = {};
+      for (const [lid, ids] of Object.entries(prev)) {
+        next[Number(lid)] = ids.filter((id) => id !== userId);
+      }
+      next[leagueId] = [...(next[leagueId] ?? []), userId];
+      return next;
+    });
+  }
+
+  function removeParticipant(leagueId: number, userId: number) {
+    setPAssignments((prev) => ({
+      ...prev,
+      [leagueId]: (prev[leagueId] ?? []).filter((id) => id !== userId),
+    }));
+  }
+
+  async function saveParticipants() {
+    if (!season) return;
+    setError("");
+    setSavingParticipants(true);
+    setParticipantsSaved("");
+    try {
+      const assignments = pLeagues.map((l) => ({
+        leagueId: l.id,
+        userIds: pAssignments[l.id] ?? [],
+      }));
+      const res = await fetch("/api/admin/seasons/participants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seasonId: season.id, assignments }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setParticipantsSaved(`${data.participantCount} participants inscrits.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setSavingParticipants(false);
+    }
+  }
+
   // Défaut de la Ligue Enchantée : 3 ligues (Ligue 1/2/3). Labels éditables.
   function applyDefaultLeagues() {
     setLeagues([
@@ -279,6 +375,7 @@ export default function NouvelleSaisonPage() {
           { n: 1, label: "Création" },
           { n: 2, label: "Clubs & joueurs" },
           { n: 3, label: "Ligues" },
+          { n: 4, label: "Participants" },
         ].map((s, i) => (
           <div key={s.n} className="flex items-center gap-2">
             <span
@@ -289,7 +386,7 @@ export default function NouvelleSaisonPage() {
               {s.n}
             </span>
             <span className={step >= s.n ? "text-foreground" : "text-muted"}>{s.label}</span>
-            {i < 2 && <span className="mx-1 text-muted">→</span>}
+            {i < 3 && <span className="mx-1 text-muted">→</span>}
           </div>
         ))}
       </div>
@@ -498,9 +595,104 @@ export default function NouvelleSaisonPage() {
               {savingLeagues ? "Enregistrement..." : "Créer les ligues"}
             </button>
             {leaguesSaved && (
+              <>
+                <span className="text-sm text-foreground">Ligues créées.</span>
+                <button className={btnGhost} onClick={goToParticipants}>
+                  Étape suivante : inscrire les participants →
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ÉTAPE 4 : PARTICIPANTS */}
+      {step === 4 && season && (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border bg-surface p-5 space-y-3">
+            <p className="text-sm text-foreground">
+              Inscris les participants dans chaque ligue de la saison{" "}
+              <span className="font-semibold text-gold">{season.label}</span>. Les ligues sont
+              par affinité : pars des participants de la saison précédente puis ajuste.
+            </p>
+            {pPrefill && pPrevLabel && (
+              <button className={btnGhost} onClick={applyParticipantsPrefill}>
+                Reprendre les participants de {pPrevLabel}
+              </button>
+            )}
+          </div>
+
+          {pLeagues.map((league) => {
+            const memberIds = pAssignments[league.id] ?? [];
+            const members = memberIds
+              .map((id) => pUsers.find((u) => u.id === id))
+              .filter((u): u is AdminUser => Boolean(u));
+            const assignedElsewhere = new Set(
+              Object.entries(pAssignments)
+                .filter(([lid]) => Number(lid) !== league.id)
+                .flatMap(([, ids]) => ids)
+            );
+            const available = pUsers.filter(
+              (u) => !memberIds.includes(u.id) && !assignedElsewhere.has(u.id)
+            );
+            return (
+              <div key={league.id} className="rounded-lg border border-border bg-surface p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-foreground">{league.name}</span>
+                  <span className="text-xs text-muted">{members.length} participants</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {members.map((u) => (
+                    <span
+                      key={u.id}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-xs text-foreground"
+                    >
+                      {u.name}
+                      <button
+                        className="text-muted hover:text-rouge"
+                        onClick={() => removeParticipant(league.id, u.id)}
+                        aria-label={`Retirer ${u.name}`}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                  {members.length === 0 && (
+                    <span className="text-xs text-muted">Aucun participant inscrit.</span>
+                  )}
+                </div>
+                <select
+                  className={`${input} py-1.5`}
+                  value=""
+                  onChange={(e) => {
+                    const id = Number(e.target.value);
+                    if (id) addParticipant(league.id, id);
+                  }}
+                >
+                  <option value="">+ Ajouter un participant...</option>
+                  {available.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })}
+
+          <div className="flex items-center gap-3">
+            <button
+              className={btn}
+              onClick={saveParticipants}
+              disabled={savingParticipants || pLeagues.length === 0}
+            >
+              {savingParticipants ? "Enregistrement..." : "Enregistrer les participants"}
+            </button>
+            {participantsSaved && (
               <span className="text-sm text-foreground">
-                Ligues créées. La saison <span className="text-gold">{season.label}</span> est
-                prête (statut SETUP).
+                {participantsSaved} La saison <span className="text-gold">{season.label}</span>{" "}
+                est prête : ouvre les enchères puis démarre-la depuis « Saisons existantes »
+                en haut de page.
               </span>
             )}
           </div>

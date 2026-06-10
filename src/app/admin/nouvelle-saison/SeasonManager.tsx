@@ -16,6 +16,13 @@ interface CloseResult {
   cupFinalist: string | null;
   warnings: string[];
 }
+interface ChecklistItem {
+  key: string;
+  label: string;
+  ok: boolean;
+  blocking: boolean;
+  detail: string;
+}
 
 // Transitions de statut autorisées (machine à états simple).
 const NEXT_STATUS: Record<string, { to: string; label: string } | null> = {
@@ -36,6 +43,7 @@ export default function SeasonManager() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [closeResult, setCloseResult] = useState<CloseResult | null>(null);
+  const [checklist, setChecklist] = useState<ChecklistItem[] | null>(null);
 
   async function load() {
     setLoading(true);
@@ -57,15 +65,35 @@ export default function SeasonManager() {
     setBusy(true);
     setErr("");
     setMsg("");
+    setChecklist(null);
     try {
-      const res = await fetch("/api/admin/seasons", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: season.id, status: to, ...(to === "ACTIVE" ? { isCurrent: true } : {}) }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erreur");
-      setMsg(`Saison ${season.label} -> ${to}`);
+      // Le lancement (passage en ACTIVE depuis SETUP/AUCTION) passe par la route
+      // dédiée : checklist de readiness + création des configs de la saison.
+      // La reprise après mercato d'hiver (WINTER -> ACTIVE) reste un simple PATCH.
+      const isLaunch = to === "ACTIVE" && (season.status === "SETUP" || season.status === "AUCTION");
+      if (isLaunch) {
+        const res = await fetch("/api/admin/seasons/launch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seasonId: season.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (Array.isArray(data.items)) setChecklist(data.items);
+          throw new Error(data.error || "Erreur");
+        }
+        setChecklist(data.items ?? null);
+        setMsg(data.message ?? `Saison ${season.label} lancée`);
+      } else {
+        const res = await fetch("/api/admin/seasons", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: season.id, status: to, ...(to === "ACTIVE" ? { isCurrent: true } : {}) }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Erreur");
+        setMsg(`Saison ${season.label} -> ${to}`);
+      }
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erreur");
@@ -124,6 +152,23 @@ export default function SeasonManager() {
       )}
       {msg && <div className="rounded bg-gold/10 px-3 py-2 text-sm text-gold">{msg}</div>}
       {err && <div className="rounded border border-rouge/40 bg-rouge/10 px-3 py-2 text-sm text-rouge">{err}</div>}
+
+      {checklist && (
+        <div className="rounded-lg border border-border bg-surface-2/50 p-4 space-y-1.5">
+          <p className="text-xs uppercase tracking-wider text-muted">Checklist de lancement</p>
+          {checklist.map((item) => (
+            <div key={item.key} className="flex items-start gap-2 text-sm">
+              <span className={item.ok ? "text-gold" : item.blocking ? "text-rouge" : "text-muted"}>
+                {item.ok ? "✓" : item.blocking ? "✗" : "○"}
+              </span>
+              <span className="text-foreground">
+                {item.label}
+                <span className="text-muted"> : {item.detail}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {closeResult && (
         <div className="rounded-lg border border-gold/30 bg-gold/[0.04] p-4 text-sm space-y-1">
