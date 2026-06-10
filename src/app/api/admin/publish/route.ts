@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getSeasonFilters } from "@/lib/season";
 
 function dec(v: unknown): number {
   if (v === null || v === undefined) return 0;
@@ -25,15 +26,16 @@ export async function POST(request: Request) {
     const { day } = await request.json() as { day: number };
     if (!day) return NextResponse.json({ error: "day required" }, { status: 400 });
 
-    // Get all leagues
-    const leagues = await prisma.league.findMany({ where: { id: { gt: 0 } } });
+    // Leagues/players de la saison courante (fallback legacy si non scopé)
+    const filters = await getSeasonFilters();
+    const leagues = await prisma.league.findMany({ where: filters.league });
 
     // Get all scores for this day
     const scores = await prisma.score.findMany({ where: { day } });
     const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
 
     // Get all players (for position)
-    const players = await prisma.player.findMany();
+    const players = await prisma.player.findMany({ where: filters.player });
     const playerMap = new Map(players.map((p) => [p.id, p]));
 
     for (const league of leagues) {

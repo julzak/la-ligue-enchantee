@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getSeasonFilters } from "@/lib/season";
+import { getCurrentMatchday } from "@/lib/db";
 
 // GET: fetch scores for a matchday
 export async function GET(request: Request) {
@@ -13,15 +15,14 @@ export async function GET(request: Request) {
   // If day=0, return the current matchday (for auto-detection)
   // Open on the latest day that has scores (not +1), so admin can review/complete
   if (!day) {
-    const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
-    const currentDay = latest?.day ?? 26;
-    return NextResponse.json({ day: currentDay });
+    return NextResponse.json({ day: await getCurrentMatchday() });
   }
 
+  const filters = await getSeasonFilters();
   const [scores, players, clubs, takenTeams] = await Promise.all([
     prisma.score.findMany({ where: { day } }),
-    prisma.player.findMany(),
-    prisma.club.findMany(),
+    prisma.player.findMany({ where: filters.player }),
+    prisma.club.findMany({ where: filters.club }),
     // Players taken by at least one participant (in their 13-man squad)
     prisma.team.findMany({
       where: { dayFirst: { lte: day }, dayLast: { gte: day } },

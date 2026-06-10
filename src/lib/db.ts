@@ -3,20 +3,30 @@ import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
 import { getClubLogoUrl, getClubShortName, getClubIdByTeamName } from "./assets";
 import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
+import { getSeasonScope } from "./season";
+import { leagueSlug } from "./season-key";
 
 // ── Request-scoped caches (dedup within same render) ────
+// Scopées sur la saison courante quand elle a des données rattachées,
+// sinon fallback legacy non scopé (données historiques seasonId NULL).
 const getCachedClubs = cache(async () => {
-  const clubs = await prisma.club.findMany();
+  const scope = await getSeasonScope();
+  const clubs = await prisma.club.findMany(
+    scope.season && scope.hasClubs ? { where: { seasonId: scope.season.id } } : undefined
+  );
   return new Map(clubs.map((c) => [c.id, c]));
 });
 
 const getCachedClubNames = cache(async () => {
-  const clubs = await prisma.club.findMany();
-  return new Map(clubs.map((c) => [c.id, c.name]));
+  const clubs = await getCachedClubs();
+  return new Map(Array.from(clubs.values()).map((c) => [c.id, c.name]));
 });
 
 const getCachedPlayers = cache(async () => {
-  const players = await prisma.player.findMany();
+  const scope = await getSeasonScope();
+  const players = await prisma.player.findMany(
+    scope.season && scope.hasPlayers ? { where: { seasonId: scope.season.id } } : undefined
+  );
   return new Map(players.map((p) => [p.id, p]));
 });
 
@@ -100,15 +110,20 @@ function mapPosition(dbPosition: string): Position {
 
 // ── Leagues ───────────────────────────────────────────────
 export async function getLeagues() {
-  const leagues = await prisma.league.findMany({
-    where: { id: { gt: 0 } }, // exclude legacy league 0
-    orderBy: { id: "asc" },
-  });
+  const scope = await getSeasonScope();
+  const leagues =
+    scope.season && scope.hasLeagues
+      ? await prisma.league.findMany({
+          where: { seasonId: scope.season.id },
+          orderBy: [{ tier: "asc" }, { id: "asc" }],
+        })
+      : await prisma.league.findMany({
+          where: { id: { gt: 0 } }, // exclude legacy league 0
+          orderBy: { id: "asc" },
+        });
   return leagues.map((l) => ({
     id: l.id,
-    slug: l.name.toLowerCase().includes("baudens") ? "ligue-1"
-      : l.name.toLowerCase().includes("national") ? "national-1"
-      : "ligue-2",
+    slug: leagueSlug(l.name),
     name: l.name,
     dbId: l.id,
   }));
@@ -143,6 +158,17 @@ export async function getUserById(userId: number): Promise<ParsedUser | null> {
 
 // ── Current matchday ──────────────────────────────────────
 export async function getCurrentMatchday(): Promise<number> {
+  const scope = await getSeasonScope();
+  if (scope.season && scope.hasPlayers) {
+    // Saison scopée : seule la progression des joueurs de la saison compte.
+    // SCORE n'a pas de relation Prisma vers PLAYER (tables MyISAM) -> SQL brut.
+    const rows = await prisma.$queryRawUnsafe<{ maxDay: number | null }[]>(
+      "SELECT MAX(s.DAY) AS maxDay FROM SCORE s JOIN PLAYER p ON p.ID_PLAYER = s.ID_PLAYER WHERE p.ID_SEASON = ?",
+      scope.season.id
+    );
+    const maxDay = rows[0]?.maxDay;
+    return maxDay != null ? Number(maxDay) : 1;
+  }
   const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
   return latest?.day ?? 1;
 }

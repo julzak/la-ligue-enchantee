@@ -182,3 +182,96 @@ Page `/admin/nouvelle-saison` — stepper 3 étapes. Convention repo = pages cli
 4. Chantier 4 (montées/descentes).
 
 ## Review (à remplir en fin)
+
+---
+
+# Lancement de saison — rendre l'app "season-aware" (session 2026-06-10)
+
+Objectif : que le bouton "Démarrer la saison" fonctionne vraiment. Aujourd'hui le
+stepper crée Season/clubs/joueurs/ligues en base, mais le site public ignore
+totalement la notion de saison : lancer 2026-2027 ne changerait RIEN à l'affichage
+(pire : doublons de ligues et de joueurs partout).
+
+## État des lieux (constaté dans le code le 2026-06-10)
+
+Ce qui existe et marche :
+- Stepper 3 étapes `/admin/nouvelle-saison` : création SETUP → import clubs+joueurs (seasonId) → ligues (seasonId).
+- Machine à états SeasonManager : SETUP→AUCTION→ACTIVE (isCurrent)→WINTER→CLOSED + clôture palmarès.
+- Saison 2026 (id 1) clôturée, ligues 19/20/22 rattachées.
+
+Ce qui manque (bloquant pour un vrai lancement) :
+1. `db.ts getLeagues()` (l.102) : prend TOUTES les ligues id>0, slugs codés en dur
+   sur les noms legacy ("baudens"→ligue-1, "national"→national-1, sinon ligue-2).
+   Les nouvelles ligues s'ajouteraient aux anciennes avec des slugs en collision.
+2. Caches clubs/joueurs (`db.ts` l.8-21) : `findMany()` sans filtre saison → doublons.
+3. `getCurrentMatchday()` (l.145) = max(SCORE.day) global → resterait bloqué à 38.
+4. Aucune étape "participants" : personne n'inscrit les users dans les nouvelles
+   ligues (LEAGUE_USER, PK leagueId+userId). Ligues par affinité → prefill copie N-1.
+5. ~12 hardcodes `'2025-2026'` : SCORING_CONFIG (db.ts, scoring-config.ts, deadline),
+   JOKER_CONFIG (x4), PAYMENT, CUP, URL TheSportsDB `s=2025-2026` (deadline route +
+   scripts sync). Aucune row config n'est créée pour la nouvelle saison.
+6. MATCH_SCHEDULE : pas de colonne season → le calendrier 2025-2026 resterait en place.
+7. `assets.ts` : logos/shortnames/teamName→clubId mappés sur les IDs numériques des
+   clubs 2025-2026. Les clubs réimportés ont de NOUVEAUX ids → logos et deadlines cassés.
+
+Hors scope (chantiers séparés) : module enchères (remplit TEAM), effectifs réels
+(mock TheSportsDB), multi-pseudos, perf desktop.
+
+## Architecture retenue (à valider)
+
+Helper central `src/lib/season.ts` : `getCurrentSeason()` (react cache) basé sur
+`Season.isCurrent`. Règle de scoping avec fallback legacy ZÉRO RISQUE pour la prod
+actuelle :
+- ligues : `where seasonId = current.id` ; si la saison courante n'a aucune ligue
+  scopée → comportement actuel (id>0). Slug = slugify(name) + table de correspondance
+  legacy conservée pour les 3 ligues actuelles.
+- clubs/joueurs : `where seasonId = current.id` ; si 0 row (cas 2026 actuel, données
+  legacy seasonId NULL) → unscoped comme aujourd'hui.
+- `getCurrentMatchday()` : max(day) des SCORE des joueurs de la saison courante,
+  fallback global si pas de joueurs scopés. Nouvelle saison sans scores → J1.
+
+## Chantiers
+
+### A — Fondation season-aware (cœur)
+- [ ] `src/lib/season.ts` : getCurrentSeason / getCurrentSeasonLabel (+ version
+      non-cache pour scripts CLI).
+- [ ] Scoper getLeagues (+slug dérivé), caches clubs/joueurs, getCurrentMatchday.
+- [ ] Vérif : build + site identique à aujourd'hui (aucune saison scopée courante).
+
+### B — Stepper étape 4 : participants
+- [ ] `GET/POST /api/admin/seasons/participants` : prefill par affinité (mapping
+      tier→tier depuis la saison N-1, via LEAGUE_USER des anciennes ligues),
+      création des LEAGUE_USER des nouvelles ligues. Idempotent.
+- [ ] UI étape 4 : liste par ligue, ajout/retrait d'un user, compteur.
+
+### C — Lancement : bouton "Démarrer la saison" robuste
+- [ ] `POST /api/admin/seasons/launch` transactionnel : checklist de readiness
+      (≥1 ligue, ≥1 club, ≥1 joueur, participants dans chaque ligue, SCORING_CONFIG
+      + JOKER_CONFIG créés pour le label — copiés depuis la saison N-1 si absents),
+      puis status ACTIVE + isCurrent (une seule courante).
+- [ ] UI SeasonManager : affiche la checklist ✓/✗ avant lancement, bloque si rouge.
+
+### D — Dé-hardcodage '2025-2026'
+- [ ] Remplacer les ~12 occurrences par getCurrentSeasonLabel().
+- [ ] Saison TheSportsDB dérivée du label (format imposé "YYYY-YYYY" à l'étape 1
+      du stepper : validation ajoutée).
+- [ ] MATCH_SCHEDULE : décision Julien — colonne `season` additive (mini DDL,
+      historique conservé, recommandé) OU purge du calendrier au lancement.
+
+### E — assets.ts par nom de club
+- [ ] Logos/shortnames/teamNameToClubId keyés par nom normalisé (stable entre
+      saisons) au lieu de l'id numérique. Lookup id→name via cache clubs.
+
+### F — Doc + tests + recette
+- [ ] `scripts/test-season-scoping.ts` : fallback legacy (saison sans données scopées
+      = comportement actuel) + scoping effectif (saison avec données) + sanity-check.
+- [ ] `docs/mode-emploi-saisons.md` : étape 4 participants + checklist lancement.
+- [ ] Recette : créer une saison de test complète en local/préprod, la lancer,
+      vérifier bascule du site, puis la supprimer (ou flag de test).
+
+## Contraintes
+- `.env` local pointe encore l'IP Scaleway morte (51.15.205.26) : à corriger vers
+  la DB OVH avant tout test runtime local (ou tests via SSH ligue-ovh).
+- Migration DDL éventuelle (MATCH_SCHEDULE.season) = acte manuel AVANT push (auto-deploy).
+
+## Review (à remplir en fin)
