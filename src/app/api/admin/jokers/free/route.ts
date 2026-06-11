@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
 
-  // Get taken player IDs in this league
+  // Get taken player IDs in this league (effectif constitué)
   const taken = await prisma.team.findMany({
     where: {
       leagueId,
@@ -30,6 +30,21 @@ export async function GET(request: Request) {
     select: { playerId: true },
   });
   const takenIds = new Set(taken.map((t) => t.playerId));
+
+  // Exclude players already WON in the active summer auction for this league.
+  // During the auction phase, won players are in AUCTION_BID (status='won') but
+  // not yet in TEAM. They must not appear in search results (règle 3.1 + BRIEF-04).
+  const activeAuction = await prisma.$queryRawUnsafe<{ id: number }[]>(
+    "SELECT id FROM AUCTION WHERE league_id = ? AND status != 'resolved' AND COALESCE(type,'summer') = 'summer' ORDER BY id DESC LIMIT 1",
+    leagueId
+  );
+  if (activeAuction.length > 0) {
+    const wonBids = await prisma.$queryRawUnsafe<{ player_id: number }[]>(
+      "SELECT player_id FROM AUCTION_BID WHERE auction_id = ? AND status = 'won'",
+      Number(activeAuction[0].id)
+    );
+    wonBids.forEach((b) => takenIds.add(Number(b.player_id)));
+  }
 
   // Build query conditions
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

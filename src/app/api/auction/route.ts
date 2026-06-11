@@ -250,6 +250,27 @@ export async function POST(request: Request) {
     }
   }
 
+  // B0 : garde serveur — chaque joueur misé ne doit pas déjà être attribué
+  // (status='won') à un autre participant lors de la même enchère.
+  // La recherche côté client exclut déjà ces joueurs, mais le serveur rejoue le
+  // contrôle (le client n'est jamais la seule barrière — BRIEF-04).
+  if (bids.length > 0) {
+    const [bidPh, bidVs] = inParams(bids.map((b) => b.playerId));
+    const alreadyWon = await prisma.$queryRawUnsafe<{ player_id: number; user_id: number }[]>(
+      `SELECT player_id, user_id FROM AUCTION_BID
+       WHERE auction_id = ? AND status = 'won' AND player_id IN (${bidPh})`,
+      a.id, ...bidVs
+    );
+    for (const w of alreadyWon) {
+      if (Number(w.user_id) !== userId) {
+        return NextResponse.json(
+          { error: `Le joueur #${w.player_id} a déjà été attribué à un autre participant.` },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   // B1 : garde serveur — chaque playerId doit exister dans le perimetre de la
   // saison courante ET ne pas etre un gardien nomme (position Gardien sans
   // prefixe gardiens_). Les pseudo-gardiens « Gardiens [Club] » sont autorisés.

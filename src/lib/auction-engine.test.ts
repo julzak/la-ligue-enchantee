@@ -12,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import {
   resolveRound,
   acceptSubmission,
+  validateSubmission,
   type ParticipantInput,
   type EnginePlayer,
   type Line,
@@ -457,5 +458,130 @@ describe("deadline : tolérance zéro, tour fermé = rejet", () => {
     });
     const buggyAccepted = true;
     expect(buggyAccepted !== late.accepted).toBe(true);
+  });
+});
+
+// ── Cas 8 : validateSubmission — avertissements de composition (BRIEF-04) ──
+// Ces contrôles sont rejoués côté client (avertissements UI) et référencés
+// côté serveur pour auditing. Ils sont non bloquants à la soumission (le
+// règlement pénalise au dépouillement, 3.2.c). Ces tests garantissent que
+// le moteur génère les bons messages avant qu'un participant soumette.
+describe("validateSubmission : avertissements de composition (BRIEF-04)", () => {
+  function p(lastName: string, line: Line): EnginePlayer {
+    return { id: nextId++, lastName, line };
+  }
+
+  it("mise conforme 13 joueurs : aucun avertissement", () => {
+    const owned: EnginePlayer[] = [
+      p("Gk", "GK"),
+      p("D1", "DEF"), p("D2", "DEF"), p("D3", "DEF"),
+      p("M1", "MID"), p("M2", "MID"), p("M3", "MID"),
+    ];
+    const bids = [
+      { player: p("D4", "DEF"), amount: 5 },
+      { player: p("M4", "MID"), amount: 5 },
+      { player: p("A1", "ATT"), amount: 5 },
+      { player: p("A2", "ATT"), amount: 5 },
+      { player: p("A3", "ATT"), amount: 5 },
+      { player: p("A4", "ATT"), amount: 5 },
+    ];
+    const warnings = validateSubmission(owned, bids, 130);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("aucun gardien dans la mise : avertissement retrait d'1 joueur", () => {
+    const owned: EnginePlayer[] = [
+      p("D1", "DEF"), p("D2", "DEF"), p("D3", "DEF"),
+      p("M1", "MID"), p("M2", "MID"), p("M3", "MID"),
+    ];
+    const bids = [
+      { player: p("D4", "DEF"), amount: 5 },
+      { player: p("M4", "MID"), amount: 5 },
+      { player: p("A1", "ATT"), amount: 5 },
+      { player: p("A2", "ATT"), amount: 5 },
+      { player: p("A3", "ATT"), amount: 5 },
+      { player: p("A4", "ATT"), amount: 5 },
+      { player: p("A5", "ATT"), amount: 5 },
+    ];
+    const warnings = validateSubmission(owned, bids, 130);
+    expect(warnings.some((w) => w.includes("gardien"))).toBe(true);
+  });
+
+  it("7 défenseurs : avertissement excès DEF", () => {
+    const owned: EnginePlayer[] = [
+      p("Gk", "GK"),
+      p("D1", "DEF"), p("D2", "DEF"), p("D3", "DEF"), p("D4", "DEF"),
+      p("M1", "MID"), p("M2", "MID"),
+    ];
+    const bids = [
+      { player: p("D5", "DEF"), amount: 5 },
+      { player: p("D6", "DEF"), amount: 5 },
+      { player: p("D7", "DEF"), amount: 5 }, // 7e défenseur
+      { player: p("M3", "MID"), amount: 5 },
+      { player: p("A1", "ATT"), amount: 5 },
+      { player: p("A2", "ATT"), amount: 5 },
+    ];
+    const warnings = validateSubmission(owned, bids, 130);
+    expect(warnings.some((w) => w.includes("défenseurs"))).toBe(true);
+  });
+
+  it("5 attaquants : avertissement excès ATT", () => {
+    const owned: EnginePlayer[] = [
+      p("Gk", "GK"),
+      p("D1", "DEF"), p("D2", "DEF"), p("D3", "DEF"),
+      p("M1", "MID"), p("M2", "MID"), p("M3", "MID"),
+    ];
+    const bids = [
+      { player: p("A1", "ATT"), amount: 5 },
+      { player: p("A2", "ATT"), amount: 5 },
+      { player: p("A3", "ATT"), amount: 5 },
+      { player: p("A4", "ATT"), amount: 5 },
+      { player: p("A5", "ATT"), amount: 5 }, // 5e attaquant
+    ];
+    const warnings = validateSubmission(owned, bids, 130);
+    expect(warnings.some((w) => w.includes("attaquants"))).toBe(true);
+  });
+
+  it("moins de 13 joueurs : avertissement joueurs manquants", () => {
+    const owned: EnginePlayer[] = [
+      p("Gk", "GK"),
+      p("D1", "DEF"), p("D2", "DEF"), p("D3", "DEF"),
+    ];
+    const bids = [
+      { player: p("M1", "MID"), amount: 5 },
+      { player: p("M2", "MID"), amount: 5 },
+      // seulement 6 joueurs, manque 7
+    ];
+    const warnings = validateSubmission(owned, bids, 130);
+    expect(warnings.some((w) => w.includes("6") && w.includes("13"))).toBe(true);
+  });
+
+  it("total mises > budget : avertissement dépassement", () => {
+    const owned: EnginePlayer[] = [
+      p("Gk", "GK"),
+      p("D1", "DEF"), p("D2", "DEF"), p("D3", "DEF"),
+      p("M1", "MID"), p("M2", "MID"), p("M3", "MID"),
+    ];
+    const bids = [
+      { player: p("D4", "DEF"), amount: 30 },
+      { player: p("M4", "MID"), amount: 30 },
+      { player: p("A1", "ATT"), amount: 30 },
+      { player: p("A2", "ATT"), amount: 30 },
+      { player: p("A3", "ATT"), amount: 30 },
+      { player: p("A4", "ATT"), amount: 30 }, // total 180 > budget 50
+    ];
+    const warnings = validateSubmission(owned, bids, 50);
+    expect(warnings.some((w) => w.includes("budget"))).toBe(true);
+  });
+
+  // Sanity-check : si validateSubmission retournait toujours [], les tests
+  // ci-dessus échoueraient (length !== 0 serait faux).
+  it("sanity-check : validateSubmission vide ne satisfait pas les cas d'erreur", () => {
+    // Mise invalide (pas de gardien, 1 seul joueur)
+    const owned: EnginePlayer[] = [];
+    const bids = [{ player: p("X", "DEF"), amount: 5 }];
+    const warnings = validateSubmission(owned, bids, 130);
+    // On s'attend à au moins 2 avertissements (pas de gardien + < 13 joueurs)
+    expect(warnings.length).toBeGreaterThanOrEqual(2);
   });
 });
