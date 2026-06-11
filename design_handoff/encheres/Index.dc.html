@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0C0C0B; }
+  a{ text-decoration:none; color:inherit; }
+</style>
+</helmet>
+
+<div style="background:#0C0C0B; min-height:100vh; font-family:'Inter',system-ui,sans-serif; color:#E8E4DB; padding:0 0 90px;">
+
+  <!-- header / blason -->
+  <div style="position:relative; overflow:hidden; padding:56px 56px 46px; border-bottom:1px solid #1E1D1A; background:linear-gradient(180deg,#16160F,#0C0C0B);">
+    <div style="position:absolute; inset:0; background-image:repeating-linear-gradient(46deg, rgba(200,168,75,.045) 0 1px, transparent 1px 10px); pointer-events:none;"></div>
+    <div style="position:relative; display:flex; align-items:center; gap:18px;">
+      <div style="position:relative; width:58px; height:70px; flex:none;">
+        <div style="position:absolute; top:-12px; left:0; right:0; display:flex; justify-content:center; gap:5px; font-size:11px; color:#C8A84B; text-shadow:0 0 8px rgba(200,168,75,.4);">★ ★ ★</div>
+        <div style="position:absolute; inset:0; background:#C8A84B; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0);"></div>
+        <div style="position:absolute; inset:2px; background:#16160F; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0);"></div>
+        <div style="position:absolute; inset:4px; background:#C8A84B; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0);"></div>
+        <div style="position:absolute; inset:5.5px; background:#16160F; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;">
+          <span style="font-size:6px; color:#8C877C; letter-spacing:1px; margin-top:6px;">LA</span>
+          <span style="font-family:'Arial Black',sans-serif; font-weight:800; font-size:15px; color:#E8E4DB; letter-spacing:-.5px; line-height:1;">LIGUE</span>
+          <span style="font-family:Georgia,serif; font-style:italic; font-size:9px; color:#C8A84B;">Enchantée</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px; font-weight:600; letter-spacing:2.5px; color:#8C877C; text-transform:uppercase; margin-bottom:8px;">Design Handoff</div>
+        <h1 style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:40px; margin:0; color:#F5F2EB; line-height:1;">Module d'enchères</h1>
+        <p style="margin:10px 0 0; font-size:14.5px; color:#9C978B; max-width:680px; line-height:1.55;">Constitution des équipes par mises fermées · 13 joueurs · budget 130 pts sur 4-5 tours. Maquettes dark, prêtes pour l'intégration.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1180px; margin:0 auto; padding:46px 40px 0;">
+
+    <!-- deliverables -->
+    <div style="font-size:11px; font-weight:700; letter-spacing:1.6px; color:#8C877C; text-transform:uppercase; margin-bottom:18px;">Écrans livrés</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-bottom:50px;">
+
+      <a href="Page de mise.dc.html" style="display:block; background:#1A1A18; border:1px solid #272521; border-radius:13px; padding:22px; transition:border-color .15s;" style-hover="border-color:rgba(200,168,75,.5)">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-size:10px; font-weight:700; letter-spacing:.6px; color:#D8BC63; background:rgba(200,168,75,.1); border:1px solid rgba(200,168,75,.3); border-radius:6px; padding:4px 9px;">MOBILE · 375px</span>
+          <span style="font-size:11px; font-weight:600; color:#7C776C;">6 états</span>
+        </div>
+        <div style="font-family:'Playfair Display',serif; font-weight:700; font-size:21px; color:#F5F2EB; margin-bottom:8px;">Page de mise</div>
+        <div style="font-size:12.5px; color:#9C978B; line-height:1.55;">Le participant soumet sa mise du tour en moins de 5 minutes, budget toujours lisible. Acquis verrouillés, recherche, avertissements non bloquants.</div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:16px; font-size:12px; font-weight:600; color:#C8A84B;">Ouvrir →</div>
+      </a>
+
+      <a href="Page de résultats.dc.html" style="display:block; background:#1A1A18; border:1px solid #272521; border-radius:13px; padding:22px;" style-hover="border-color:rgba(200,168,75,.5)">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-size:10px; font-weight:700; letter-spacing:.6px; color:#D8BC63; background:rgba(200,168,75,.1); border:1px solid rgba(200,168,75,.3); border-radius:6px; padding:4px 9px;">MOBILE · 375px</span>
+          <span style="font-size:11px; font-weight:600; color:#7C776C;">4 états</span>
+        </div>
+        <div style="font-family:'Playfair Display',serif; font-weight:700; font-size:21px; color:#F5F2EB; margin-bottom:8px;">Page de résultats</div>
+        <div style="font-size:12.5px; color:#9C978B; line-height:1.55;">En 30 secondes : gains, mises perdues expliquées, retraits motivés, budget pour le tour suivant, et le dépouillement de tous en « papier journal ».</div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:16px; font-size:12px; font-weight:600; color:#C8A84B;">Ouvrir →</div>
+      </a>
+
+      <a href="Console admin.dc.html" style="display:block; background:#1A1A18; border:1px solid #272521; border-radius:13px; padding:22px;" style-hover="border-color:rgba(200,168,75,.5)">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-size:10px; font-weight:700; letter-spacing:.6px; color:#D8BC63; background:rgba(200,168,75,.1); border:1px solid rgba(200,168,75,.3); border-radius:6px; padding:4px 9px;">DESKTOP · 1440px</span>
+          <span style="font-size:11px; font-weight:600; color:#7C776C;">4 états</span>
+        </div>
+        <div style="font-family:'Playfair Display',serif; font-weight:700; font-size:21px; color:#F5F2EB; margin-bottom:8px;">Console d'administration</div>
+        <div style="font-size:12.5px; color:#9C978B; line-height:1.55;">Pilotage du cycle de vie d'un tour (ouvrir → clôturer → dépouiller → clore), compteur de soumissions, récap copiable pour l'email manuel.</div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:16px; font-size:12px; font-weight:600; color:#C8A84B;">Ouvrir →</div>
+      </a>
+    </div>
+
+    <!-- tokens + principles -->
+    <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:18px;">
+
+      <!-- tokens -->
+      <div style="background:#1A1A18; border:1px solid #272521; border-radius:13px; padding:22px 24px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase; margin-bottom:16px;">Tokens utilisés</div>
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:30px; height:30px; border-radius:7px; background:#141414; border:1px solid #34322B; flex:none;"></span><span style="font-size:12.5px; color:#D8D3C7; flex:1;">Nuit · fond</span><span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#7C776C;">#141414</span></div>
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:30px; height:30px; border-radius:7px; background:#1E1E1C; border:1px solid #34322B; flex:none;"></span><span style="font-size:12.5px; color:#D8D3C7; flex:1;">Surface · cards</span><span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#7C776C;">#1E1E1C</span></div>
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:30px; height:30px; border-radius:7px; background:#C8A84B; flex:none;"></span><span style="font-size:12.5px; color:#D8D3C7; flex:1;">Or · accent, prestige</span><span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#7C776C;">#C8A84B</span></div>
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:30px; height:30px; border-radius:7px; background:#8A7133; flex:none;"></span><span style="font-size:12.5px; color:#D8D3C7; flex:1;">Or sombre · hover</span><span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#7C776C;">#8A7133</span></div>
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:30px; height:30px; border-radius:7px; background:#F5F2EB; flex:none;"></span><span style="font-size:12.5px; color:#D8D3C7; flex:1;">Papier · encadrés résultats</span><span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#7C776C;">#F5F2EB</span></div>
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:30px; height:30px; border-radius:7px; background:#C0392B; flex:none;"></span><span style="font-size:12.5px; color:#D8D3C7; flex:1;">Rouge · cartons, rejet</span><span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#7C776C;">#C0392B</span></div>
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:30px; height:30px; border-radius:7px; background:#1A6B3C; flex:none;"></span><span style="font-size:12.5px; color:#D8D3C7; flex:1;">Vert · succès, primes</span><span style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#7C776C;">#1A6B3C</span></div>
+        </div>
+        <div style="border-top:1px solid #272521; margin-top:16px; padding-top:15px; display:flex; flex-direction:column; gap:7px;">
+          <div style="display:flex; align-items:baseline; gap:12px;"><span style="font-size:11.5px; color:#8C877C; width:74px; flex:none;">Titres</span><span style="font-family:'Playfair Display',serif; font-size:16px; color:#F5F2EB;">Playfair Display</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;"><span style="font-size:11.5px; color:#8C877C; width:74px; flex:none;">Corps</span><span style="font-size:14px; font-weight:500; color:#F5F2EB;">Inter — données &amp; scores</span></div>
+          <div style="display:flex; align-items:baseline; gap:12px;"><span style="font-size:11.5px; color:#8C877C; width:74px; flex:none;">Radius</span><span style="font-size:13px; color:#D8D3C7;">8px · 12px (grandes cartes)</span></div>
+        </div>
+      </div>
+
+      <!-- principles -->
+      <div style="background:#1A1A18; border:1px solid #272521; border-radius:13px; padding:22px 24px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase; margin-bottom:16px;">Principes non négociables</div>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; gap:12px;"><span style="font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:#C8A84B; line-height:1; flex:none;">1</span><div style="font-size:12.5px; color:#C9C3B5; line-height:1.5;">Le budget restant et les chiffres de mise sont l'information reine : toujours lisibles, jamais ambigus.</div></div>
+          <div style="display:flex; gap:12px;"><span style="font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:#C8A84B; line-height:1; flex:none;">2</span><div style="font-size:12.5px; color:#C9C3B5; line-height:1.5;">Aucune disparition silencieuse : tout ce qui est verrouillé ou rejeté reste visible et expliqué.</div></div>
+          <div style="display:flex; gap:12px;"><span style="font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:#C8A84B; line-height:1; flex:none;">3</span><div style="font-size:12.5px; color:#C9C3B5; line-height:1.5;">Les avertissements de règlement préviennent mais ne bloquent jamais la soumission.</div></div>
+          <div style="display:flex; gap:12px;"><span style="font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:#C8A84B; line-height:1; flex:none;">4</span><div style="font-size:12.5px; color:#C9C3B5; line-height:1.5;">Mobile-first 375px pour les participants, desktop 1440px pour l'admin.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}"></script>
+</body>
+</html>

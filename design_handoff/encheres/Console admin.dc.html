@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0C0C0B; }
+</style>
+</helmet>
+
+<div style="background:#0C0C0B; min-height:100vh; font-family:'Inter',system-ui,sans-serif; color:#E8E4DB; padding:0 0 90px;">
+
+  <div style="padding:40px 56px 30px; border-bottom:1px solid #1E1D1A; background:linear-gradient(180deg,#141410,#0C0C0B);">
+    <div style="display:flex; align-items:center; gap:11px; margin-bottom:14px;">
+      <div style="position:relative; width:26px; height:31px; flex:none;">
+        <div style="position:absolute; inset:0; background:#C8A84B; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0);"></div>
+        <div style="position:absolute; inset:1.4px; background:#16160F; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0); display:flex; align-items:center; justify-content:center;"><span style="font-family:'Arial Black',sans-serif; font-weight:800; font-size:12px; color:#E8E4DB; margin-top:-3px;">L</span></div>
+      </div>
+      <span style="font-size:12px; font-weight:600; letter-spacing:2px; color:#8C877C; text-transform:uppercase;">La Ligue Enchantée — Module Enchères</span>
+    </div>
+    <h1 style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:34px; margin:0 0 8px; color:#F5F2EB;">Console d'administration <span style="font-style:italic; color:#C8A84B; font-weight:600;">des enchères</span></h1>
+    <p style="margin:0; font-size:14px; color:#9C978B; max-width:760px; line-height:1.55;">Desktop 1440px · 4 états. L'admin pilote un tour de bout en bout sans douter de l'état du système. L'état courant rend évidentes les actions possibles et grise les autres. Les résultats partent par email en un copier-coller.</p>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:54px; padding:46px 56px 0;">
+
+    <div>
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:18px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">01</span>
+        <div><div style="font-size:15px; font-weight:700; color:#F5F2EB;">Tour ouvert — soumissions en cours</div><div style="font-size:12.5px; color:#8C877C; margin-top:2px;">14/20 reçues, butoir éditable, liste des manquants.</div></div>
+      </div>
+      <dc-import name="AdminConsole" mode="{{ s1.mode }}" phase-label="{{ s1.phaseLabel }}" tour-label="{{ s1.tourLabel }}" deadline-label="{{ s1.deadlineLabel }}" submitted-count="{{ s1.submittedCount }}" total-count="{{ s1.totalCount }}" missing="{{ s1.missing }}" participants="{{ s1.participants }}" hint-size="1440px,900px"></dc-import>
+    </div>
+
+    <div>
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:18px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">02</span>
+        <div><div style="font-size:15px; font-weight:700; color:#F5F2EB;">Tour clôturé — prêt à dépouiller</div><div style="font-size:12.5px; color:#8C877C; margin-top:2px;">Soumissions verrouillées, dépouillement à lancer.</div></div>
+      </div>
+      <dc-import name="AdminConsole" mode="{{ s2.mode }}" phase-label="{{ s2.phaseLabel }}" tour-label="{{ s2.tourLabel }}" deadline-label="{{ s2.deadlineLabel }}" submitted-count="{{ s2.submittedCount }}" total-count="{{ s2.totalCount }}" missing="{{ s2.missing }}" hint-size="1440px,620px"></dc-import>
+    </div>
+
+    <div>
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:18px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">03</span>
+        <div><div style="font-size:15px; font-weight:700; color:#F5F2EB;">Résultats dépouillés — récap copiable</div><div style="font-size:12.5px; color:#8C877C; margin-top:2px;">Tableau par participant + blocs texte pour email.</div></div>
+      </div>
+      <dc-import name="AdminConsole" mode="{{ s3.mode }}" last-round="{{ s3.lastRound }}" next-tour-label="{{ s3.nextTourLabel }}" phase-label="{{ s3.phaseLabel }}" tour-label="{{ s3.tourLabel }}" deadline-label="{{ s3.deadlineLabel }}" submitted-count="{{ s3.submittedCount }}" total-count="{{ s3.totalCount }}" missing="{{ s3.missing }}" results="{{ s3.results }}" recaps="{{ s3.recaps }}" hint-size="1440px,1100px"></dc-import>
+    </div>
+
+    <div>
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:18px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#D69634; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">04</span>
+        <div><div style="font-size:15px; font-weight:700; color:#F5F2EB;">Clôture de phase — complétion d'office</div><div style="font-size:12.5px; color:#8C877C; margin-top:2px;">Effectifs &lt;13 complétés à 1 pt avant de clore.</div></div>
+      </div>
+      <dc-import name="AdminConsole" mode="{{ s4.mode }}" phase-label="{{ s4.phaseLabel }}" tour-label="{{ s4.tourLabel }}" deadline-label="{{ s4.deadlineLabel }}" submitted-count="{{ s4.submittedCount }}" total-count="{{ s4.totalCount }}" missing="{{ s4.missing }}" incomplete="{{ s4.incomplete }}" hint-size="1440px,720px"></dc-import>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() {
+    const names = ['LST', 'Troyan', 'Francis Llacer', 'Le Général', 'GeLo 59', 'FC Terrich', 'Batistuta', 'Gonz', 'Duch', 'Blek le Roc', 'Rom Aulas', 'Jun', 'Benhijk', 'Cmdt de Bord', 'Damoki Sakai', 'Kazu', 'Vince77', 'Thib', 'David A', 'Mathieu L.'];
+    const init = n => n.replace(/[^A-Za-zÀ-ÿ0-9 ].*/, '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const missing1 = ['Gonz', 'Duch', 'Jun', 'Kazu', 'Thib', 'David A'];
+    const times = ['18:02', '18:14', '18:31', '18:47', '19:03', '19:09', '19:22', '19:28', '19:35', '19:41', '19:44', '19:46', '19:51', '19:58'];
+    let ti = 0;
+    const participants = names.map(n => {
+      const sub = missing1.indexOf(n) === -1;
+      return { name: n, initials: init(n), submitted: sub, pending: !sub, time: sub ? (times[ti++] || '19:59') : '' };
+    });
+
+    return {
+      s1: { mode: 'open', phaseLabel: 'Enchères d\'été 2025-2026', tourLabel: 'Tour 3 / 5', deadlineLabel: '12 août · 20:00', submittedCount: 14, totalCount: 20, missing: missing1, participants },
+
+      s2: { mode: 'closed', phaseLabel: 'Enchères d\'été 2025-2026', tourLabel: 'Tour 3 / 5', deadlineLabel: '12 août · 20:00 (atteint)', submittedCount: 18, totalCount: 20, missing: ['Kazu', 'David A'] },
+
+      s3: {
+        mode: 'tallied', lastRound: false, nextTourLabel: 'Tour 4', phaseLabel: 'Enchères d\'été 2025-2026', tourLabel: 'Tour 3 / 5', deadlineLabel: '12 août · 20:00', submittedCount: 20, totalCount: 20, missing: [],
+        results: [
+          { name: 'LST', acquisitions: [{ name: 'Doué', price: 12 }, { name: 'Barcola', price: 14 }], notes: 'Retrait Ajorque (5 ATT misés). Égalité Gardiens Monaco → remise en jeu T4.', budget: 44 },
+          { name: 'Troyan', acquisitions: [{ name: 'Nuno Mendes', price: 18 }, { name: 'Kolo Muani', price: 22 }], notes: '—', budget: 31 },
+          { name: 'Francis Llacer', acquisitions: [{ name: 'Greenwood', price: 16 }], notes: '—', budget: 58 },
+          { name: 'Le Général', acquisitions: [{ name: 'Gardiens Monaco', price: 9 }, { name: 'Thauvin', price: 11 }], notes: 'Égalité résolue à l\'ancienneté.', budget: 40 },
+          { name: 'Gonz', acquisitions: [], notes: 'Aucune soumission — budget conservé.', budget: 72 },
+        ],
+        recaps: [
+          { name: 'LST', text: 'LST — Tour 3\nAcquis : Doué (12), Barcola (14)\nRetrait : Ajorque — 5 attaquants misés\nÉgalité : Gardiens Monaco, remis en jeu T4\nBudget restant : 44 pts' },
+          { name: 'Troyan', text: 'Troyan — Tour 3\nAcquis : Nuno Mendes (18), Kolo Muani (22)\nRetraits : aucun\nBudget restant : 31 pts' },
+          { name: 'Francis Llacer', text: 'Francis Llacer — Tour 3\nAcquis : Greenwood (16)\nRetraits : aucun\nBudget restant : 58 pts' },
+          { name: 'Le Général', text: 'Le Général — Tour 3\nAcquis : Gardiens Monaco (9), Thauvin (11)\nÉgalité résolue à l\'ancienneté\nBudget restant : 40 pts' },
+        ],
+      },
+
+      s4: {
+        mode: 'phase-close', phaseLabel: 'Enchères d\'été 2025-2026', tourLabel: 'Tour 5 / 5', deadlineLabel: '19 août · 20:00', submittedCount: 20, totalCount: 20, missing: [],
+        incomplete: [
+          { name: 'Mathieu L.', count: 11, missing: 2, missingLines: '1 MIL, 1 ATT', proposed: [{ name: 'Pépé', poste: 'ATT' }, { name: 'Chotard', poste: 'MIL' }, { name: 'Sotoca', poste: 'ATT' }] },
+          { name: 'David A', count: 12, missing: 1, missingLines: '1 DEF', proposed: [{ name: 'Comte', poste: 'DEF' }, { name: 'Mexique', poste: 'DEF' }] },
+        ],
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</helmet>
+
+<div style="width:1440px; background:#141414; font-family:'Inter',system-ui,sans-serif; color:#E8E4DB; border-radius:14px; overflow:hidden; border:1px solid #2A2824;">
+
+  <!-- top bar -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:0 28px; height:60px; background:#16160F; border-bottom:1px solid #232220;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="position:relative; width:26px; height:31px; flex:none;">
+        <div style="position:absolute; inset:0; background:#C8A84B; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0);"></div>
+        <div style="position:absolute; inset:1.4px; background:#16160F; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0); display:flex; align-items:center; justify-content:center;"><span style="font-family:'Arial Black',sans-serif; font-weight:800; font-size:12px; color:#E8E4DB; margin-top:-3px;">L</span></div>
+      </div>
+      <span style="font-size:15px; font-weight:700; color:#F5F2EB;">Console d'administration</span>
+      <span style="font-size:12px; color:#8C877C; border-left:1px solid #322F2A; padding-left:12px;">Enchères</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="font-size:11px; font-weight:700; letter-spacing:.5px; color:#D8BC63; background:rgba(200,168,75,.12); border:1px solid rgba(200,168,75,.34); border-radius:6px; padding:5px 10px;">ADMIN</span>
+      <div style="width:30px; height:30px; border-radius:50%; background:#1E1E1C; border:1px solid rgba(200,168,75,.4); display:flex; align-items:center; justify-content:center; font-size:12px; color:#C8A84B; font-weight:700;">A</div>
+    </div>
+  </div>
+
+  <div style="padding:26px 28px 32px;">
+
+    <!-- STATUS BANNER -->
+    <div style="display:flex; gap:26px; align-items:stretch; background:linear-gradient(180deg,#1B1B19,#19191600); border:1px solid #2A2824; border-radius:12px; padding:20px 24px; margin-bottom:24px;">
+      <div style="flex:1; border-right:1px solid #2A2824; padding-right:26px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase; margin-bottom:7px;">Phase en cours</div>
+        <div style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:22px; color:#F5F2EB; margin-bottom:4px;">{{ phaseLabel }}</div>
+        <div style="display:flex; align-items:center; gap:14px; margin-top:10px;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="font-size:11px; color:#8C877C;">Tour courant</span>
+            <span style="font-size:13px; font-weight:700; color:#C8A84B;">{{ tourLabel }}</span>
+          </div>
+          <span style="width:4px; height:4px; border-radius:50%; background:#3A382F;"></span>
+          <div style="display:flex; align-items:center; gap:7px;">
+            <span style="font-size:11px; color:#8C877C;">Butoir</span>
+            <span style="font-size:13px; font-weight:600; color:#D8D3C7;">{{ deadlineLabel }}</span>
+          </div>
+          <span style="font-size:10.5px; font-weight:700; letter-spacing:.5px; padding:4px 9px; border-radius:999px; background:{{ phaseChipBg }}; border:1px solid {{ phaseChipBorder }}; color:{{ phaseChipColor }};">{{ phaseChipLabel }}</span>
+        </div>
+      </div>
+      <div style="width:380px; flex:none;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px;">
+          <span style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase;">Soumissions reçues</span>
+          <span style="font-size:13px; font-weight:700; color:#D8D3C7;"><span style="color:#C8A84B; font-size:18px; font-variant-numeric:tabular-nums;">{{ submittedCount }}</span> / {{ totalCount }}</span>
+        </div>
+        <div style="height:7px; border-radius:4px; background:#262421; overflow:hidden; margin-bottom:11px;">
+          <div style="height:100%; border-radius:4px; width:{{ subPct }}; background:#C8A84B;"></div>
+        </div>
+        <sc-if value="{{ hasMissing }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:10.5px; color:#8C877C; margin-bottom:6px;">En attente · {{ missingCount }}</div>
+          <div style="display:flex; flex-wrap:wrap; gap:5px;">
+            <sc-for list="{{ missing }}" as="m" hint-placeholder-count="6">
+              <span style="font-size:11px; color:#D8AE58; background:rgba(214,150,52,.10); border:1px solid rgba(214,150,52,.3); border-radius:5px; padding:2px 7px;">{{ m }}</span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noMissing }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:#3FB873; font-weight:600;"><span style="width:14px; height:14px; border-radius:50%; background:rgba(26,107,60,.25); border:1px solid #1A6B3C; display:inline-flex; align-items:center; justify-content:center; font-size:8px;">✓</span> Toutes les soumissions sont arrivées</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div style="display:grid; grid-template-columns:312px 1fr; gap:24px; align-items:start;">
+
+      <!-- LIFECYCLE STEPPER -->
+      <div style="background:#1A1A18; border:1px solid #272521; border-radius:12px; padding:20px 18px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase; margin-bottom:18px;">Cycle de vie du tour</div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex; gap:13px;">
+              <div style="display:flex; flex-direction:column; align-items:center; flex:none;">
+                <sc-if value="{{ s.isDone }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:26px; height:26px; border-radius:50%; background:rgba(26,107,60,.18); border:1px solid #1A6B3C; display:flex; align-items:center; justify-content:center; font-size:11px; color:#3FB873;">✓</div>
+                </sc-if>
+                <sc-if value="{{ s.isActive }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:26px; height:26px; border-radius:50%; background:rgba(200,168,75,.16); border:1px solid #C8A84B; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#C8A84B;">{{ s.num }}</div>
+                </sc-if>
+                <sc-if value="{{ s.isNext }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:26px; height:26px; border-radius:50%; background:#C8A84B; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#16160F;">{{ s.num }}</div>
+                </sc-if>
+                <sc-if value="{{ s.isDisabled }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:26px; height:26px; border-radius:50%; background:#201F1C; border:1px solid #2C2A26; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#5A564C;">{{ s.num }}</div>
+                </sc-if>
+                <sc-if value="{{ s.showRail }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:1px; flex:1; min-height:34px; background:#2C2A26; margin:4px 0;"></div>
+                </sc-if>
+              </div>
+              <div style="flex:1; padding-bottom:14px;">
+                <div style="font-size:13.5px; font-weight:700; color:{{ s.titleColor }}; margin-bottom:2px;">{{ s.label }}</div>
+                <div style="font-size:11px; color:#8C877C; line-height:1.4;">{{ s.sub }}</div>
+
+                <sc-if value="{{ s.showButoir }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:10px; background:#141414; border:1px solid #322F2A; border-radius:8px; padding:9px 11px;">
+                    <div style="font-size:9.5px; font-weight:700; letter-spacing:.8px; color:#8C877C; text-transform:uppercase; margin-bottom:5px;">Butoir (optionnel)</div>
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                      <span style="font-size:13px; font-weight:600; color:#E8E4DB; font-variant-numeric:tabular-nums;">12 août · 20:00</span>
+                      <span style="font-size:11px; color:#C8A84B; font-weight:600;">Modifier</span>
+                    </div>
+                    <div style="font-size:10px; color:#6E6A60; margin-top:6px; font-style:italic;">Modifiable tant que le tour est ouvert.</div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ s.isNext }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:10px; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px; border-radius:8px; background:{{ s.btnBg }}; border:1px solid {{ s.btnBorder }};">
+                    <span style="font-size:13px; font-weight:700; color:{{ s.btnColor }};">{{ s.cta }}</span>
+                  </div>
+                  <sc-if value="{{ s.destructive }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:7px;">
+                      <span style="font-size:11px;">⚠️</span>
+                      <span style="font-size:10.5px; color:#D8AE58; line-height:1.35;">Action irréversible — confirmation requise.</span>
+                    </div>
+                  </sc-if>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- RIGHT CONTENT -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- OPEN : submissions live -->
+        <sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#1A1A18; border:1px solid #272521; border-radius:12px; overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #232220;">
+              <span style="font-size:15px; font-weight:700; color:#F5F2EB;">Soumissions en cours</span>
+              <span style="font-size:12px; color:#8C877C;">Mise à jour en direct</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 1px; background:#232220;">
+              <sc-for list="{{ participants }}" as="p" hint-placeholder-count="10">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 20px; background:#1A1A18;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:#242220; border:1px solid #34322B; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#A8A294;">{{ p.initials }}</div>
+                    <span style="font-size:13px; font-weight:500; color:#E8E4DB;">{{ p.name }}</span>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <sc-if value="{{ p.submitted }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-size:11px; color:#7C776C; font-variant-numeric:tabular-nums;">{{ p.time }}</span>
+                      <span style="font-size:10px; font-weight:700; letter-spacing:.4px; padding:3px 8px; border-radius:999px; background:rgba(26,107,60,.14); border:1px solid rgba(26,107,60,.4); color:#3FB873;">SOUMISE</span>
+                    </sc-if>
+                    <sc-if value="{{ p.pending }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:10px; font-weight:700; letter-spacing:.4px; padding:3px 8px; border-radius:999px; background:rgba(214,150,52,.12); border:1px solid rgba(214,150,52,.34); color:#D8AE58; white-space:nowrap;">EN ATTENTE</span>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- CLOSED : ready to tally -->
+        <sc-if value="{{ isClosed }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#1A1A18; border:1px solid #272521; border-radius:12px; padding:26px 24px;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; letter-spacing:.5px; padding:4px 10px; border-radius:999px; background:rgba(192,57,43,.12); border:1px solid rgba(192,57,43,.4); color:#E0705F;">TOUR CLÔTURÉ</span>
+              <span style="font-size:13px; color:#8C877C;">Soumissions verrouillées · plus aucune modification possible</span>
+            </div>
+            <div style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:24px; color:#F5F2EB; margin-bottom:18px;">Prêt à dépouiller le {{ tourLabel }}</div>
+            <div style="display:flex; gap:14px; margin-bottom:20px;">
+              <div style="flex:1; background:#141414; border:1px solid #272521; border-radius:10px; padding:15px 18px;">
+                <div style="font-size:30px; font-weight:800; color:#C8A84B; font-variant-numeric:tabular-nums; line-height:1;">{{ submittedCount }} / {{ totalCount }}</div>
+                <div style="font-size:11.5px; color:#8C877C; margin-top:5px;">soumissions enregistrées</div>
+              </div>
+              <div style="flex:2; background:rgba(214,150,52,.07); border:1px solid rgba(214,150,52,.3); border-radius:10px; padding:15px 18px;">
+                <div style="font-size:12.5px; font-weight:700; color:#D8AE58; margin-bottom:5px;">{{ missingCount }} participant(s) sans soumission</div>
+                <div style="font-size:11.5px; color:#A39E92; line-height:1.5;">{{ missingNames }} — seront traités selon le règlement au dépouillement (aucune acquisition, budget conservé).</div>
+              </div>
+            </div>
+            <div style="font-size:12px; color:#7C776C; font-style:italic;">Lancez le dépouillement depuis le panneau de gauche. Le calcul des attributions est irréversible.</div>
+          </div>
+        </sc-if>
+
+        <!-- TALLIED : results + copyable recap -->
+        <sc-if value="{{ isTallied }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#1A1A18; border:1px solid #272521; border-radius:12px; overflow:hidden;">
+            <div style="padding:16px 20px; border-bottom:1px solid #232220;">
+              <span style="font-size:15px; font-weight:700; color:#F5F2EB;">Résultats du dépouillement · {{ tourLabel }}</span>
+            </div>
+            <div style="display:grid; grid-template-columns:150px 1fr 1fr 110px; gap:0; font-size:10px; font-weight:700; letter-spacing:.8px; color:#8C877C; text-transform:uppercase; padding:10px 20px; border-bottom:1px solid #232220; background:#16160F;">
+              <span>Participant</span><span>Acquisitions</span><span>Retraits · égalités</span><span style="text-align:right;">Budget</span>
+            </div>
+            <sc-for list="{{ results }}" as="r" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:150px 1fr 1fr 110px; gap:0; align-items:center; padding:13px 20px; border-bottom:1px solid #201F1D;">
+                <span style="font-size:13px; font-weight:700; color:#E8E4DB;">{{ r.name }}</span>
+                <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                  <sc-for list="{{ r.acquisitions }}" as="a" hint-placeholder-count="2">
+                    <span style="font-size:11px; color:#D8D3C7; background:rgba(200,168,75,.08); border:1px solid rgba(200,168,75,.26); border-radius:5px; padding:3px 8px;">{{ a.name }} <span style="color:#C8A84B; font-weight:700;">{{ a.price }}</span></span>
+                  </sc-for>
+                  <sc-if value="{{ r.noAcq }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px; color:#6E6A60; font-style:italic;">aucune</span></sc-if>
+                </div>
+                <div style="font-size:11.5px; color:#A39E92; line-height:1.45;">{{ r.notes }}</div>
+                <span style="font-size:14px; font-weight:700; color:#C8A84B; text-align:right; font-variant-numeric:tabular-nums;">{{ r.budget }} pts</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#1A1A18; border:1px solid #272521; border-radius:12px; overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #232220;">
+              <div>
+                <div style="font-size:15px; font-weight:700; color:#F5F2EB;">Récap copiable</div>
+                <div style="font-size:11.5px; color:#8C877C; margin-top:2px;">L'email de notification est envoyé <span style="color:#D8AE58; font-weight:600;">manuellement</span> par les modérateurs.</div>
+              </div>
+              <span style="font-size:12.5px; font-weight:700; color:#16160F; background:#C8A84B; border-radius:8px; padding:9px 16px;">Tout copier</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:18px 20px;">
+              <sc-for list="{{ recaps }}" as="c" hint-placeholder-count="4">
+                <div style="background:#121211; border:1px solid #2A2824; border-radius:9px; overflow:hidden;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-bottom:1px solid #232220; background:#16160F;">
+                    <span style="font-size:12px; font-weight:700; color:#D8D3C7;">{{ c.name }}</span>
+                    <span style="font-size:11px; font-weight:600; color:#C8A84B; display:flex; align-items:center; gap:5px;">⧉ Copier</span>
+                  </div>
+                  <pre style="margin:0; padding:12px 13px; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.65; color:#B8B3A7; white-space:pre-wrap;">{{ c.text }}</pre>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- PHASE CLOSE : complétion d'office -->
+        <sc-if value="{{ isPhaseClose }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#1A1A18; border:1px solid #272521; border-radius:12px; padding:22px 24px;">
+            <div style="display:flex; align-items:center; gap:11px; margin-bottom:7px;">
+              <span style="font-size:10px; font-weight:700; letter-spacing:.5px; padding:4px 10px; border-radius:999px; background:rgba(214,150,52,.12); border:1px solid rgba(214,150,52,.34); color:#D8AE58;">CLÔTURE DE PHASE</span>
+            </div>
+            <div style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:22px; color:#F5F2EB; margin-bottom:6px;">Complétion d'office des effectifs</div>
+            <div style="font-size:13px; color:#A39E92; line-height:1.55; margin-bottom:20px; max-width:760px;">{{ incompleteCount }} participant(s) ont moins de 13 joueurs. Les emplacements manquants sont complétés d'office à <span style="color:#C8A84B; font-weight:700;">1 point</span> parmi les joueurs encore disponibles, avant de clore la phase.</div>
+
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <sc-for list="{{ incomplete }}" as="i" hint-placeholder-count="2">
+                <div style="background:#141414; border:1px solid #272521; border-radius:10px; padding:16px 18px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:11px;">
+                      <span style="font-size:14px; font-weight:700; color:#E8E4DB;">{{ i.name }}</span>
+                      <span style="font-size:11.5px; font-weight:700; color:#E0705F; background:rgba(192,57,43,.1); border:1px solid rgba(192,57,43,.34); border-radius:6px; padding:2px 9px; font-variant-numeric:tabular-nums;">{{ i.count }} / 13</span>
+                      <span style="font-size:11.5px; color:#8C877C;">manque {{ i.missing }} joueur(s) · {{ i.missingLines }}</span>
+                    </div>
+                    <span style="font-size:12.5px; font-weight:700; color:#16160F; background:#C8A84B; border-radius:7px; padding:8px 14px;">Compléter à 1 pt</span>
+                  </div>
+                  <div style="font-size:10.5px; font-weight:700; letter-spacing:.6px; color:#8C877C; text-transform:uppercase; margin-bottom:7px;">Joueurs disponibles proposés</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                    <sc-for list="{{ i.proposed }}" as="pp" hint-placeholder-count="3">
+                      <span style="font-size:11.5px; color:#D8D3C7; background:rgba(200,168,75,.07); border:1px solid rgba(200,168,75,.24); border-radius:6px; padding:4px 9px;">{{ pp.name }} <span style="font-size:9.5px; color:#8C877C;">{{ pp.poste }}</span> <span style="color:#C8A84B; font-weight:700;">1 pt</span></span>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:22px; padding-top:18px; border-top:1px solid #272521;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:13px;">⚠️</span>
+                <span style="font-size:12px; color:#D8AE58;">Clore la phase verrouille tous les effectifs définitivement. Action irréversible.</span>
+              </div>
+              <span style="font-size:13.5px; font-weight:700; color:#16160F; background:#C8A84B; border-radius:9px; padding:12px 22px;">Clore la phase et constituer les effectifs</span>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:760}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props || {};
+    const mode = p.mode || 'open';
+    const isOpen = mode === 'open';
+    const isClosed = mode === 'closed';
+    const isTallied = mode === 'tallied';
+    const isPhaseClose = mode === 'phase-close';
+
+    // step definitions
+    const lastRound = !!p.lastRound;
+    const nextTourLabel = p.nextTourLabel || 'tour suivant';
+    const defs = [
+      { num: '1', label: 'Ouvrir un tour', subActive: 'Tour ouvert — saisie en cours', subDone: 'Tour ouvert', subLoop: 'Tour dépouillé — relancez un tour', ctaLoop: 'Ouvrir le ' + nextTourLabel },
+      { num: '2', label: 'Clôturer le tour', cta: 'Clôturer le tour', subNext: 'Verrouille les soumissions', subDone: 'Soumissions verrouillées', subDis: 'Étape verrouillée' },
+      { num: '3', label: 'Dépouiller', cta: 'Lancer le dépouillement', destructive: true, subNext: 'Calcule les attributions', subDone: 'Attributions calculées', subDis: 'Étape verrouillée' },
+      { num: '4', label: 'Clore la phase', cta: 'Clore la phase', destructive: true, subNext: 'Constitue les effectifs définitifs', subActive: 'Constitution en cours', subDis: 'Disponible au dernier tour' },
+    ];
+    // status per step, per mode
+    let statuses;
+    if (mode === 'open') statuses = ['active', 'next', 'disabled', 'disabled'];
+    else if (mode === 'closed') statuses = ['done', 'done', 'next', 'disabled'];
+    else if (mode === 'tallied') statuses = lastRound ? ['done', 'done', 'done', 'next'] : ['loop', 'done', 'done', 'disabled'];
+    else statuses = ['done', 'done', 'done', 'active'];
+
+    const steps = defs.map((d, idx) => {
+      const status = statuses[idx];
+      let sub;
+      if (status === 'active') sub = d.subActive || d.subNext;
+      else if (status === 'loop') sub = d.subLoop;
+      else if (status === 'next') sub = d.subNext;
+      else if (status === 'done') sub = d.subDone;
+      else sub = d.subDis || 'Étape verrouillée';
+      const isNext = status === 'next' || status === 'loop';
+      const destructive = !!d.destructive && status === 'next';
+      const btnBg = destructive ? 'rgba(192,57,43,.14)' : '#C8A84B';
+      const btnBorder = destructive ? 'rgba(192,57,43,.5)' : '#C8A84B';
+      const btnColor = destructive ? '#E0705F' : '#16160F';
+      return {
+        num: d.num, label: d.label, sub,
+        titleColor: status === 'disabled' ? '#6E6A60' : '#F5F2EB',
+        isDone: status === 'done', isActive: status === 'active', isNext, isDisabled: status === 'disabled',
+        showRail: idx < 3,
+        showButoir: idx === 0 && mode === 'open',
+        destructive,
+        cta: status === 'loop' ? d.ctaLoop : d.cta,
+        btnBg, btnBorder, btnColor,
+      };
+    });
+
+    const total = p.totalCount != null ? p.totalCount : 20;
+    const submitted = p.submittedCount != null ? p.submittedCount : 0;
+    const missing = p.missing || [];
+    const subPct = Math.round((submitted / total) * 100) + '%';
+
+    // phase chip
+    let chip = { label: 'OUVERT', bg: 'rgba(26,107,60,.14)', border: 'rgba(26,107,60,.4)', color: '#3FB873' };
+    if (isClosed) chip = { label: 'CLÔTURÉ', bg: 'rgba(192,57,43,.12)', border: 'rgba(192,57,43,.4)', color: '#E0705F' };
+    if (isTallied) chip = { label: 'DÉPOUILLÉ', bg: 'rgba(200,168,75,.14)', border: 'rgba(200,168,75,.4)', color: '#D8BC63' };
+    if (isPhaseClose) chip = { label: 'CLÔTURE DE PHASE', bg: 'rgba(214,150,52,.12)', border: 'rgba(214,150,52,.34)', color: '#D8AE58' };
+
+    const results = (p.results || []).map(r => Object.assign({}, r, { noAcq: !r.acquisitions || r.acquisitions.length === 0 }));
+
+    return {
+      isOpen, isClosed, isTallied, isPhaseClose,
+      phaseLabel: p.phaseLabel || 'Enchères d\'été',
+      tourLabel: p.tourLabel || 'Tour',
+      deadlineLabel: p.deadlineLabel || 'Clôture manuelle',
+      phaseChipLabel: chip.label, phaseChipBg: chip.bg, phaseChipBorder: chip.border, phaseChipColor: chip.color,
+      submittedCount: submitted, totalCount: total, subPct,
+      missing, missingCount: missing.length, missingNames: missing.join(', '),
+      hasMissing: missing.length > 0 && (isOpen || isClosed),
+      noMissing: missing.length === 0 && (isOpen || isClosed),
+      steps,
+      participants: p.participants || [],
+      results,
+      recaps: p.recaps || [],
+      incomplete: p.incomplete || [], incompleteCount: (p.incomplete || []).length,
+    };
+  }
+}
+</script>
+</body>
+</html>
