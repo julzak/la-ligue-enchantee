@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -198,10 +199,9 @@ export async function POST(request: Request) {
   };
 
   // Rejet tolérance 0 si l'heure butoir est dépassée (timestamp serveur fait foi)
-  if (a.round_deadline !== null && new Date() >= a.round_deadline) {
-    const fmt = a.round_deadline.toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" });
+  if (isDeadlinePassed(a.round_deadline, new Date())) {
     return NextResponse.json(
-      { error: `Tour clôturé le ${fmt} — aucune mise acceptée après l'heure butoir.` },
+      { error: deadlineErrorMessage(a.round_deadline!) },
       { status: 403 }
     );
   }

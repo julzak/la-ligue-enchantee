@@ -228,13 +228,16 @@ export default function AdminEncheresPage() {
                   Butoir actuel : {new Date(auction.roundDeadline).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
                 </p>
               )}
-              <div className="flex items-center gap-3">
-                <input
-                  type="datetime-local"
-                  value={deadlineInput}
-                  onChange={(e) => setDeadlineInput(e.target.value)}
-                  className="bg-surface-2 border border-white/[0.07] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-gold"
-                />
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="datetime-local"
+                    value={deadlineInput}
+                    onChange={(e) => setDeadlineInput(e.target.value)}
+                    className="bg-surface-2 border border-white/[0.07] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-gold"
+                  />
+                  <span className="text-xs text-muted whitespace-nowrap">(heure de Paris)</span>
+                </div>
                 <button
                   onClick={handleSetDeadline}
                   disabled={deadlineLoading}

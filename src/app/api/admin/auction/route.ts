@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+import { isDeadlinePassed } from "@/lib/auction-deadline";
 
 // GET: auction status for a league
 export async function GET(request: Request) {
@@ -119,6 +120,10 @@ export async function POST(request: Request) {
     if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
       return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
     }
+    // Garde-fou : refuser une deadline déjà passée (toutes les mises seraient rejetées immédiatement)
+    if (isDeadlinePassed(deadlineDate, new Date())) {
+      return NextResponse.json({ error: "La date butoir est déjà passée — choisissez une date dans le futur." }, { status: 400 });
+    }
 
     // Create or reopen auction
     const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
@@ -172,6 +177,10 @@ export async function POST(request: Request) {
     const deadlineDate = deadline ? new Date(deadline) : null;
     if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
       return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
+    }
+    // Garde-fou : refuser une deadline déjà passée (toutes les mises seraient rejetées immédiatement)
+    if (isDeadlinePassed(deadlineDate, new Date())) {
+      return NextResponse.json({ error: "La date butoir est déjà passée — choisissez une date dans le futur." }, { status: 400 });
     }
     if (deadlineDate !== null) {
       await prisma.$executeRawUnsafe(
