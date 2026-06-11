@@ -1,0 +1,39 @@
+name: CI
+
+# Gate qualité des PR (pipeline boucle autonome) : lint + tests + typecheck.
+# Le build Next complet n'est PAS possible ici : le prerender de /, /coupe et
+# /classement-interligue interroge MySQL, inaccessible depuis les runners.
+# Le build reste une étape locale obligatoire avant PR (cf tasks/pipeline.md).
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Prisma generate (requis pour le typecheck)
+        run: ./node_modules/.bin/prisma generate
+
+      - name: Typecheck
+        run: ./node_modules/.bin/tsc --noEmit
