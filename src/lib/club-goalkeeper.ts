@@ -59,10 +59,13 @@ export function isNamedGoalkeeper(p: { position: string; link: string | null }):
 // ── Résolution de la note ─────────────────────────────────────────────────
 // Sous-ensemble d'une ligne SCORE suffisant pour la résolution. `points`
 // accepte number ou Decimal Prisma (converti via Number()).
+// `used` : 1 si le joueur était aligné (titulaire ou remplaçant entré en jeu)
+// ce jour-là. Les lignes sans champ `used` sont traitées comme used=0.
 export interface ClubGkScoreLike {
   playerId: number;
   points: number | { toString(): string };
   goals: number;
+  used?: number;
 }
 
 function notes(s: ClubGkScoreLike): number {
@@ -70,14 +73,22 @@ function notes(s: ClubGkScoreLike): number {
 }
 
 // Choix déterministe quand PLUSIEURS gardiens du même club sont notés le
-// même jour (ex: titulaire blessé en cours de match, remplaçant noté aussi) :
-// meilleure note, puis plus de buts, puis plus petit ID (stabilité totale).
-// Cas non tranché par le règlement : choix documenté ici et dans la PR.
+// même jour (ex: titulaire blessé en cours de match, remplaçant noté aussi).
+//
+// Règle m1 (finding review 2026-06-11) : si au moins une ligne used=1 existe,
+// on choisit UNIQUEMENT parmi celles-ci (gardiens effectivement alignés).
+// En l'absence de ligne used=1, on repart sur l'ensemble (comportement
+// précédent, compatible avec les données historiques sans flag used).
+//
+// Parmi les lignes retenues : meilleure note, puis plus de buts, puis plus
+// petit ID (stabilité totale). Décision Julien 2026-06-11, tracée §7.
 export function pickAlignedGoalkeeperScore<S extends ClubGkScoreLike>(
   rows: S[]
 ): S | undefined {
   if (rows.length === 0) return undefined;
-  return [...rows].sort(
+  const usedRows = rows.filter((r) => (r.used ?? 0) === 1);
+  const candidates = usedRows.length > 0 ? usedRows : rows;
+  return [...candidates].sort(
     (a, b) => notes(b) - notes(a) || b.goals - a.goals || a.playerId - b.playerId
   )[0];
 }

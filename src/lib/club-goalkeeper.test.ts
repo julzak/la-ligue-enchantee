@@ -53,8 +53,8 @@ const AUTRE_GK: ClubGkPlayerLike = {
 };
 const PLAYERS = [PSEUDO_GK, TITULAIRE, REMPLACANT, DEFENSEUR, AUTRE_GK];
 
-function score(playerId: number, points: number, extra: Partial<{ goals: number; day: number }> = {}) {
-  return { playerId, points, goals: extra.goals ?? 0, day: extra.day ?? 1 };
+function score(playerId: number, points: number, extra: Partial<{ goals: number; day: number; used: number }> = {}) {
+  return { playerId, points, goals: extra.goals ?? 0, day: extra.day ?? 1, used: extra.used };
 }
 
 describe("clé stable gardiens par club", () => {
@@ -158,6 +158,69 @@ describe("attribution multi-journées (stats cumulées)", () => {
     expect(Number(j2.points)).toBe(5.0);
     // Les lignes réelles ne sont pas modifiées.
     expect(scores.every((s) => s.playerId !== 900)).toBe(true);
+  });
+});
+
+describe("flag used — préférence gardien aligné (finding m1)", () => {
+  it("gardien non aligné used=0 avec meilleure note vs gardien aligné used=1 → le gardien aligné gagne", () => {
+    // 901 = titulaire (used=0, note 9.0 — blessé en cours de match, noté mais
+    //        sorti immédiatement, marqué used=0 par le système de saisie).
+    // 902 = remplaçant entré (used=1, note 7.0 — a joué le match effectivement).
+    // Sans le flag used, la meilleure note (9.0) l'emporterait, mais used=1
+    // prime : on choisit parmi les lignes alignées d'abord.
+    const rows = [
+      score(901, 9.0, { used: 0 }),
+      score(902, 7.0, { used: 1 }),
+    ];
+    const picked = pickAlignedGoalkeeperScore(rows);
+    expect(picked!.playerId).toBe(902);
+  });
+
+  it("si aucune ligne used=1, comportement habituel (meilleure note)", () => {
+    const rows = [
+      score(901, 9.0, { used: 0 }),
+      score(902, 7.0, { used: 0 }),
+    ];
+    const picked = pickAlignedGoalkeeperScore(rows);
+    expect(picked!.playerId).toBe(901);
+  });
+
+  it("si toutes les lignes used=1, comportement habituel parmi elles (meilleure note)", () => {
+    const rows = [
+      score(901, 7.0, { used: 1 }),
+      score(902, 9.0, { used: 1 }),
+    ];
+    const picked = pickAlignedGoalkeeperScore(rows);
+    expect(picked!.playerId).toBe(902);
+  });
+
+  it("used absent (données legacy sans champ) → traité comme used=0, comportement inchangé", () => {
+    // Score sans champ used : les deux lignes sont traitées comme used=0,
+    // donc on choisit parmi tout l'ensemble → meilleure note gagne.
+    const rows = [
+      { playerId: 901, points: 9.0, goals: 0 }, // pas de champ used
+      { playerId: 902, points: 7.0, goals: 0 },
+    ];
+    const picked = pickAlignedGoalkeeperScore(rows);
+    expect(picked!.playerId).toBe(901);
+  });
+});
+
+describe("isNamedGoalkeeper — helper B1", () => {
+  it("gardien nommé avec lien externe = true", () => {
+    expect(isNamedGoalkeeper({ position: "Gardien", link: "https://lequipe.fr/..." })).toBe(true);
+  });
+
+  it("gardien nommé avec link null = true", () => {
+    expect(isNamedGoalkeeper({ position: "Gardien", link: null })).toBe(true);
+  });
+
+  it("pseudo-gardien avec prefixe gardiens_ = false", () => {
+    expect(isNamedGoalkeeper({ position: "Gardien", link: "gardiens_marseille" })).toBe(false);
+  });
+
+  it("défenseur = false", () => {
+    expect(isNamedGoalkeeper({ position: "Défenseur", link: null })).toBe(false);
   });
 });
 
