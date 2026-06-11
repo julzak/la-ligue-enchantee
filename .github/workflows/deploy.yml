@@ -5,12 +5,13 @@ name: Deploy (OVH)
 # Les migrations SQL restent un acte manuel et gaté (cf sql/*.sql).
 # Déclenchable aussi à la main (workflow_dispatch).
 
+# docs/** et **.md ne sont PLUS ignorés : /admin/kickoff sert
+# docs/kickoff-nouvelle-saison.md à la requête, une modif du guide doit
+# donc déployer.
 on:
   push:
     branches: [main]
     paths-ignore:
-      - "**.md"
-      - "docs/**"
       - "tasks/**"
       - "sql/**"
   workflow_dispatch:
