@@ -16,9 +16,9 @@ export async function GET(request: Request) {
 
   // Find active auction (any type)
   const auction = await prisma.$queryRawUnsafe<{
-    id: number; status: string; current_round: number; budget_per_user: number; players_per_user: number; type: string;
+    id: number; status: string; current_round: number; budget_per_user: number; players_per_user: number; type: string; round_deadline: Date | null;
   }[]>(
-    "SELECT id, status, current_round, budget_per_user, players_per_user, COALESCE(type, 'summer') as type FROM AUCTION WHERE league_id = ? AND status != 'resolved' ORDER BY id DESC LIMIT 1",
+    "SELECT id, status, current_round, budget_per_user, players_per_user, COALESCE(type, 'summer') as type, round_deadline FROM AUCTION WHERE league_id = ? AND status != 'resolved' ORDER BY id DESC LIMIT 1",
     leagueId
   );
 
@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     budget_per_user: Number(auction[0].budget_per_user),
     players_per_user: Number(auction[0].players_per_user),
     type: auction[0].type || "summer",
+    round_deadline: auction[0].round_deadline ? new Date(auction[0].round_deadline) : null,
   };
 
   const isWinter = a.type === "winter";
@@ -137,6 +138,7 @@ export async function GET(request: Request) {
       currentRound: Number(a.current_round),
       isOpen: a.status === "open",
       type: a.type,
+      roundDeadline: a.round_deadline ? a.round_deadline.toISOString() : null,
     },
     budget,
     playersWon,
@@ -176,9 +178,9 @@ export async function POST(request: Request) {
 
   // Find open auction
   const auction = await prisma.$queryRawUnsafe<{
-    id: number; status: string; current_round: number; budget_per_user: number; type: string;
+    id: number; status: string; current_round: number; budget_per_user: number; type: string; round_deadline: Date | null;
   }[]>(
-    "SELECT id, status, current_round, budget_per_user, COALESCE(type, 'summer') as type FROM AUCTION WHERE league_id = ? AND status = 'open' ORDER BY id DESC LIMIT 1",
+    "SELECT id, status, current_round, budget_per_user, COALESCE(type, 'summer') as type, round_deadline FROM AUCTION WHERE league_id = ? AND status = 'open' ORDER BY id DESC LIMIT 1",
     leagueId
   );
 
@@ -192,7 +194,17 @@ export async function POST(request: Request) {
     current_round: Number(auction[0].current_round),
     budget_per_user: Number(auction[0].budget_per_user),
     type: auction[0].type || "summer",
+    round_deadline: auction[0].round_deadline ? new Date(auction[0].round_deadline) : null,
   };
+
+  // Rejet tolérance 0 si l'heure butoir est dépassée (timestamp serveur fait foi)
+  if (a.round_deadline !== null && new Date() >= a.round_deadline) {
+    const fmt = a.round_deadline.toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" });
+    return NextResponse.json(
+      { error: `Tour clôturé le ${fmt} — aucune mise acceptée après l'heure butoir.` },
+      { status: 403 }
+    );
+  }
 
   const isWinter = a.type === "winter";
 

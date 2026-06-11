@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Gavel, Loader2, Play, Square, CheckCircle, XCircle } from "lucide-react";
+import { Gavel, Loader2, Play, Square, CheckCircle, XCircle, Clock } from "lucide-react";
 
 interface AuctionData {
   id: number;
@@ -10,6 +10,7 @@ interface AuctionData {
   currentRound: number;
   budget: number;
   playersPerUser: number;
+  roundDeadline: string | null; // ISO 8601
 }
 
 interface Bid {
@@ -35,6 +36,13 @@ interface League {
   name: string;
 }
 
+/** Convertit un DateTime ISO en valeur compatible avec <input type="datetime-local"> */
+function isoToDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function AdminEncheresPage() {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [selectedLeague, setSelectedLeague] = useState(0);
@@ -43,6 +51,10 @@ export default function AdminEncheresPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Deadline UI state
+  const [deadlineInput, setDeadlineInput] = useState("");
+  const [deadlineLoading, setDeadlineLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/jokers/leagues")
@@ -64,6 +76,8 @@ export default function AdminEncheresPage() {
         setAuction(data.auction);
         setBids(data.bids ?? []);
         setParticipants(data.participants ?? []);
+        // Pré-remplir le champ deadline si déjà renseignée
+        setDeadlineInput(data.auction?.roundDeadline ? isoToDatetimeLocal(data.auction.roundDeadline) : "");
       }
     } catch {
       setMessage("Erreur chargement");
@@ -73,21 +87,21 @@ export default function AdminEncheresPage() {
 
   useEffect(() => { fetchAuction(); }, [fetchAuction]);
 
-  async function handleAction(action: string) {
-    const confirmMsg = {
+  async function handleAction(action: string, extraBody?: Record<string, unknown>) {
+    const confirmMsg: Record<string, string> = {
       open: "Ouvrir un nouveau tour d'enchères ?",
       "close-round": "Fermer les enchères pour ce tour ?",
       "resolve-round": "Résoudre le tour (attribuer les joueurs) ?",
       "close-auction": "Terminer définitivement l'enchère ?",
-    }[action];
-    if (confirmMsg && !confirm(confirmMsg)) return;
+    };
+    if (confirmMsg[action] && !confirm(confirmMsg[action])) return;
 
     setMessage("");
     try {
       const res = await fetch("/api/admin/auction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, leagueId: selectedLeague }),
+        body: JSON.stringify({ action, leagueId: selectedLeague, ...extraBody }),
       });
       const data = await res.json();
       setMessage(data.message ?? data.error ?? "OK");
@@ -95,6 +109,26 @@ export default function AdminEncheresPage() {
     } catch {
       setMessage("Erreur");
     }
+  }
+
+  async function handleSetDeadline() {
+    setDeadlineLoading(true);
+    setMessage("");
+    // deadlineInput vide = effacer la deadline ; sinon convertir en ISO
+    const deadline = deadlineInput ? new Date(deadlineInput).toISOString() : null;
+    try {
+      const res = await fetch("/api/admin/auction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set-deadline", leagueId: selectedLeague, deadline }),
+      });
+      const data = await res.json();
+      setMessage(data.message ?? data.error ?? "OK");
+      fetchAuction();
+    } catch {
+      setMessage("Erreur");
+    }
+    setDeadlineLoading(false);
   }
 
   // Group bids by player
@@ -146,7 +180,7 @@ export default function AdminEncheresPage() {
       </div>
 
       {message && (
-        <div className={`px-4 py-2 rounded text-sm ${message.includes("Erreur") ? "bg-rouge/10 text-rouge" : "bg-vert/10 text-vert"}`}>
+        <div className={`px-4 py-2 rounded text-sm ${message.includes("Erreur") || message.includes("invalide") || message.includes("Pas de") ? "bg-rouge/10 text-rouge" : "bg-vert/10 text-vert"}`}>
           {message}
         </div>
       )}
@@ -156,7 +190,7 @@ export default function AdminEncheresPage() {
       ) : selectedLeague > 0 && (
         <>
           {/* Action buttons */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {(!auction || auction.status === "resolved" || auction.status === "closed") && (
               <button onClick={() => handleAction("open")} className="h-9 px-4 bg-vert text-white rounded text-sm flex items-center gap-2 hover:bg-vert/80">
                 <Play className="w-4 h-4" /> {auction ? "Ouvrir tour suivant" : "Démarrer les enchères"}
@@ -164,15 +198,13 @@ export default function AdminEncheresPage() {
             )}
             {auction?.status === "open" && (
               <button onClick={() => handleAction("close-round")} className="h-9 px-4 bg-gold text-night rounded text-sm flex items-center gap-2 hover:bg-gold/80">
-                <Square className="w-4 h-4" /> Fermer le tour
+                <Square className="w-4 h-4" /> Clôturer le tour
               </button>
             )}
             {auction?.status === "closed" && (
-              <>
-                <button onClick={() => handleAction("resolve-round")} className="h-9 px-4 bg-gold text-night rounded text-sm flex items-center gap-2 hover:bg-gold/80">
-                  <CheckCircle className="w-4 h-4" /> Résoudre le tour
-                </button>
-              </>
+              <button onClick={() => handleAction("resolve-round")} className="h-9 px-4 bg-gold text-night rounded text-sm flex items-center gap-2 hover:bg-gold/80">
+                <CheckCircle className="w-4 h-4" /> Résoudre le tour
+              </button>
             )}
             {(auction?.status === "closed" || auction?.status === "resolved") && (
               <button onClick={() => handleAction("close-auction")} className="h-9 px-4 bg-rouge text-white rounded text-sm flex items-center gap-2 hover:bg-rouge/80">
@@ -180,6 +212,40 @@ export default function AdminEncheresPage() {
               </button>
             )}
           </div>
+
+          {/* Deadline panel — visible uniquement si tour ouvert */}
+          {auction?.status === "open" && (
+            <div className="bg-surface rounded-lg border border-white/[0.07] p-4 space-y-3">
+              <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gold" />
+                Heure butoir du tour {auction.currentRound}
+              </h3>
+              <p className="text-xs text-muted">
+                Optionnelle. Si renseignée, toute mise reçue après ce moment est rejetée (tolérance 0, timestamp serveur). La clôture manuelle fonctionne dans tous les cas.
+              </p>
+              {auction.roundDeadline && (
+                <p className="text-xs text-gold font-medium">
+                  Butoir actuel : {new Date(auction.roundDeadline).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <input
+                  type="datetime-local"
+                  value={deadlineInput}
+                  onChange={(e) => setDeadlineInput(e.target.value)}
+                  className="bg-surface-2 border border-white/[0.07] rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-gold"
+                />
+                <button
+                  onClick={handleSetDeadline}
+                  disabled={deadlineLoading}
+                  className="h-8 px-3 bg-gold text-night rounded text-xs font-semibold hover:bg-gold/80 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {deadlineLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Clock className="w-3 h-3" />}
+                  {deadlineInput ? "Enregistrer" : "Effacer le butoir"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Participants status */}
           <div>
@@ -236,8 +302,8 @@ export default function AdminEncheresPage() {
                       </span>
                     </div>
                   ))
-                ))}
-              </div>
+                ))
+              }</div>
             </div>
           )}
         </>

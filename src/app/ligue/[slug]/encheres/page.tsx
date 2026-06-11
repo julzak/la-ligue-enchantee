@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Gavel, Loader2, Search, Plus, Minus, Send, Snowflake, ArrowRightLeft } from "lucide-react";
+import { Gavel, Loader2, Search, Plus, Minus, Send, Snowflake, ArrowRightLeft, Clock } from "lucide-react";
 
 interface AuctionState {
   id: number;
@@ -10,6 +10,7 @@ interface AuctionState {
   currentRound: number;
   isOpen: boolean;
   type?: string;
+  roundDeadline: string | null; // ISO 8601
 }
 
 interface MyBid {
@@ -53,6 +54,17 @@ interface DraftBid {
   playerOutName?: string;
 }
 
+/** Formate un nombre de secondes en "Xh Ym Zs" ou "Ym Zs" ou "Zs" */
+function formatCountdown(secondsLeft: number): string {
+  if (secondsLeft <= 0) return "0s";
+  const h = Math.floor(secondsLeft / 3600);
+  const m = Math.floor((secondsLeft % 3600) / 60);
+  const s = secondsLeft % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 export default function EncheresPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -67,6 +79,9 @@ export default function EncheresPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Compte à rebours deadline
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   // New bids being composed
   const [draftBids, setDraftBids] = useState<DraftBid[]>([]);
@@ -103,6 +118,22 @@ export default function EncheresPage() {
   }, [leagueDbId]);
 
   useEffect(() => { fetchAuction(); }, [fetchAuction]);
+
+  // Démarrer le compte à rebours quand la deadline est connue
+  useEffect(() => {
+    if (!auction?.roundDeadline) {
+      setSecondsLeft(null);
+      return;
+    }
+    const deadline = new Date(auction.roundDeadline).getTime();
+    const update = () => {
+      const diff = Math.floor((deadline - Date.now()) / 1000);
+      setSecondsLeft(diff);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [auction?.roundDeadline]);
 
   const isWinter = auction?.type === "winter";
 
@@ -239,6 +270,35 @@ export default function EncheresPage() {
             </div>
           )}
         </div>
+
+        {/* Deadline / compte a rebours */}
+        {auction.isOpen && (
+          <div className={`mt-4 flex items-center justify-center gap-2 text-xs rounded px-3 py-2 ${
+            auction.roundDeadline
+              ? secondsLeft !== null && secondsLeft <= 300
+                ? "bg-rouge/15 text-rouge"
+                : "bg-gold/10 text-gold"
+              : "bg-white/5 text-muted"
+          }`}>
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            {auction.roundDeadline ? (
+              secondsLeft !== null && secondsLeft <= 0 ? (
+                <span>Tour clôturé — aucune mise acceptée</span>
+              ) : (
+                <span>
+                  Clôture le{" "}
+                  {new Date(auction.roundDeadline).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+                  {secondsLeft !== null && secondsLeft > 0 && (
+                    <strong className="ml-1">— {formatCountdown(secondsLeft)}</strong>
+                  )}
+                </span>
+              )
+            ) : (
+              <span>Clôture manuelle par l&apos;admin</span>
+            )}
+          </div>
+        )}
+
         {isWinter && (
           <p className="text-xs text-muted text-center mt-3 flex items-center justify-center gap-1.5">
             <ArrowRightLeft className="w-3.5 h-3.5" />

@@ -11,9 +11,9 @@ export async function GET(request: Request) {
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
 
   const auction = await prisma.$queryRawUnsafe<{
-    id: number; league_id: number; status: string; current_round: number; budget_per_user: number; players_per_user: number;
+    id: number; league_id: number; status: string; current_round: number; budget_per_user: number; players_per_user: number; round_deadline: Date | null;
   }[]>(
-    "SELECT * FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' ORDER BY id DESC LIMIT 1",
+    "SELECT id, league_id, status, current_round, budget_per_user, players_per_user, round_deadline FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' ORDER BY id DESC LIMIT 1",
     leagueId
   );
 
@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     current_round: Number(auction[0].current_round),
     budget_per_user: Number(auction[0].budget_per_user),
     players_per_user: Number(auction[0].players_per_user),
+    round_deadline: auction[0].round_deadline ? new Date(auction[0].round_deadline) : null,
   };
 
   // Get bids for current round
@@ -87,6 +88,7 @@ export async function GET(request: Request) {
       currentRound: Number(a.current_round),
       budget: a.budget_per_user,
       playersPerUser: a.players_per_user,
+      roundDeadline: a.round_deadline ? a.round_deadline.toISOString() : null,
     },
     bids: bids.map((b) => ({
       userId: Number(b.user_id),
@@ -105,12 +107,19 @@ export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
-  const { action, leagueId } = await request.json() as {
-    action: "open" | "close-round" | "resolve-round" | "close-auction";
+  const { action, leagueId, deadline } = await request.json() as {
+    action: "open" | "close-round" | "resolve-round" | "close-auction" | "set-deadline";
     leagueId: number;
+    deadline?: string | null; // ISO 8601 ou null pour effacer
   };
 
   if (action === "open") {
+    // Valider la deadline si fournie
+    const deadlineDate = deadline ? new Date(deadline) : null;
+    if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
+      return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
+    }
+
     // Create or reopen auction
     const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
       "SELECT id FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
@@ -118,20 +127,64 @@ export async function POST(request: Request) {
     );
 
     if (existing.length > 0) {
-      // Reopen existing
-      await prisma.$executeRawUnsafe(
-        "UPDATE AUCTION SET status = 'open', current_round = current_round + 1 WHERE id = ?",
-        existing[0].id
-      );
+      // Reopen existing — reset deadline pour ce nouveau tour
+      if (deadlineDate !== null) {
+        await prisma.$executeRawUnsafe(
+          "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = ? WHERE id = ?",
+          deadlineDate, existing[0].id
+        );
+      } else {
+        await prisma.$executeRawUnsafe(
+          "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = NULL WHERE id = ?",
+          existing[0].id
+        );
+      }
       return NextResponse.json({ ok: true, message: "Tour suivant ouvert" });
     }
 
     // Create new auction
-    await prisma.$executeRawUnsafe(
-      "INSERT INTO AUCTION (league_id, status, current_round) VALUES (?, 'open', 1)",
+    if (deadlineDate !== null) {
+      await prisma.$executeRawUnsafe(
+        "INSERT INTO AUCTION (league_id, status, current_round, round_deadline) VALUES (?, 'open', 1, ?)",
+        leagueId, deadlineDate
+      );
+    } else {
+      await prisma.$executeRawUnsafe(
+        "INSERT INTO AUCTION (league_id, status, current_round) VALUES (?, 'open', 1)",
+        leagueId
+      );
+    }
+    return NextResponse.json({ ok: true, message: "Enchère ouverte (tour 1)" });
+  }
+
+  if (action === "set-deadline") {
+    // Modifier la deadline d'un tour ouvert
+    const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
+      "SELECT id FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status = 'open' ORDER BY id DESC LIMIT 1",
       leagueId
     );
-    return NextResponse.json({ ok: true, message: "Enchère ouverte (tour 1)" });
+    if (existing.length === 0) {
+      return NextResponse.json({ error: "Pas de tour ouvert pour cette ligue" }, { status: 400 });
+    }
+    if (deadline === undefined) {
+      return NextResponse.json({ error: "Champ deadline manquant" }, { status: 400 });
+    }
+    const deadlineDate = deadline ? new Date(deadline) : null;
+    if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
+      return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
+    }
+    if (deadlineDate !== null) {
+      await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET round_deadline = ? WHERE id = ?",
+        deadlineDate, existing[0].id
+      );
+    } else {
+      await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET round_deadline = NULL WHERE id = ?",
+        existing[0].id
+      );
+    }
+    return NextResponse.json({ ok: true, message: deadline ? "Heure butoir enregistrée" : "Heure butoir effacée" });
   }
 
   if (action === "close-round") {
