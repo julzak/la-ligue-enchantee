@@ -398,7 +398,13 @@ Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
         `scripts/diag-thesportsdb-photos.ts` clé premium (mesure free du
         2026-06-10 : 96% sur échantillon biaisé).
 
-      Les briques d'autonomie : LIVRÉES le 2026-06-11 (migration APP_CONFIG appliquée en prod). Reste la vérification live avec un vrai token football-data.org (compte gratuit à créer par l'admin pilote ou Julien).
+      Les briques d'autonomie : LIVRÉES le 2026-06-11 (migration APP_CONFIG
+      appliquée en prod). Décision Julien 2026-06-11 : le token
+      football-data.org est un SETUP UNIQUE hors runbook (gratuit, permanent,
+      pas une étape admin annuelle ; la phase 1bis a été retirée du guide).
+      ⚠️ RESTE À FAIRE UNE FOIS : créer le compte gratuit football-data.org
+      et poser le token (champ Clé effectifs de Admin → Configuration, ou
+      env FOOTBALL_DATA_TOKEN sur le serveur), puis vérifier l'import live.
       - [x] **Brique 0 — provider football-data.org** dans football-api.ts
             (effectifs gratuits noms+postes, token gratuit à l'inscription,
             10 req/min). Devient la source de l'étape 2 du stepper.

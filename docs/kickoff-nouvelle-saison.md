@@ -27,26 +27,22 @@ n'est jamais cassé définitivement.
 
 - **Désigner un admin « pilote effectifs »** : c'est lui qui prendra
   l'abonnement photos (TheSportsDB, 9 $ pour UN mois au moment du lancement)
-  et qui le résiliera début septembre. Voir phase 6bis et phase 8.
-- **Calendrier d'été** : les phases 1 à 5 se font début juillet (les listes
-  de joueurs sont gratuites, pas besoin d'attendre). Les **enchères occupent
-  juillet**, les équipes sont complètes début août, et le lancement
-  (phase 6) suit. Pendant les enchères, les joueurs n'ont pas de photo
-  (avatar à initiales) : c'est voulu, les photos ne sont récupérées que
-  pour les joueurs réellement sélectionnés, au lancement.
-- **Le module enchères est en cours de développement** (livraison prévue
-  avant juillet) : après le lancement, les participants n'auront pas
-  d'équipe tant que les enchères n'auront pas eu lieu.
-- Les écrans « clé effectifs », « clé photos », « récupérer les photos des
-  équipes » et « rafraîchir l'effectif d'un club » décrits plus bas arrivent
-  avec la mise à jour de fin juin. Si vous lisez ce guide avant et que vous
-  ne les voyez pas, c'est normal.
+  et qui le résiliera mi-septembre. Voir phase 6bis et phase 8.
+- **Calendrier d'été** : les phases 1 à 5 se font début juillet. Les
+  **enchères occupent la mi-juillet à la mi-août**, les équipes sont
+  complètes mi-août, et le lancement (phase 6) suit, avant la première
+  journée de Ligue 1 (autour du 23 août). Pendant les enchères, les joueurs
+  n'ont pas de photo (avatar à initiales) : c'est voulu, les photos ne sont
+  récupérées que pour les joueurs réellement sélectionnés, au lancement.
+- Les écrans « clé photos », « récupérer les photos des équipes » et
+  « rafraîchir l'effectif d'un club » décrits plus bas arrivent avec la mise
+  à jour de fin juin.
 
 ---
 
 ## Phase 1 : créer la saison
 
-**Qui : un seul admin (désignez-vous un pilote pour tout le kick-off).**
+**Qui : un admin.**
 
 - Page **Admin → Nouvelle saison**, partie basse, étape 1 du stepper.
 - Saisir le libellé : **`2027`** (ou `2026-2027`, les deux marchent).
@@ -59,38 +55,18 @@ n'est jamais cassé définitivement.
 
 ---
 
-## Phase 1bis : activer la source des effectifs (gratuite)
-
-**Qui : l'admin pilote effectifs, 10 minutes, une seule fois.**
-
-- Créer un compte gratuit sur football-data.org et récupérer le token API
-  (c'est la source des listes de joueurs : effectifs complets de Ligue 1,
-  gratuits, sans photos).
-- Coller le token dans **Admin → Configuration**, champ **« Clé effectifs »**.
-- Rien à payer à cette étape. L'abonnement photos (9 $) n'arrive qu'au
-  lancement, phase 6bis.
-
-**Vérification :** l'étape 2 du stepper affiche « API live » comme source
-(et non plus « données simulées »).
-
----
-
 ## Phase 2 : importer les clubs et les joueurs
 
-**Qui : le pilote. Comptez 10-15 minutes.**
+**Qui : un admin. Comptez 10-15 minutes.**
 
 - Étape 2 du stepper : cliquer sur **Récupérer les clubs de Ligue 1**.
-- La liste des 18 clubs de Ligue 1 s'affiche, tous cochés : c'est ce qu'on
-  veut, ne décochez rien.
+- La liste des 18 clubs de Ligue 1 s'affiche, tous cochés.
 - Pour chaque club : cliquer sur **Charger l'effectif**.
 - Contrôler le **poste** de chaque joueur (Gardien / Défense / Milieu /
   Attaque) : le menu déroulant est modifiable et c'est la classification de
   la Ligue qui fait foi, pas celle de l'API (qui est parfois approximative,
   surtout sur les milieux offensifs et les pistons).
-- Cliquer sur **Importer en base**. À ce stade les joueurs n'ont **pas de
-  photo** (avatar à initiales) : c'est normal, les photos arrivent au
-  lancement (phase 6bis), uniquement pour les joueurs sélectionnés dans les
-  équipes.
+- Cliquer sur **Importer en base**.
 
 **Vérification :** le message « X clubs et Y joueurs importés » s'affiche.
 Dans « Saisons existantes », la ligne de la saison affiche les compteurs de
@@ -108,7 +84,7 @@ clubs et joueurs.
 
 ## Phase 3 : créer les ligues
 
-**Qui : le pilote, 2 minutes.**
+**Qui : un admin, 2 minutes.**
 
 - Étape 3 du stepper : cliquer sur **Reprendre depuis 2026** (ça recopie la
   structure de l'an dernier) ou sur **Pré-remplir 3 ligues (Ligue 1/2/3)**.
@@ -129,7 +105,7 @@ repassez par ici après la phase 4, refaites la phase 4 derrière.
 
 ## Phase 4 : inscrire les participants
 
-**Qui : le pilote, avec la liste des inscrits de la saison validée entre vous.**
+**Qui : un admin, avec la liste des inscrits de la saison validée entre vous.**
 
 - Étape 4 du stepper : cliquer sur **Reprendre les participants de 2026** :
   chaque ligue se pré-remplit avec ses participants de l'an dernier.
@@ -182,7 +158,7 @@ déroulant :
 
 ## Phase 6 : LANCEMENT (bascule du site)
 
-**Qui : le pilote, prévenir les autres admins juste avant.**
+**Qui : un admin, prévenir les autres juste avant.**
 
 - Dans « Saisons existantes », cliquer sur **Démarrer la saison**.
 - Le système vérifie d'abord une **checklist** : ligues créées, clubs et
@@ -206,7 +182,7 @@ déroulant :
 
 ## Phase 6bis : récupérer les photos des joueurs sélectionnés
 
-**Qui : l'admin pilote effectifs, juste après le lancement (début août).**
+**Qui : l'admin pilote effectifs, juste après le lancement (mi-août).**
 
 - Souscrire l'abonnement TheSportsDB premium (Patreon, palier « Single
   Developer » à 9 $/mois, sans engagement) et récupérer la clé API sur son
@@ -259,7 +235,7 @@ résiliation.**
   uniquement les nouveaux joueurs, avec leur photo : rien n'est supprimé ni
   modifié sur les joueurs existants et les équipes constituées. Rejouable à
   volonté.
-- **Début septembre : RÉSILIER l'abonnement photos** (le pilote, depuis son
+- **Mi-septembre : RÉSILIER l'abonnement photos** (le pilote, depuis son
   compte Patreon, un mois pile après la souscription de la phase 6bis).
   Tout continue de fonctionner à l'identique : les photos sont chez nous,
   les listes de joueurs et le calendrier tournent sur les API gratuites.
@@ -273,9 +249,6 @@ résiliation.**
 
 ## Et ensuite
 
-- **Enchères** : module en cours de développement, livré avant la mi-août.
-  C'est lui qui donnera leurs équipes aux participants. D'ici là, les pages
-  « Mon équipe » resteront vides : normal.
 - **Coupe** : le tirage se fait comme d'habitude dans Admin → Coupe, une fois
   la saison lancée.
 
@@ -287,16 +260,15 @@ résiliation.**
 |---|---|---|---|
 | 0 | juin | Clôturer l'ancienne saison + désigner le pilote effectifs | aucun |
 | 1 | début juillet | Créer la saison (libellé `2027`) | aucun |
-| 1bis | début juillet | Token gratuit football-data.org dans l'admin | 0 $ |
-| 2 | début juillet | Importer clubs + joueurs (sans photos, c'est normal) | aucun |
+| 2 | début juillet | Importer clubs + joueurs (sans photos) | aucun |
 | 3 | début juillet | Créer les 3 ligues (reprise de 2026) | aucun |
 | 4 | début juillet | Inscrire les participants (reprise + ajustements) | aucun |
-| 5 | début juillet | Ouvrir les enchères + revue collective | aucun |
-| — | juillet | Les enchères se jouent (équipes complètes début août) | aucun |
-| 6 | début août | **Démarrer la saison** | **bascule le site** |
-| 6bis | début août | Abonnement photos 9 $ + « Récupérer les photos des équipes » | 9 $ |
-| 7 | début août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
-| 8 | août | Rafraîchir les effectifs (recrues) puis **RÉSILIER début septembre** | oubli = 9 $/mois |
+| 5 | mi-juillet | Ouvrir les enchères + revue collective | aucun |
+| — | mi-juillet → mi-août | Les enchères se jouent (équipes complètes mi-août) | aucun |
+| 6 | mi-août | **Démarrer la saison** (avant la J1, autour du 23 août) | **bascule le site** |
+| 6bis | mi-août | Abonnement photos 9 $ + « Récupérer les photos des équipes » | 9 $ |
+| 7 | mi-août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
+| 8 | fin août | Rafraîchir les effectifs (recrues) puis **RÉSILIER mi-septembre** | oubli = 9 $/mois |
 
 *En cas de doute à n'importe quelle étape : capture d'écran sur le groupe
 admins. Tout est prévu pour être rejouable.*
