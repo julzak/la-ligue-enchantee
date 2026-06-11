@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import SeasonManager from "./SeasonManager";
+import EffectifsTools from "./EffectifsTools";
 
 const POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"] as const;
 type Position = (typeof POSITIONS)[number];
@@ -378,6 +379,8 @@ export default function NouvelleSaisonPage() {
       <div className="rounded-lg border border-border bg-surface p-5">
         <SeasonManager />
       </div>
+
+      <EffectifsTools />
 
       <hr className="border-border" />
       <h2 className="font-serif text-base text-gold">Créer une nouvelle saison</h2>

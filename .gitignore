@@ -39,3 +39,6 @@ yarn-error.log*
 next-env.d.ts
 .env
 ligueenc_*.sql
+
+# Photos joueurs telechargees a l'import (jamais committees)
+/public/players/

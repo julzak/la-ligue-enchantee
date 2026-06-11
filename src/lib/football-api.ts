@@ -1,21 +1,25 @@
 /**
  * Football API abstraction (provider-agnostic).
  *
- * Provider principal : TheSportsDB (gratuit, déjà utilisé partout sur le site
- * pour dates/scores/photos cutout). Ligue 1 = league id 4334.
+ * EFFECTIFS (clubs + joueurs, noms et postes) : football-data.org, dont le
+ * tier GRATUIT couvre la Ligue 1 avec les effectifs complets (pas de photos,
+ * elles viennent de TheSportsDB premium au lancement, cf photo-sync.ts).
+ * Token saisi par les admins dans Admin → Configuration (APP_CONFIG),
+ * fallback env FOOTBALL_DATA_TOKEN. Sans token : mock déterministe.
  *
- * Tant que les endpoints "effectif complet" ne sont pas accessibles (premium
- * TheSportsDB), les EFFECTIFS sont servis depuis un MOCK déterministe. Les
- * CLUBS, eux, viennent du live (endpoint gratuit lookup_all_teams).
+ * Clubs seuls : fallback TheSportsDB gratuit (lookup_all_teams) si
+ * football-data.org indisponible, comme avant.
  *
- * Bascule live/mock pilotée par env :
- *   FOOTBALL_API_PROVIDER  (def: "thesportsdb")
+ * Bascule env :
  *   FOOTBALL_API_MOCK      ("true" force le mock partout ; "false" force le live)
- *   THESPORTSDB_KEY        (def: "3" = clé free tier)
+ *   FOOTBALL_DATA_TOKEN    (fallback du token saisi dans l'admin)
+ *   THESPORTSDB_KEY        (def: "3" = clé free tier, clubs seulement)
  *
  * Chaque fonction renvoie un `source: "live" | "mock"` pour que l'UI puisse
  * signaler à l'admin d'où viennent les données.
  */
+
+import { getAppConfig, CONFIG_KEYS } from "./app-config";
 
 export type ApiPosition = "Gardien" | "Défense" | "Milieu" | "Attaque";
 
@@ -41,12 +45,13 @@ export interface FetchResult<T> {
   data: T;
 }
 
-const PROVIDER = process.env.FOOTBALL_API_PROVIDER || "thesportsdb";
 const FORCE_MOCK = process.env.FOOTBALL_API_MOCK === "true";
 const FORCE_LIVE = process.env.FOOTBALL_API_MOCK === "false";
 const SDB_KEY = process.env.THESPORTSDB_KEY || "3";
 const SDB_BASE = "https://www.thesportsdb.com/api/v1/json";
 const L1_LEAGUE_ID = "4334";
+const FD_BASE = "https://api.football-data.org/v4";
+const FD_COMPETITION = "FL1"; // Ligue 1
 
 /**
  * Normalise une position brute (API ou saisie) vers la classification Ligue
@@ -62,7 +67,77 @@ export function normalizePosition(raw: string | null | undefined): ApiPosition {
   return "Milieu";
 }
 
-// ── Live : TheSportsDB ──────────────────────────────────────────────────────
+// ── Live : football-data.org (effectifs complets, tier gratuit) ────────────
+
+interface FdSquadMember {
+  id: number;
+  name: string;
+  position: string | null;
+}
+interface FdTeam {
+  id: number;
+  name: string;
+  crest: string | null;
+  squad: FdSquadMember[];
+}
+
+// L'endpoint /competitions/FL1/teams renvoie les 18 clubs AVEC leurs
+// effectifs complets en un seul appel. On le met en cache mémoire quelques
+// minutes : le stepper appelle getSquad club par club et le tier gratuit est
+// limité à 10 requêtes/minute.
+let fdCache: { at: number; teams: FdTeam[] } | null = null;
+const FD_CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function getFootballDataToken(): Promise<string | null> {
+  try {
+    const fromDb = await getAppConfig(CONFIG_KEYS.FOOTBALL_DATA_TOKEN);
+    if (fromDb) return fromDb;
+  } catch {
+    /* table absente ou DB down : on tente l'env */
+  }
+  return process.env.FOOTBALL_DATA_TOKEN || null;
+}
+
+async function fetchFdTeams(): Promise<FdTeam[]> {
+  if (fdCache && Date.now() - fdCache.at < FD_CACHE_TTL_MS) return fdCache.teams;
+  const token = await getFootballDataToken();
+  if (!token) throw new Error("Pas de token football-data.org (Admin → Configuration, champ Clé effectifs)");
+  const res = await fetch(`${FD_BASE}/competitions/${FD_COMPETITION}/teams`, {
+    headers: { "X-Auth-Token": token },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`football-data.org ${res.status}`);
+  const json = (await res.json()) as { teams?: FdTeam[] };
+  const teams = json.teams || [];
+  if (teams.length === 0) throw new Error("football-data.org : aucune équipe renvoyée");
+  fdCache = { at: Date.now(), teams };
+  return teams;
+}
+
+// "Kylian Mbappé" -> fname "Kylian", lname "Mbappé" ; les noms composés
+// partent dans le lname ("Van den Boomen").
+function splitName(full: string): { fname: string; lname: string } {
+  const parts = full.trim().split(/\s+/);
+  if (parts.length === 1) return { fname: "", lname: parts[0] };
+  return { fname: parts[0], lname: parts.slice(1).join(" ") };
+}
+
+function fdTeamToClub(t: FdTeam): ApiClub {
+  return { externalId: String(t.id), name: t.name, badgeUrl: t.crest || null };
+}
+
+function fdMemberToPlayer(m: FdSquadMember): ApiPlayer {
+  const { fname, lname } = splitName(m.name);
+  return {
+    externalId: String(m.id),
+    fname,
+    lname,
+    position: normalizePosition(m.position),
+    photoUrl: null, // les photos viennent de TheSportsDB premium, au lancement
+  };
+}
+
+// ── Live : TheSportsDB (fallback clubs seulement) ───────────────────────────
 
 interface SdbTeam {
   idTeam: string;
@@ -142,28 +217,45 @@ function mockSquad(clubExternalId: string): ApiPlayer[] {
 
 export async function getClubs(): Promise<FetchResult<ApiClub[]>> {
   if (!FORCE_MOCK) {
+    // 1. football-data.org (clubs + effectifs dans le même appel)
     try {
-      const data = await fetchClubsLive();
-      return { source: "live", provider: PROVIDER, data };
+      const teams = await fetchFdTeams();
+      return { source: "live", provider: "football-data.org", data: teams.map(fdTeamToClub) };
     } catch (e) {
       if (FORCE_LIVE) throw e;
-      // Sinon on retombe sur le mock silencieusement.
+    }
+    // 2. Fallback TheSportsDB gratuit (clubs seulement, comme avant)
+    try {
+      const data = await fetchClubsLive();
+      return { source: "live", provider: "thesportsdb", data };
+    } catch (e) {
+      if (FORCE_LIVE) throw e;
     }
   }
-  return { source: "mock", provider: PROVIDER, data: mockClubs() };
+  return { source: "mock", provider: "mock", data: mockClubs() };
 }
 
 /**
- * Effectif d'un club. L'endpoint live "effectif complet" de TheSportsDB est
- * premium : tant qu'on n'a pas la clé premium, on sert le mock. Le live sera
- * branché ici quand la clé sera fournie (FOOTBALL_API_MOCK=false).
+ * Effectif complet d'un club (noms + postes, pas de photos).
+ * Live = football-data.org si un token est configuré, sinon mock.
  */
 export async function getSquad(clubExternalId: string): Promise<FetchResult<ApiPlayer[]>> {
-  // TODO(premium) : brancher lookup_all_players.php quand clé premium dispo.
-  if (FORCE_LIVE) {
-    throw new Error(
-      "Effectif live non disponible : endpoint TheSportsDB premium requis. Retire FOOTBALL_API_MOCK=false."
-    );
+  if (!FORCE_MOCK) {
+    try {
+      const teams = await fetchFdTeams();
+      const team = teams.find((t) => String(t.id) === clubExternalId);
+      if (team) {
+        return {
+          source: "live",
+          provider: "football-data.org",
+          data: (team.squad || []).map(fdMemberToPlayer),
+        };
+      }
+      // Club inconnu de football-data.org (id mock ou autre provider).
+      if (FORCE_LIVE) throw new Error(`Club ${clubExternalId} introuvable chez football-data.org`);
+    } catch (e) {
+      if (FORCE_LIVE) throw e;
+    }
   }
-  return { source: "mock", provider: PROVIDER, data: mockSquad(clubExternalId) };
+  return { source: "mock", provider: "mock", data: mockSquad(clubExternalId) };
 }

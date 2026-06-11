@@ -32,6 +32,12 @@ interface DeadlinesConfig {
   earlyMatchOffsetHours: number;
 }
 
+interface EffectifsInfo {
+  footballDataToken: string | null; // masquée ("****abcd") ou null
+  theSportsDbKey: string | null;
+  theSportsDbKeySetAt: string | null;
+}
+
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 export default function AdminConfigPage() {
@@ -50,6 +56,11 @@ export default function AdminConfigPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({});
+  const [effectifs, setEffectifs] = useState<EffectifsInfo>({
+    footballDataToken: null, theSportsDbKey: null, theSportsDbKeySetAt: null,
+  });
+  const [fdTokenInput, setFdTokenInput] = useState("");
+  const [sdbKeyInput, setSdbKeyInput] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -60,6 +71,7 @@ export default function AdminConfigPage() {
         if (data.jokers) setJokers(data.jokers);
         if (data.mercatoHiver) setMercato(data.mercatoHiver);
         if (data.deadlines) setDeadlines(data.deadlines);
+        if (data.effectifs) setEffectifs(data.effectifs);
       } catch {}
       setLoading(false);
     }
@@ -75,6 +87,12 @@ export default function AdminConfigPage() {
         body: JSON.stringify({ section, data }),
       });
       if (!res.ok) throw new Error();
+      if (section === "effectifs") {
+        const fresh = await fetch("/api/admin/config").then((r) => r.json()).catch(() => null);
+        if (fresh?.effectifs) setEffectifs(fresh.effectifs);
+        setFdTokenInput("");
+        setSdbKeyInput("");
+      }
       setSaveStatus((s) => ({ ...s, [section]: "saved" }));
       setTimeout(() => setSaveStatus((s) => ({ ...s, [section]: "idle" })), 2000);
     } catch {
@@ -123,6 +141,55 @@ export default function AdminConfigPage() {
         </h1>
         <p className="text-sm text-muted">Parametres de la saison courante</p>
       </div>
+
+      {/* Section 0: Effectifs & photos (clés API, kick-off de saison) */}
+      <section className="bg-surface rounded-lg border border-white/[0.07] p-5">
+        <h2 className="font-serif text-base text-gold mb-1">Effectifs & photos (clés API)</h2>
+        <p className="text-xs text-muted mb-4">
+          Cf docs/kickoff-nouvelle-saison.md. Champ laissé vide = clé inchangée. Saisir CLEAR pour effacer.
+        </p>
+        {effectifs.theSportsDbKey && effectifs.theSportsDbKeySetAt && (
+          <div className="mb-4 rounded border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-gold">
+            Clé photos active (saisie le {effectifs.theSportsDbKeySetAt}) : pensez à RÉSILIER le
+            Patreon TheSportsDB un mois après, sinon il refacture 9 $ chaque mois.
+          </div>
+        )}
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className="block text-xs text-muted mb-1">
+              Clé effectifs : token football-data.org (gratuit)
+              {effectifs.footballDataToken && (
+                <span className="ml-2 text-vert">configurée ({effectifs.footballDataToken})</span>
+              )}
+            </label>
+            <input
+              type="text"
+              value={fdTokenInput}
+              onChange={(e) => setFdTokenInput(e.target.value)}
+              placeholder={effectifs.footballDataToken ? "Remplacer le token..." : "Coller le token football-data.org"}
+              className="w-full bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">
+              Clé photos : TheSportsDB premium (9 $/mois, au lancement seulement)
+              {effectifs.theSportsDbKey && (
+                <span className="ml-2 text-vert">configurée ({effectifs.theSportsDbKey})</span>
+              )}
+            </label>
+            <input
+              type="text"
+              value={sdbKeyInput}
+              onChange={(e) => setSdbKeyInput(e.target.value)}
+              placeholder={effectifs.theSportsDbKey ? "Remplacer la clé..." : "Coller la clé TheSportsDB premium"}
+              className="w-full bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <SaveButton section="effectifs" data={{ footballDataToken: fdTokenInput, theSportsDbKey: sdbKeyInput }} />
+        </div>
+      </section>
 
       {/* Section 1: Jokers */}
       <section className="bg-surface rounded-lg border border-white/[0.07] p-5">

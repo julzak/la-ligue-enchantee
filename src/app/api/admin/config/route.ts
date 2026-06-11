@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey } from "@/lib/season";
+import { getAppConfig, setAppConfig, CONFIG_KEYS } from "@/lib/app-config";
+
+function maskKey(key: string | null): string | null {
+  if (!key) return null;
+  return key.length <= 4 ? "****" : `****${key.slice(-4)}`;
+}
 
 interface ScoringConfigRow {
   goal_bonus_gk: number;
@@ -85,7 +91,19 @@ export async function GET() {
     treveEnd: winterMercato?.treve_end ? String(winterMercato.treve_end).slice(0, 10) : null,
   };
 
+  // Clés API effectifs/photos (jamais renvoyées en clair, seulement masquées)
+  const [fdToken, sdbKey, sdbKeySetAt] = await Promise.all([
+    getAppConfig(CONFIG_KEYS.FOOTBALL_DATA_TOKEN),
+    getAppConfig(CONFIG_KEYS.THESPORTSDB_PREMIUM_KEY),
+    getAppConfig(CONFIG_KEYS.THESPORTSDB_KEY_SET_AT),
+  ]);
+
   return NextResponse.json({
+    effectifs: {
+      footballDataToken: maskKey(fdToken),
+      theSportsDbKey: maskKey(sdbKey),
+      theSportsDbKeySetAt: sdbKeySetAt,
+    },
     scoring: {
       goalBonusGk: Number(scoring.goal_bonus_gk),
       goalBonusDef: Number(scoring.goal_bonus_def),
@@ -163,6 +181,24 @@ export async function POST(request: Request) {
           data.rankingMatchday ?? null, data.treveStart ?? null, data.treveEnd ?? null,
           data.rankingMatchday ?? null, data.treveStart ?? null, data.treveEnd ?? null
         );
+        break;
+
+      case "effectifs":
+        // Champ vide = on ne touche pas ; "CLEAR" explicite = on efface.
+        if (typeof data.footballDataToken === "string" && data.footballDataToken.trim()) {
+          await setAppConfig(
+            CONFIG_KEYS.FOOTBALL_DATA_TOKEN,
+            data.footballDataToken.trim() === "CLEAR" ? null : data.footballDataToken.trim()
+          );
+        }
+        if (typeof data.theSportsDbKey === "string" && data.theSportsDbKey.trim()) {
+          const clear = data.theSportsDbKey.trim() === "CLEAR";
+          await setAppConfig(CONFIG_KEYS.THESPORTSDB_PREMIUM_KEY, clear ? null : data.theSportsDbKey.trim());
+          await setAppConfig(
+            CONFIG_KEYS.THESPORTSDB_KEY_SET_AT,
+            clear ? null : new Date().toISOString().slice(0, 10)
+          );
+        }
         break;
 
       default:

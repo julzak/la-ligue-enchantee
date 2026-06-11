@@ -247,3 +247,11 @@ enum MovementType {
   RELEGATION
   STAY
 }
+
+model AppConfig {
+  name      String   @id @map("NAME") @db.VarChar(50)
+  value     String?  @map("VALUE") @db.Text
+  updatedAt DateTime @default(now()) @updatedAt @map("UPDATED_AT") @db.DateTime(0)
+
+  @@map("APP_CONFIG")
+}
