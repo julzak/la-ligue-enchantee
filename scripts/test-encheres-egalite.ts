@@ -9,6 +9,6 @@
  */
 import { execSync } from "child_process";
 execSync(
-  './node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t "égalité"',
+  "./node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t \"^égalité de mise : personne n'obtient le joueur\"",
   { stdio: "inherit" }
 );

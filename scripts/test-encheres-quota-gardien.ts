@@ -6,6 +6,6 @@
  */
 import { execSync } from "child_process";
 execSync(
-  './node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t "gardien"',
+  "./node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t \"^mise sans gardien : retrait d'1 joueur sur la plus chère \\\\(alphabétique\\\\)\"",
   { stdio: "inherit" }
 );

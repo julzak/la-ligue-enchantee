@@ -6,6 +6,6 @@
  */
 import { execSync } from "child_process";
 execSync(
-  './node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t "attaquants"',
+  "./node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t \"^excès d'attaquants : retrait dans la ligne ATT uniquement\"",
   { stdio: "inherit" }
 );

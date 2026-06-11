@@ -6,6 +6,6 @@
  */
 import { execSync } from "child_process";
 execSync(
-  './node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t "deadline"',
+  "./node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t \"^deadline : tolérance zéro, tour fermé = rejet\"",
   { stdio: "inherit" }
 );

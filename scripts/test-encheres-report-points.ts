@@ -6,6 +6,6 @@
  */
 import { execSync } from "child_process";
 execSync(
-  './node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t "report"',
+  "./node_modules/.bin/vitest run --reporter=verbose src/lib/auction-engine.test.ts -t \"^report des points : mises perdues récupérées au tour suivant\"",
   { stdio: "inherit" }
 );
