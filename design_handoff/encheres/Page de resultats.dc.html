@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0C0C0B; }
+</style>
+</helmet>
+
+<div style="background:#0C0C0B; min-height:100vh; font-family:'Inter',system-ui,sans-serif; color:#E8E4DB; padding:0 0 90px;">
+
+  <div style="padding:40px 48px 30px; border-bottom:1px solid #1E1D1A; background:linear-gradient(180deg,#141410,#0C0C0B);">
+    <div style="display:flex; align-items:center; gap:11px; margin-bottom:14px;">
+      <div style="position:relative; width:26px; height:31px; flex:none;">
+        <div style="position:absolute; inset:0; background:#C8A84B; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0);"></div>
+        <div style="position:absolute; inset:1.4px; background:#16160F; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0); display:flex; align-items:center; justify-content:center;"><span style="font-family:'Arial Black',sans-serif; font-weight:800; font-size:12px; color:#E8E4DB; margin-top:-3px;">L</span></div>
+      </div>
+      <span style="font-size:12px; font-weight:600; letter-spacing:2px; color:#8C877C; text-transform:uppercase;">La Ligue Enchantée — Module Enchères</span>
+    </div>
+    <h1 style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:34px; margin:0 0 8px; color:#F5F2EB;">Résultats <span style="font-style:italic; color:#C8A84B; font-weight:600;">d'un tour dépouillé</span></h1>
+    <p style="margin:0; font-size:14px; color:#9C978B; max-width:700px; line-height:1.55;">Mobile-first 375px · 4 états. En 30 secondes, le participant comprend ce qu'il a gagné, perdu, et avec quel budget il repart. Chaque mise perdue est expliquée ; chaque retrait porte son motif complet.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:48px 44px; justify-content:center; padding:46px 40px 0; max-width:1340px; margin:0 auto;">
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">01</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Dépouillé : acquisitions + 1 retrait</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Le cas complet : gains, pertes expliquées, pénalité.</div></div>
+      </div>
+      <dc-import name="ResultScreen" mode="{{ s1.mode }}" subtitle="{{ s1.subtitle }}" tours="{{ s1.tours }}" satisfaction-line="{{ s1.satisfactionLine }}" acquisitions="{{ s1.acquisitions }}" losses="{{ s1.losses }}" penalties="{{ s1.penalties }}" budget-next="{{ s1.budgetNext }}" next-tour-label="{{ s1.nextTourLabel }}" effectif="{{ s1.effectif }}" depouillement="{{ s1.depouillement }}" dep-title="{{ s1.depTitle }}" hint-size="375px,1500px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">02</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Aucune acquisition</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Tour blanc — état encourageant, pas une page vide.</div></div>
+      </div>
+      <dc-import name="ResultScreen" mode="{{ s2.mode }}" subtitle="{{ s2.subtitle }}" tours="{{ s2.tours }}" acquisitions="{{ s2.acquisitions }}" encourage-msg="{{ s2.encourageMsg }}" losses="{{ s2.losses }}" penalties="{{ s2.penalties }}" budget-next="{{ s2.budgetNext }}" next-tour-label="{{ s2.nextTourLabel }}" effectif="{{ s2.effectif }}" depouillement="{{ s2.depouillement }}" dep-title="{{ s2.depTitle }}" hint-size="375px,1300px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#8C877C; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">03</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Clôturé, en attente de dépouillement</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Mise enregistrée, transparence pas encore visible.</div></div>
+      </div>
+      <dc-import name="ResultScreen" mode="{{ s3.mode }}" subtitle="{{ s3.subtitle }}" tours="{{ s3.tours }}" awaiting-msg="{{ s3.awaitingMsg }}" submitted-summary="{{ s3.submittedSummary }}" submitted-at="{{ s3.submittedAt }}" hint-size="375px,780px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#D69634; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">04</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Fin de phase : effectif 13/13</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Moment célébratoire, équipe constituée.</div></div>
+      </div>
+      <dc-import name="ResultScreen" mode="{{ s4.mode }}" subtitle="{{ s4.subtitle }}" tours="{{ s4.tours }}" final-msg="{{ s4.finalMsg }}" roster="{{ s4.roster }}" total-spent="{{ s4.totalSpent }}" budget-max="{{ s4.budgetMax }}" hint-size="375px,1050px"></dc-import>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() {
+    const dep = [
+      { name: 'Vous (LST)', you: true, items: [{ name: 'Doué', price: 12 }, { name: 'Barcola', price: 14 }], total: 26 },
+      { name: 'Troyan', items: [{ name: 'Nuno Mendes', price: 18 }, { name: 'Kolo Muani', price: 22 }], total: 40 },
+      { name: 'Francis Llacer', items: [{ name: 'Greenwood', price: 16 }], total: 16 },
+      { name: 'Le Général', items: [{ name: 'Gardiens Monaco', price: 9 }, { name: 'Thauvin', price: 11 }], total: 20 },
+      { name: 'Batistuta', items: [{ name: 'Sahraoui', price: 7 }], total: 7 },
+      { name: 'GeLo 59', items: [{ name: 'Le Fée', price: 8 }], total: 8 },
+    ];
+
+    return {
+      s1: {
+        mode: 'results', subtitle: 'Tour 3 dépouillé · 12 août',
+        tours: [{ label: 'T1', done: true }, { label: 'T2', done: true }, { label: 'T3', active: true }],
+        satisfactionLine: 'Vous remportez 2 joueurs ce tour.',
+        acquisitions: [
+          { name: 'Désiré Doué', club: 'Paris SG', poste: 'MIL', price: 12, initials: 'DD' },
+          { name: 'Bradley Barcola', club: 'Paris SG', poste: 'ATT', price: 14, initials: 'BB' },
+        ],
+        losses: [
+          { name: 'Nuno Mendes', poste: 'DEF', yourBid: 15, reasonType: 'surenchere', detail: 'obtenu par Troyan à 18 pts' },
+          { name: 'Gardiens Monaco', poste: 'G', yourBid: 8, reasonType: 'egalite', detail: 'personne, remis en jeu au Tour 4', refund: '8 pts' },
+        ],
+        penalties: [
+          { name: 'Ludovic Ajorque', poste: 'ATT', motif: '5 attaquants misés : retrait de l\'acquisition la plus chère de la ligne (Ajorque, 12 pts).' },
+        ],
+        budgetNext: 44, nextTourLabel: 'Tour 4',
+        effectif: { count: 9, lines: [{ line: 'G', count: 1 }, { line: 'DEF', count: 4 }, { line: 'MIL', count: 3 }, { line: 'ATT', count: 1 }] },
+        depouillement: dep, depTitle: 'Dépouillement · Tour 3',
+      },
+
+      s2: {
+        mode: 'results', subtitle: 'Tour 3 dépouillé · 12 août',
+        tours: [{ label: 'T1', done: true }, { label: 'T2', done: true }, { label: 'T3', active: true }],
+        acquisitions: [],
+        encourageMsg: 'Rien d\'acquis ce tour, mais vos 70 pts restent intacts pour le Tour 4. Les meilleurs coups se jouent souvent plus tard.',
+        losses: [
+          { name: 'Désiré Doué', poste: 'MIL', yourBid: 11, reasonType: 'surenchere', detail: 'obtenu par Gonz à 14 pts' },
+          { name: 'Quentin Merlin', poste: 'DEF', yourBid: 8, reasonType: 'surenchere', detail: 'obtenu par Duch à 9 pts' },
+        ],
+        penalties: [],
+        budgetNext: 70, nextTourLabel: 'Tour 4',
+        effectif: { count: 7, lines: [{ line: 'G', count: 1 }, { line: 'DEF', count: 3 }, { line: 'MIL', count: 2 }, { line: 'ATT', count: 1 }] },
+        depouillement: dep, depTitle: 'Dépouillement · Tour 3',
+      },
+
+      s3: {
+        mode: 'awaiting', subtitle: 'Tour 3 clôturé · en attente',
+        tours: [{ label: 'T1', done: true }, { label: 'T2', done: true }, { label: 'T3', pending: true }],
+        awaitingMsg: 'Tour clôturé le 12 août à 20:00. L\'admin procède au dépouillement — vous serez notifié par email dès publication.',
+        submittedSummary: '13 joueurs · 86 pts engagés',
+        submittedAt: '19:47',
+      },
+
+      s4: {
+        mode: 'final', subtitle: 'Phase d\'enchères terminée',
+        tours: [{ label: 'T1', done: true }, { label: 'T2', done: true }, { label: 'T3', done: true }, { label: 'T4', active: true }],
+        finalMsg: 'Vos 13 joueurs sont verrouillés pour la saison. Que le meilleur gagne.',
+        budgetMax: 130,
+        roster: [
+          { name: 'Gardiens Monaco', club: 'ASM', poste: 'G', price: 8 },
+          { name: 'Quentin Merlin', club: 'OM', poste: 'DEF', price: 9 },
+          { name: 'Lucas Hernández', club: 'PSG', poste: 'DEF', price: 13 },
+          { name: 'Lucas Beraldo', club: 'PSG', poste: 'DEF', price: 6 },
+          { name: 'Loïc Badé', club: 'Rennes', poste: 'DEF', price: 5 },
+          { name: 'Jonathan Gradit', club: 'Lens', poste: 'DEF', price: 4 },
+          { name: 'P. Lees-Melou', club: 'Brest', poste: 'MIL', price: 6 },
+          { name: 'Andy Diouf', club: 'Lens', poste: 'MIL', price: 8 },
+          { name: 'Désiré Doué', club: 'PSG', poste: 'MIL', price: 12 },
+          { name: 'B. Bourigeaud', club: 'Rennes', poste: 'MIL', price: 7 },
+          { name: 'A. Kalimuendo', club: 'Rennes', poste: 'ATT', price: 11 },
+          { name: 'Bradley Barcola', club: 'PSG', poste: 'ATT', price: 14 },
+          { name: 'Ludovic Ajorque', club: 'Brest', poste: 'ATT', price: 9 },
+        ],
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</helmet>
+
+<div style="width:375px; background:#141414; font-family:'Inter',system-ui,sans-serif; color:#E8E4DB; display:flex; flex-direction:column; min-height:780px; border-radius:26px; overflow:hidden; border:1px solid #2A2824;">
+
+  <!-- status bar -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 20px 5px; font-size:12px; color:#8C877C; font-weight:600;">
+    <span style="font-variant-numeric:tabular-nums;">09:12</span>
+    <span style="letter-spacing:1px;">• • • &nbsp;◖&nbsp; ▰▰▰</span>
+  </div>
+
+  <!-- HEADER + selector -->
+  <div style="padding:6px 18px 16px; border-bottom:1px solid #232220; background:linear-gradient(180deg,#16160F 0%, #141414 100%);">
+    <div style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:24px; color:#F5F2EB; line-height:1; margin-bottom:3px;">Résultats</div>
+    <div style="font-size:12px; color:#8C877C; margin-bottom:13px;">{{ subtitle }}</div>
+    <div style="display:flex; gap:7px;">
+      <sc-for list="{{ tours }}" as="t" hint-placeholder-count="3">
+        <sc-if value="{{ t.active }}" hint-placeholder-val="{{ true }}">
+          <span style="font-size:12.5px; font-weight:700; padding:6px 14px; border-radius:999px; background:#C8A84B; color:#16160F;">{{ t.label }}</span>
+        </sc-if>
+        <sc-if value="{{ t.done }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:12.5px; font-weight:600; padding:6px 14px; border-radius:999px; background:rgba(200,168,75,.08); border:1px solid rgba(200,168,75,.32); color:#C9B97E;">{{ t.label }}</span>
+        </sc-if>
+        <sc-if value="{{ t.pending }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:12.5px; font-weight:600; padding:6px 14px; border-radius:999px; background:rgba(255,255,255,.03); border:1px solid #2C2A26; color:#6E6A60;">{{ t.label }}</span>
+        </sc-if>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div style="flex:1; padding:16px 14px 4px; display:flex; flex-direction:column; gap:18px;">
+
+    <!-- AWAITING -->
+    <sc-if value="{{ isAwaiting }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center; padding:30px 16px 14px;">
+        <div style="font-size:34px; margin-bottom:10px;">⏳</div>
+        <div style="font-family:'Playfair Display',Georgia,serif; font-style:italic; font-weight:600; font-size:21px; color:#F5F2EB; margin-bottom:8px;">Dépouillement en attente</div>
+        <div style="font-size:13px; color:#A39E92; line-height:1.55; max-width:290px; margin:0 auto;">{{ awaitingMsg }}</div>
+      </div>
+      <div style="background:#1B1B19; border:1px solid #272521; border-radius:10px; padding:14px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase; margin-bottom:9px;">Votre mise enregistrée</div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:13.5px; color:#D8D3C7; font-weight:600;">{{ submittedSummary }}</span>
+          <span style="font-size:11.5px; color:#7C776C;">{{ submittedAt }}</span>
+        </div>
+      </div>
+      <div style="text-align:center; font-size:11.5px; color:#7C776C; font-style:italic; padding:4px 20px;">Le dépouillement de tous les participants apparaîtra ici une fois publié par l'admin.</div>
+    </sc-if>
+
+    <!-- FINAL (célébration) -->
+    <sc-if value="{{ isFinal }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center; padding:14px 10px 4px;">
+        <div style="display:flex; justify-content:center; gap:9px; font-size:16px; color:#C8A84B; margin-bottom:12px; text-shadow:0 0 12px rgba(200,168,75,.45);">★ ★ ★</div>
+        <div style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:25px; color:#F5F2EB; line-height:1.15; margin-bottom:8px;">Votre effectif est<br>au complet</div>
+        <div style="font-size:13px; color:#A39E92; line-height:1.5; max-width:300px; margin:0 auto;">{{ finalMsg }}</div>
+      </div>
+
+      <div style="background:#F5F2EB; border-radius:12px; padding:16px 16px 18px; box-shadow:0 14px 34px rgba(0,0,0,.4);">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1.5px solid #1A1A18; padding-bottom:9px; margin-bottom:12px;">
+          <span style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:18px; color:#1A1A18;">Votre équipe</span>
+          <span style="font-family:'Playfair Display',Georgia,serif; font-style:italic; font-size:13px; color:#7A6A2E;">2025 – 2026</span>
+        </div>
+        <sc-for list="{{ roster }}" as="g" hint-placeholder-count="4">
+          <div style="margin-bottom:11px;">
+            <div style="font-size:9.5px; font-weight:800; letter-spacing:1.2px; color:#9C8E5C; text-transform:uppercase; margin-bottom:5px;">{{ g.label }}</div>
+            <sc-for list="{{ g.players }}" as="pl" hint-placeholder-count="2">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; padding:3px 0;">
+                <span style="font-size:13.5px; color:#1A1A18; font-weight:500;">{{ pl.name }} <span style="color:#8A8270; font-size:11px;">· {{ pl.club }}</span></span>
+                <span style="font-size:13px; font-weight:700; color:#7A6A2E; font-variant-numeric:tabular-nums;">{{ pl.price }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; border-top:1.5px solid #1A1A18; padding-top:10px; margin-top:4px;">
+          <span style="font-size:12px; font-weight:700; color:#1A1A18; text-transform:uppercase; letter-spacing:.5px;">Total engagé</span>
+          <span style="font-family:'Playfair Display',serif; font-weight:700; font-size:20px; color:#1A1A18; font-variant-numeric:tabular-nums;">{{ totalSpent }} <span style="font-size:12px; color:#8A8270;">/ {{ budgetMax }} pts</span></span>
+        </div>
+      </div>
+      <div style="text-align:center; font-size:12px; color:#9C978B; font-style:italic; padding:2px 20px 6px;">La phase d'enchères est terminée. Rendez-vous sur le terrain.</div>
+    </sc-if>
+
+    <!-- RESULTS body -->
+    <sc-if value="{{ isResults }}" hint-placeholder-val="{{ true }}">
+
+      <!-- satisfaction line -->
+      <sc-if value="{{ hasAcquisitions }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="font-family:'Playfair Display',Georgia,serif; font-style:italic; font-weight:600; font-size:18px; color:#D8BC63; margin-bottom:12px; padding:0 2px;">{{ satisfactionLine }}</div>
+          <div style="background:linear-gradient(180deg, rgba(200,168,75,.10), rgba(200,168,75,.03)); border:1px solid rgba(200,168,75,.34); border-radius:11px; overflow:hidden;">
+            <div style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#C9B97E; text-transform:uppercase; padding:11px 14px 8px;">Mes acquisitions</div>
+            <sc-for list="{{ acquisitions }}" as="a" hint-placeholder-count="2">
+              <div style="display:flex; align-items:center; gap:11px; padding:11px 14px; border-top:1px solid rgba(200,168,75,.16);">
+                <div style="width:38px; height:38px; flex:none; border-radius:50%; background:#2C2A22; border:1px solid rgba(200,168,75,.4); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#D8BC63;">{{ a.initials }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:14.5px; font-weight:600; color:#F5F2EB; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ a.name }}</div>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span style="font-size:11px; color:#9C978B;">{{ a.club }}</span>
+                    <span style="font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(200,168,75,.12); border:1px solid rgba(200,168,75,.3); color:#C9B97E; letter-spacing:.3px;">{{ a.poste }}</span>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:'Playfair Display',serif; font-weight:700; font-size:22px; color:#C8A84B; font-variant-numeric:tabular-nums; line-height:1;">{{ a.price }}</div>
+                  <div style="font-size:9px; color:#8C877C; margin-top:2px;">pts payés</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- no acquisitions (encouraging) -->
+      <sc-if value="{{ noAcquisitions }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#1B1B19; border:1px solid #272521; border-radius:11px; padding:18px 16px; text-align:center;">
+          <div style="font-family:'Playfair Display',Georgia,serif; font-style:italic; font-weight:600; font-size:18px; color:#F5F2EB; margin-bottom:7px;">Tour blanc</div>
+          <div style="font-size:12.5px; color:#A39E92; line-height:1.55;">{{ encourageMsg }}</div>
+        </div>
+      </sc-if>
+
+      <!-- losses -->
+      <sc-if value="{{ hasLosses }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase; margin-bottom:9px; padding:0 2px;">Mes mises perdues</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <sc-for list="{{ losses }}" as="l" hint-placeholder-count="2">
+              <div style="background:#191917; border:1px solid #272521; border-radius:9px; padding:11px 13px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                  <div style="display:flex; align-items:center; gap:9px; min-width:0;">
+                    <span style="font-size:13.5px; font-weight:600; color:#B8B3A7; text-decoration:line-through; text-decoration-color:#5A564C;">{{ l.name }}</span>
+                    <span style="font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,.04); border:1px solid #34322B; color:#8C877C;">{{ l.poste }}</span>
+                  </div>
+                  <span style="font-size:11.5px; color:#7C776C; white-space:nowrap;">misé {{ l.yourBid }}</span>
+                </div>
+                <sc-if value="{{ l.isSurenchere }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex; align-items:center; gap:7px; margin-top:8px;">
+                    <span style="font-size:9px; font-weight:700; letter-spacing:.4px; padding:2px 6px; border-radius:4px; background:rgba(192,57,43,.14); border:1px solid rgba(192,57,43,.4); color:#E0705F;">SURENCHÉRI</span>
+                    <span style="font-size:11.5px; color:#9C978B;">{{ l.detail }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ l.isEgalite }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:8px;">
+                    <div style="display:flex; align-items:center; gap:7px;">
+                      <span style="font-size:9px; font-weight:700; letter-spacing:.4px; padding:2px 6px; border-radius:4px; background:rgba(214,150,52,.14); border:1px solid rgba(214,150,52,.4); color:#E0A94E;">ÉGALITÉ</span>
+                      <span style="font-size:11.5px; color:#9C978B;">{{ l.detail }}</span>
+                    </div>
+                    <div style="font-size:11px; color:#3FB873; margin-top:5px; font-weight:600;">↩ {{ l.refund }} rendus à votre budget</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- penalties -->
+      <sc-if value="{{ hasPenalties }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#E0705F; text-transform:uppercase; margin-bottom:9px; padding:0 2px;">Retraits de pénalité</div>
+          <sc-for list="{{ penalties }}" as="p" hint-placeholder-count="1">
+            <div style="background:rgba(192,57,43,.08); border:1px solid rgba(192,57,43,.34); border-radius:9px; padding:12px 13px;">
+              <div style="display:flex; align-items:center; gap:9px; margin-bottom:6px;">
+                <span style="font-size:14px; font-weight:600; color:#E8E4DB; text-decoration:line-through; text-decoration-color:#C0392B;">{{ p.name }}</span>
+                <span style="font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(192,57,43,.16); border:1px solid rgba(192,57,43,.4); color:#E0705F;">RETIRÉ</span>
+              </div>
+              <div style="font-size:12px; color:#C9B7A8; line-height:1.5;">{{ p.motif }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- budget next + effectif -->
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1.1; background:#16160F; border:1px solid rgba(200,168,75,.3); border-radius:11px; padding:13px 14px;">
+          <div style="font-size:9.5px; font-weight:700; letter-spacing:1.2px; color:#8C877C; text-transform:uppercase; margin-bottom:5px; line-height:1.3;">Budget · {{ nextTourLabel }}</div>
+          <div style="display:flex; align-items:baseline; gap:5px;">
+            <span style="font-size:34px; font-weight:800; color:#C8A84B; font-variant-numeric:tabular-nums; line-height:.9; letter-spacing:-1px;">{{ budgetNext }}</span>
+            <span style="font-size:12px; color:#8C877C;">pts</span>
+          </div>
+        </div>
+        <div style="flex:1; background:#1B1B19; border:1px solid #272521; border-radius:11px; padding:13px 14px;">
+          <div style="font-size:9.5px; font-weight:700; letter-spacing:1.2px; color:#8C877C; text-transform:uppercase; margin-bottom:5px;">Mon effectif</div>
+          <div style="display:flex; align-items:baseline; gap:4px;">
+            <span style="font-size:34px; font-weight:800; color:#E8E4DB; font-variant-numeric:tabular-nums; line-height:.9; letter-spacing:-1px;">{{ effectifCount }}</span>
+            <span style="font-size:13px; color:#8C877C;">/ 13</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:#191917; border:1px solid #232220; border-radius:10px; padding:12px 14px; margin-top:-8px;">
+        <sc-for list="{{ effectifLines }}" as="e" hint-placeholder-count="4">
+          <div style="display:flex; align-items:center; gap:10px; padding:4px 0;">
+            <span style="font-size:10.5px; font-weight:700; color:#9C978B; width:78px; flex:none;">{{ e.label }}</span>
+            <div style="flex:1; display:flex; gap:4px;">
+              <sc-for list="{{ e.dots }}" as="d" hint-placeholder-count="6">
+                <sc-if value="{{ d.filled }}" hint-placeholder-val="{{ true }}">
+                  <span style="width:9px; height:9px; border-radius:2px; background:#C8A84B;"></span>
+                </sc-if>
+                <sc-if value="{{ d.empty }}" hint-placeholder-val="{{ false }}">
+                  <span style="width:9px; height:9px; border-radius:2px; background:transparent; border:1px solid #3A382F;"></span>
+                </sc-if>
+              </sc-for>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:#7C776C; font-variant-numeric:tabular-nums;">{{ e.countLabel }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- transparency (papier journal) -->
+      <div>
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase; margin-bottom:9px; padding:0 2px;">Le dépouillement de tous</div>
+        <div style="background:#F5F2EB; border-radius:12px; padding:15px 15px 7px; box-shadow:0 12px 30px rgba(0,0,0,.38);">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; border-bottom:1.5px solid #1A1A18; padding-bottom:8px; margin-bottom:4px;">
+            <span style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:16px; color:#1A1A18;">{{ depTitle }}</span>
+            <span style="font-size:10px; color:#8A8270; font-style:italic;">prix en points</span>
+          </div>
+          <sc-for list="{{ depouillement }}" as="d" hint-placeholder-count="4">
+            <div style="padding:9px 0; border-bottom:1px solid #DAD4C5;">
+              <div style="display:flex; align-items:baseline; justify-content:space-between;">
+                <sc-if value="{{ d.you }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-family:'Playfair Display',serif; font-weight:700; font-size:14px; color:#7A6A2E;">{{ d.name }}</span>
+                </sc-if>
+                <sc-if value="{{ d.other }}" hint-placeholder-val="{{ true }}">
+                  <span style="font-family:'Playfair Display',serif; font-weight:600; font-size:14px; color:#1A1A18;">{{ d.name }}</span>
+                </sc-if>
+                <span style="font-size:11px; font-weight:700; color:#5A564C; font-variant-numeric:tabular-nums; white-space:nowrap; flex:none; padding-left:10px;">{{ d.summary }}</span>
+              </div>
+              <div style="font-size:11.5px; color:#4A463C; margin-top:3px; line-height:1.5;">{{ d.itemsText }}</div>
+            </div>
+          </sc-for>
+          <div style="text-align:center; font-size:9.5px; color:#8A8270; font-style:italic; padding:8px 0 5px;">Visible uniquement après dépouillement · source des notes : L'Équipe</div>
+        </div>
+      </div>
+
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:375,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props || {};
+    const mode = p.mode || 'results';
+    const isResults = mode === 'results';
+    const isAwaiting = mode === 'awaiting';
+    const isFinal = mode === 'final';
+    const acquisitions = p.acquisitions || [];
+    const losses = (p.losses || []).map(l => Object.assign({}, l, {
+      isSurenchere: l.reasonType === 'surenchere',
+      isEgalite: l.reasonType === 'egalite',
+    }));
+    const penalties = p.penalties || [];
+
+    // effectif dots per line
+    const lineDefs = [
+      { key: 'G', label: 'Gardien', max: 1 },
+      { key: 'DEF', label: 'Défenseurs', max: 6 },
+      { key: 'MIL', label: 'Milieux', max: 6 },
+      { key: 'ATT', label: 'Attaquants', max: 4 },
+    ];
+    const eff = p.effectif || { count: 0, lines: [] };
+    const lineMap = {};
+    (eff.lines || []).forEach(l => { lineMap[l.line] = l; });
+    const effectifLines = lineDefs.map(d => {
+      const got = (lineMap[d.key] && lineMap[d.key].count) || 0;
+      const dots = [];
+      for (let i = 0; i < d.max; i++) dots.push({ filled: i < got, empty: i >= got });
+      return { label: d.label, countLabel: got + '/' + d.max, dots };
+    });
+
+    // depouillement enrich
+    const depouillement = (p.depouillement || []).map(d => ({
+      name: d.name, you: !!d.you, other: !d.you,
+      summary: '+' + (d.items ? d.items.length : 0) + ' · ' + (d.total || 0) + ' pts',
+      itemsText: (d.items || []).map(it => it.name + ' ' + it.price).join('  ·  '),
+    }));
+
+    // roster groups (final)
+    let totalSpent = 0;
+    const roster = lineDefs.map(d => {
+      const players = (p.roster || []).filter(r => r.poste === d.key);
+      players.forEach(pl => { totalSpent += (pl.price || 0); });
+      return { label: d.label, players };
+    }).filter(g => g.players.length > 0);
+
+    return {
+      subtitle: p.subtitle || '',
+      tours: p.tours || [],
+      isResults, isAwaiting, isFinal,
+      hasAcquisitions: acquisitions.length > 0,
+      noAcquisitions: acquisitions.length === 0,
+      acquisitions,
+      satisfactionLine: p.satisfactionLine || '',
+      encourageMsg: p.encourageMsg || '',
+      losses, hasLosses: losses.length > 0,
+      penalties, hasPenalties: penalties.length > 0,
+      budgetNext: p.budgetNext != null ? p.budgetNext : 0,
+      nextTourLabel: p.nextTourLabel || 'Tour suivant',
+      effectifCount: eff.count != null ? eff.count : 0,
+      effectifLines,
+      depouillement, depTitle: p.depTitle || 'Le dépouillement',
+      awaitingMsg: p.awaitingMsg || '',
+      submittedSummary: p.submittedSummary || '',
+      submittedAt: p.submittedAt || '',
+      finalMsg: p.finalMsg || '',
+      roster, totalSpent, budgetMax: p.budgetMax != null ? p.budgetMax : 130,
+    };
+  }
+}
+</script>
+</body>
+</html>

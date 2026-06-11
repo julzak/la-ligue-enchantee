@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0C0C0B; }
+</style>
+</helmet>
+
+<div style="background:#0C0C0B; min-height:100vh; font-family:'Inter',system-ui,sans-serif; color:#E8E4DB; padding:0 0 90px;">
+
+  <!-- gallery header -->
+  <div style="padding:40px 48px 30px; border-bottom:1px solid #1E1D1A; background:linear-gradient(180deg,#141410,#0C0C0B);">
+    <div style="display:flex; align-items:center; gap:11px; margin-bottom:14px;">
+      <div style="position:relative; width:26px; height:31px; flex:none;">
+        <div style="position:absolute; inset:0; background:#C8A84B; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0);"></div>
+        <div style="position:absolute; inset:1.4px; background:#16160F; clip-path:polygon(50% 0,100% 0,100% 60%,50% 100%,0 60%,0 0); display:flex; align-items:center; justify-content:center;"><span style="font-family:'Arial Black',sans-serif; font-weight:800; font-size:12px; color:#E8E4DB; margin-top:-3px;">L</span></div>
+      </div>
+      <span style="font-size:12px; font-weight:600; letter-spacing:2px; color:#8C877C; text-transform:uppercase;">La Ligue Enchantée — Module Enchères</span>
+    </div>
+    <h1 style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:34px; margin:0 0 8px; color:#F5F2EB;">Page de mise <span style="font-style:italic; color:#C8A84B; font-weight:600;">d'un tour</span></h1>
+    <p style="margin:0; font-size:14px; color:#9C978B; max-width:680px; line-height:1.55;">Mobile-first 375px · 6 états. Le participant soumet sa mise du tour en moins de 5 minutes, en confiance totale sur son budget. Le budget restant et les chiffres de mise sont toujours lisibles ; rien de verrouillé ou rejeté ne disparaît sans explication.</p>
+  </div>
+
+  <!-- states grid -->
+  <div style="display:flex; flex-wrap:wrap; gap:48px 44px; justify-content:center; padding:46px 40px 0; max-width:1340px; margin:0 auto;">
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">01</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Premier tour, vide</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Budget plein, 13 emplacements à constituer.</div></div>
+      </div>
+      <dc-import name="MiseScreen" tour="{{ s1.tour }}" deadline="{{ s1.deadline }}" budget-max="{{ s1.budgetMax }}" slots="{{ s1.slots }}" warnings="{{ s1.warnings }}" mode="{{ s1.mode }}" search-open="{{ s1.searchOpen }}" hint-size="375px,820px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">02</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">En cours de saisie</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Acquis pré-remplis verrouillés + recherche ouverte.</div></div>
+      </div>
+      <dc-import name="MiseScreen" tour="{{ s2.tour }}" deadline="{{ s2.deadline }}" budget-max="{{ s2.budgetMax }}" slots="{{ s2.slots }}" warnings="{{ s2.warnings }}" mode="{{ s2.mode }}" search-open="{{ s2.searchOpen }}" hint-size="375px,820px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#C8A84B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">03</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Complète et conforme</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">13/13, quotas respectés, prête à soumettre.</div></div>
+      </div>
+      <dc-import name="MiseScreen" tour="{{ s3.tour }}" deadline="{{ s3.deadline }}" budget-max="{{ s3.budgetMax }}" slots="{{ s3.slots }}" warnings="{{ s3.warnings }}" mode="{{ s3.mode }}" search-open="{{ s3.searchOpen }}" hint-size="375px,820px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#D69634; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">04</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Complète, 2 avertissements</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Bandeau ambre non bloquant — soumission permise.</div></div>
+      </div>
+      <dc-import name="MiseScreen" tour="{{ s4.tour }}" deadline="{{ s4.deadline }}" budget-max="{{ s4.budgetMax }}" slots="{{ s4.slots }}" warnings="{{ s4.warnings }}" mode="{{ s4.mode }}" search-open="{{ s4.searchOpen }}" hint-size="375px,820px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#F5F2EB; background:#C0392B; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">05</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Après le butoir — lecture seule</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Tour clôturé, soumission refusée.</div></div>
+      </div>
+      <dc-import name="MiseScreen" tour="{{ s5.tour }}" deadline="{{ s5.deadline }}" budget-max="{{ s5.budgetMax }}" slots="{{ s5.slots }}" warnings="{{ s5.warnings }}" mode="{{ s5.mode }}" search-open="{{ s5.searchOpen }}" submitted="{{ s5.submitted }}" closed-msg="{{ s5.closedMsg }}" hint-size="375px,820px"></dc-import>
+    </div>
+
+    <div style="width:375px;">
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:16px;">
+        <span style="flex:none; font-size:11px; font-weight:800; color:#16160F; background:#8C877C; border-radius:6px; padding:3px 7px; font-variant-numeric:tabular-nums;">06</span>
+        <div><div style="font-size:14px; font-weight:700; color:#F5F2EB;">Clôturé, dépouillement en attente</div><div style="font-size:12px; color:#8C877C; margin-top:2px;">Mise soumise, résultats à venir.</div></div>
+      </div>
+      <dc-import name="MiseScreen" tour="{{ s6.tour }}" deadline="{{ s6.deadline }}" budget-max="{{ s6.budgetMax }}" slots="{{ s6.slots }}" warnings="{{ s6.warnings }}" mode="{{ s6.mode }}" search-open="{{ s6.searchOpen }}" submitted="{{ s6.submitted }}" awaiting-msg="{{ s6.awaitingMsg }}" hint-size="375px,820px"></dc-import>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  renderVals() {
+    const acquis = (name, club, poste, price, initials) => ({ type: 'acquis', name, club, poste, price, initials });
+    const bid = (name, club, poste, b, initials) => ({ type: 'bid', name, club, poste, bid: b, initials });
+
+    // shared valid 13-man roster (used by states 3, 5, 6)
+    const roster13 = [
+      acquis('Gardiens Monaco', 'AS Monaco', 'G', 8, 'AS'),
+      acquis('Quentin Merlin', 'Marseille', 'DEF', 9, 'QM'),
+      acquis('Lucas Hernández', 'Paris SG', 'DEF', 13, 'LH'),
+      bid('Lucas Beraldo', 'Paris SG', 'DEF', 6, 'LB'),
+      bid('Loïc Badé', 'Rennes', 'DEF', 5, 'LB'),
+      acquis('Jonathan Gradit', 'RC Lens', 'DEF', 4, 'JG'),
+      acquis('Pierre Lees-Melou', 'Brest', 'MIL', 6, 'PL'),
+      bid('Andy Diouf', 'RC Lens', 'MIL', 8, 'AD'),
+      bid('Désiré Doué', 'Paris SG', 'MIL', 12, 'DD'),
+      acquis('B. Bourigeaud', 'Rennes', 'MIL', 7, 'BB'),
+      acquis('A. Kalimuendo', 'Rennes', 'ATT', 11, 'AK'),
+      bid('Bradley Barcola', 'Paris SG', 'ATT', 14, 'BB'),
+      bid('Ludovic Ajorque', 'Brest', 'ATT', 9, 'LA'),
+    ];
+
+    return {
+      s1: { tour: 1, deadline: { type: 'countdown', text: '05:58:12' }, budgetMax: 130, slots: [], warnings: [], mode: 'edit', searchOpen: false },
+
+      s2: {
+        tour: 3, deadline: { type: 'countdown', text: '02:14:09' }, budgetMax: 130, mode: 'edit', searchOpen: true, warnings: [],
+        slots: [
+          acquis('Gardiens Lille', 'LOSC', 'G', 7, 'LO'),
+          acquis('Quentin Merlin', 'Marseille', 'DEF', 9, 'QM'),
+          acquis('Lucas Hernández', 'Paris SG', 'DEF', 13, 'LH'),
+          bid('Lucas Beraldo', 'Paris SG', 'DEF', 6, 'LB'),
+          acquis('Pierre Lees-Melou', 'Brest', 'MIL', 6, 'PL'),
+          bid('Andy Diouf', 'RC Lens', 'MIL', 8, 'AD'),
+          acquis('A. Kalimuendo', 'Rennes', 'ATT', 11, 'AK'),
+        ],
+      },
+
+      s3: { tour: 3, deadline: { type: 'countdown', text: '02:14:09' }, budgetMax: 130, slots: roster13, warnings: [], mode: 'edit', searchOpen: false },
+
+      s4: {
+        tour: 3, deadline: { type: 'countdown', text: '00:46:51' }, budgetMax: 130, mode: 'edit', searchOpen: false,
+        slots: [
+          acquis('Quentin Merlin', 'Marseille', 'DEF', 9, 'QM'),
+          acquis('Lucas Hernández', 'Paris SG', 'DEF', 13, 'LH'),
+          bid('Lucas Beraldo', 'Paris SG', 'DEF', 8, 'LB'),
+          bid('Loïc Badé', 'Rennes', 'DEF', 7, 'LB'),
+          acquis('Jonathan Gradit', 'RC Lens', 'DEF', 5, 'JG'),
+          bid('Nuno Mendes', 'Paris SG', 'DEF', 15, 'NM'),
+          acquis('Pierre Lees-Melou', 'Brest', 'MIL', 6, 'PL'),
+          bid('Andy Diouf', 'RC Lens', 'MIL', 10, 'AD'),
+          bid('Désiré Doué', 'Paris SG', 'MIL', 18, 'DD'),
+          acquis('B. Bourigeaud', 'Rennes', 'MIL', 7, 'BB'),
+          acquis('A. Kalimuendo', 'Rennes', 'ATT', 11, 'AK'),
+          bid('Bradley Barcola', 'Paris SG', 'ATT', 20, 'BB'),
+          bid('Ludovic Ajorque', 'Brest', 'ATT', 12, 'LA'),
+        ],
+        warnings: [
+          { text: "Aucun gardien dans la mise — retrait d'1 joueur au dépouillement." },
+          { text: 'Total 141 pts : dépassement de 11 pts sur le budget de 130.' },
+        ],
+      },
+
+      s5: { tour: 3, deadline: { type: 'closed', text: 'Tour clôturé' }, budgetMax: 130, slots: roster13, warnings: [], mode: 'readonly', submitted: '12 août à 19:47', closedMsg: 'Tour clôturé le 12 août à 20:00. Toute soumission est désormais refusée.' },
+
+      s6: { tour: 3, deadline: { type: 'closed', text: 'Clôturé' }, budgetMax: 130, slots: roster13, warnings: [], mode: 'awaiting', submitted: '12 août à 19:47', awaitingMsg: "L'admin procède au dépouillement. Vous serez notifié par email dès publication des résultats." },
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</helmet>
+
+<div style="width:375px; background:#141414; font-family:'Inter',system-ui,sans-serif; color:#E8E4DB; display:flex; flex-direction:column; min-height:780px; border-radius:26px; overflow:hidden; border:1px solid #2A2824;">
+
+  <!-- status bar -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 20px 5px; font-size:12px; color:#8C877C; font-weight:600;">
+    <span style="font-variant-numeric:tabular-nums;">21:41</span>
+    <span style="letter-spacing:1px;">• • • &nbsp;◖&nbsp; ▰▰▰</span>
+  </div>
+
+  <!-- HEADER : tour + deadline + budget -->
+  <div style="padding:6px 18px 16px; border-bottom:1px solid #232220; background:linear-gradient(180deg,#16160F 0%, #141414 100%);">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;">
+      <div style="font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:24px; color:#F5F2EB; line-height:1; white-space:nowrap;">{{ tourLabel }}</div>
+      <sc-if value="{{ isCountdown }}" hint-placeholder-val="{{ true }}">
+        <div style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(200,168,75,.10); border:1px solid rgba(200,168,75,.35); border-radius:999px;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#C8A84B; box-shadow:0 0 6px #C8A84B;"></span>
+          <span style="font-size:12px; font-weight:700; color:#D8BC63; font-variant-numeric:tabular-nums; letter-spacing:.3px;">{{ deadlineText }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isManual }}" hint-placeholder-val="{{ true }}">
+        <div style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(255,255,255,.04); border:1px solid #322F2A; border-radius:999px;">
+          <span style="font-size:11px; font-weight:600; color:#A39E92; letter-spacing:.2px;">{{ deadlineText }}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isClosedChip }}" hint-placeholder-val="{{ true }}">
+        <div style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(192,57,43,.12); border:1px solid rgba(192,57,43,.45); border-radius:999px;">
+          <span style="font-size:11px; font-weight:700; color:#E0705F; letter-spacing:.3px;">{{ deadlineText }}</span>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="font-size:10px; font-weight:700; letter-spacing:1.6px; color:#8C877C; margin-bottom:4px;">BUDGET RESTANT</div>
+    <sc-if value="{{ notOver }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; align-items:baseline; gap:8px;">
+        <span style="font-size:52px; font-weight:800; line-height:.9; color:#C8A84B; font-variant-numeric:tabular-nums; letter-spacing:-1.5px;">{{ remaining }}</span>
+        <span style="font-size:15px; color:#8C877C; font-weight:500;">/ {{ budgetMax }} pts</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:baseline; gap:8px;">
+        <span style="font-size:52px; font-weight:800; line-height:.9; color:#D85547; font-variant-numeric:tabular-nums; letter-spacing:-1.5px;">−{{ remainingAbs }}</span>
+        <span style="font-size:13px; color:#E0705F; font-weight:600;">dépassement / {{ budgetMax }} pts</span>
+      </div>
+    </sc-if>
+    <div style="margin-top:12px; height:5px; border-radius:3px; background:#262421; overflow:hidden;">
+      <div style="height:100%; border-radius:3px; width:{{ barPct }}; background:{{ barColor }};"></div>
+    </div>
+    <div style="margin-top:7px; font-size:11.5px; color:#7C776C;">{{ engagedLabel }} engagés ce tour · {{ filledLabel }} joueurs</div>
+  </div>
+
+  <!-- scroll body -->
+  <div style="flex:1; padding:14px 14px 4px; display:flex; flex-direction:column; gap:14px;">
+
+    <!-- READONLY banner -->
+    <sc-if value="{{ isReadonly }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; gap:10px; padding:13px; background:rgba(192,57,43,.10); border:1px solid rgba(192,57,43,.4); border-radius:8px;">
+        <span style="font-size:16px; line-height:1.2;">🔒</span>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#E0705F; margin-bottom:2px;">Soumission refusée</div>
+          <div style="font-size:12px; color:#C9B7A0; line-height:1.45;">{{ closedMsg }}</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- AWAITING banner -->
+    <sc-if value="{{ isAwaiting }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; gap:10px; padding:13px; background:rgba(200,168,75,.08); border:1px solid rgba(200,168,75,.3); border-radius:8px;">
+        <span style="font-size:16px; line-height:1.2;">⏳</span>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#D8BC63; margin-bottom:2px;">Tour clôturé — dépouillement en attente</div>
+          <div style="font-size:12px; color:#A39E92; line-height:1.45;">{{ awaitingMsg }}</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- EMPTY hint -->
+    <sc-if value="{{ showEmptyHint }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center; padding:18px 14px 6px;">
+        <div style="font-family:'Playfair Display',Georgia,serif; font-style:italic; font-size:19px; color:#F5F2EB; margin-bottom:6px;">Constituez votre équipe</div>
+        <div style="font-size:12.5px; color:#8C877C; line-height:1.5;">13 joueurs · {{ budgetMax }} points · mises fermées.<br>Ajoutez vos joueurs ligne par ligne ci-dessous.</div>
+      </div>
+    </sc-if>
+
+    <!-- WARNINGS band (amber, non-blocking) -->
+    <sc-if value="{{ hasWarnings }}" hint-placeholder-val="{{ false }}">
+      <div style="background:rgba(214,150,52,.10); border:1px solid rgba(214,150,52,.42); border-radius:8px; overflow:hidden;">
+        <div style="display:flex; align-items:center; gap:8px; padding:10px 13px 8px;">
+          <span style="font-size:14px;">⚠️</span>
+          <span style="font-size:12px; font-weight:700; color:#E0A94E; letter-spacing:.2px;">Avertissements de composition</span>
+        </div>
+        <sc-for list="{{ warnings }}" as="w" hint-placeholder-count="2">
+          <div style="display:flex; gap:9px; padding:7px 13px; border-top:1px solid rgba(214,150,52,.18);">
+            <span style="color:#E0A94E; font-size:13px; line-height:1.4;">•</span>
+            <span style="font-size:12px; color:#D8CBB6; line-height:1.45;">{{ w.text }}</span>
+          </div>
+        </sc-for>
+        <div style="padding:8px 13px 10px; border-top:1px solid rgba(214,150,52,.18); font-size:11px; color:#9C8E73; font-style:italic;">Vous pouvez soumettre malgré ces avertissements.</div>
+      </div>
+    </sc-if>
+
+    <!-- SEARCH overlay (inline sheet) -->
+    <sc-if value="{{ showSearch }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#1B1B19; border:1px solid rgba(200,168,75,.28); border-radius:10px; box-shadow:0 12px 30px rgba(0,0,0,.45); overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 13px 10px;">
+          <span style="font-size:13px; font-weight:700; color:#F5F2EB;">Ajouter un joueur</span>
+          <span style="font-size:18px; color:#8C877C; line-height:1;">×</span>
+        </div>
+        <div style="padding:0 13px 10px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:9px 11px; background:#141414; border:1px solid #322F2A; border-radius:8px;">
+            <span style="font-size:14px; color:#7C776C;">⌕</span>
+            <span style="font-size:13px; color:#7C776C;">Rechercher un joueur, un club…</span>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:10px;">
+            <span style="font-size:11px; font-weight:600; padding:5px 11px; border-radius:999px; background:rgba(200,168,75,.14); border:1px solid rgba(200,168,75,.4); color:#D8BC63;">Tous</span>
+            <span style="font-size:11px; font-weight:600; padding:5px 11px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid #322F2A; color:#A39E92;">G</span>
+            <span style="font-size:11px; font-weight:600; padding:5px 11px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid #322F2A; color:#A39E92;">DEF</span>
+            <span style="font-size:11px; font-weight:600; padding:5px 11px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid #322F2A; color:#A39E92;">MIL</span>
+            <span style="font-size:11px; font-weight:600; padding:5px 11px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid #322F2A; color:#A39E92;">ATT</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid #232220;">
+          <sc-for list="{{ catalog }}" as="c" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:11px; padding:10px 13px; border-bottom:1px solid #201F1D;">
+              <div style="width:36px; height:36px; flex:none; border-radius:50%; background:#2A2824; border:1px solid #38362F; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#C9C3B5;">{{ c.initials }}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13.5px; font-weight:600; color:#EBE6DA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ c.name }}</div>
+                <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                  <span style="font-size:11px; color:#8C877C;">{{ c.club }}</span>
+                  <span style="font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,.05); border:1px solid #38362F; color:#A39E92; letter-spacing:.3px;">{{ c.poste }}</span>
+                </div>
+              </div>
+              <span style="font-size:11.5px; font-weight:700; color:#C8A84B; padding:6px 12px; border:1px solid rgba(200,168,75,.4); border-radius:7px;">Ajouter</span>
+            </div>
+          </sc-for>
+          <div style="padding:9px 13px; font-size:10.5px; color:#7C776C; font-style:italic; line-height:1.4;">Les joueurs déjà acquis par un autre participant n'apparaissent pas. Les gardiens sont des entrées par club.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- GROUPS (lignes) -->
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+      <div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0 2px 7px;">
+          <span style="font-size:10.5px; font-weight:700; letter-spacing:1.4px; color:#8C877C; text-transform:uppercase;">{{ g.label }}</span>
+          <sc-if value="{{ g.over }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:11px; font-weight:700; color:#E0705F; font-variant-numeric:tabular-nums;">{{ g.countLabel }}</span>
+          </sc-if>
+          <sc-if value="{{ g.notOver }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size:11px; font-weight:600; color:#7C776C; font-variant-numeric:tabular-nums;">{{ g.countLabel }}</span>
+          </sc-if>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:7px;">
+          <sc-for list="{{ g.players }}" as="pl" hint-placeholder-count="2">
+            <!-- ACQUIS row -->
+            <sc-if value="{{ pl.isAcquis }}" hint-placeholder-val="{{ true }}">
+              <div style="position:relative; display:flex; align-items:center; gap:11px; padding:10px 12px; background:#1A1A18; border:1px solid #272521; border-radius:8px;">
+                <div style="position:absolute; left:0; top:9px; bottom:9px; width:2px; border-radius:2px; background:#8A7133;"></div>
+                <div style="width:36px; height:36px; flex:none; border-radius:50%; background:#242220; border:1px solid #34322B; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#A8A294;">{{ pl.initials }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13.5px; font-weight:600; color:#D8D3C7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ pl.name }}</div>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span style="font-size:11px; color:#7C776C;">{{ pl.club }}</span>
+                    <span style="font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,.04); border:1px solid #34322B; color:#8C877C; letter-spacing:.3px;">{{ pl.poste }}</span>
+                  </div>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                  <span style="font-size:14px; font-weight:700; color:#C9C3B5; font-variant-numeric:tabular-nums;">{{ pl.valueLabel }}</span>
+                  <span style="font-size:8.5px; font-weight:700; letter-spacing:.6px; padding:2px 6px; border-radius:999px; background:rgba(200,168,75,.13); border:1px solid rgba(200,168,75,.38); color:#D8BC63;">ACQUIS</span>
+                </div>
+              </div>
+            </sc-if>
+            <!-- BID row (editable) -->
+            <sc-if value="{{ pl.isBidEdit }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:11px; padding:10px 12px; background:#201F1B; border:1px solid rgba(200,168,75,.24); border-radius:8px;">
+                <div style="width:36px; height:36px; flex:none; border-radius:50%; background:#2C2A24; border:1px solid #443F33; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#D2CCBD;">{{ pl.initials }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13.5px; font-weight:600; color:#EBE6DA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ pl.name }}</div>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span style="font-size:11px; color:#8C877C;">{{ pl.club }}</span>
+                    <span style="font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,.05); border:1px solid #443F33; color:#A39E92; letter-spacing:.3px;">{{ pl.poste }}</span>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="display:flex; align-items:baseline; gap:3px; background:#141414; border:1px solid #4A4538; border-radius:7px; padding:6px 10px;">
+                    <span style="font-size:17px; font-weight:800; color:#F5F2EB; font-variant-numeric:tabular-nums; line-height:1;">{{ pl.bid }}</span>
+                    <span style="font-size:9.5px; color:#8C877C;">pts</span>
+                  </div>
+                  <span style="font-size:16px; color:#6E6A60; line-height:1;">×</span>
+                </div>
+              </div>
+            </sc-if>
+            <!-- BID row (locked / readonly) -->
+            <sc-if value="{{ pl.isBidLocked }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:11px; padding:10px 12px; background:#1A1A18; border:1px solid #272521; border-radius:8px;">
+                <div style="width:36px; height:36px; flex:none; border-radius:50%; background:#242220; border:1px solid #34322B; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#A8A294;">{{ pl.initials }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13.5px; font-weight:600; color:#D8D3C7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ pl.name }}</div>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span style="font-size:11px; color:#7C776C;">{{ pl.club }}</span>
+                    <span style="font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(255,255,255,.04); border:1px solid #34322B; color:#8C877C; letter-spacing:.3px;">{{ pl.poste }}</span>
+                  </div>
+                </div>
+                <span style="font-size:14px; font-weight:700; color:#C9C3B5; font-variant-numeric:tabular-nums;">{{ pl.bid }} pts</span>
+              </div>
+            </sc-if>
+          </sc-for>
+
+          <!-- add row -->
+          <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; align-items:center; gap:11px; padding:11px 12px; border:1px dashed #3A382F; border-radius:8px;">
+              <div style="width:36px; height:36px; flex:none; border-radius:50%; border:1px dashed #46443A; display:flex; align-items:center; justify-content:center; font-size:18px; color:#6E6A60; line-height:1;">+</div>
+              <div style="flex:1;">
+                <div style="font-size:13px; font-weight:600; color:#9C978B;">Ajouter un joueur</div>
+                <div style="font-size:10.5px; color:#6E6A60; margin-top:1px;">Rechercher par nom, club, poste</div>
+              </div>
+              <span style="font-size:15px; color:#6E6A60;">⌕</span>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="border-top:1px solid #2A2824; background:#16160F; padding:13px 16px 18px;">
+    <!-- EDIT footer -->
+    <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ showWarnSummary }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:10px;">
+          <span style="font-size:13px;">⚠️</span>
+          <span style="font-size:11.5px; color:#E0A94E; font-weight:600;">Mise non conforme — soumission autorisée</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showConforme }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:10px;">
+          <span style="width:16px; height:16px; border-radius:50%; background:rgba(26,107,60,.2); border:1px solid #1A6B3C; display:inline-flex; align-items:center; justify-content:center; font-size:9px; color:#3FB873;">✓</span>
+          <span style="font-size:11.5px; color:#3FB873; font-weight:600;">Composition conforme · 13 / 13 joueurs</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showIncomplete }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:10px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#8C877C;"></span>
+          <span style="font-size:11.5px; color:#9C978B; font-weight:600;">{{ filledLabel }} joueurs · complétez votre mise</span>
+        </div>
+      </sc-if>
+      <div style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; background:#C8A84B; border-radius:9px;">
+        <span style="font-size:15px; font-weight:700; color:#16160F; letter-spacing:.2px;">Soumettre ma mise</span>
+      </div>
+      <div style="text-align:center; font-size:10.5px; color:#7C776C; margin-top:8px; font-style:italic;">Remplace toute mise précédente de ce tour.</div>
+    </sc-if>
+
+    <!-- AWAITING footer (submitted) -->
+    <sc-if value="{{ isAwaiting }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; gap:10px; padding:12px; background:rgba(26,107,60,.10); border:1px solid rgba(26,107,60,.4); border-radius:9px;">
+        <span style="width:18px; height:18px; flex:none; border-radius:50%; background:rgba(26,107,60,.25); border:1px solid #1A6B3C; display:inline-flex; align-items:center; justify-content:center; font-size:10px; color:#3FB873;">✓</span>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#3FB873;">Mise soumise</div>
+          <div style="font-size:11.5px; color:#A39E92; margin-top:1px;">{{ submitted }} · résultats à venir après dépouillement.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- READONLY footer -->
+    <sc-if value="{{ isReadonly }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; background:#201F1C; border:1px solid #322F2A; border-radius:9px;">
+        <span style="font-size:13px; color:#6E6A60;">🔒</span>
+        <span style="font-size:14px; font-weight:700; color:#7C776C;">Soumission close</span>
+      </div>
+      <div style="text-align:center; font-size:10.5px; color:#7C776C; margin-top:8px;">Dernière soumission : {{ submitted }}</div>
+    </sc-if>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:375,&quot;height&quot;:820}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props || {};
+    const max = p.budgetMax != null ? p.budgetMax : 130;
+    const slots = p.slots || [];
+    const mode = p.mode || 'edit';
+    const isEdit = mode === 'edit';
+    const isReadonly = mode === 'readonly';
+    const isAwaiting = mode === 'awaiting';
+    const lines = [
+      { key: 'G',   label: 'Gardien',     max: 1 },
+      { key: 'DEF', label: 'Défenseurs',  max: 6 },
+      { key: 'MIL', label: 'Milieux',     max: 6 },
+      { key: 'ATT', label: 'Attaquants',  max: 4 },
+    ];
+    let spent = 0, engaged = 0, filled = 0;
+    const groups = lines.map(l => {
+      const players = slots.filter(s => s.poste === l.key).map(s => {
+        const acquis = s.type === 'acquis';
+        if (acquis) { spent += (s.price || 0); }
+        else { engaged += (s.bid || 0); }
+        filled++;
+        return Object.assign({}, s, {
+          isAcquis: acquis,
+          isBidEdit: !acquis && isEdit,
+          isBidLocked: !acquis && !isEdit,
+          valueLabel: (acquis ? (s.price || 0) : (s.bid || 0)) + ' pts',
+        });
+      });
+      return {
+        label: l.label, max: l.max, players,
+        count: players.length,
+        countLabel: players.length + ' / ' + l.max,
+        over: players.length > l.max,
+        notOver: players.length <= l.max,
+      };
+    });
+    const remaining = max - spent - engaged;
+    const over = remaining < 0;
+    const usedPct = Math.max(0, Math.min(100, Math.round(((spent + engaged) / max) * 100)));
+    const warnings = p.warnings || [];
+    return {
+      tourLabel: 'Tour ' + (p.tour != null ? p.tour : ''),
+      isCountdown: !!(p.deadline && p.deadline.type === 'countdown'),
+      isManual: !!(p.deadline && p.deadline.type === 'manual'),
+      isClosedChip: !!(p.deadline && p.deadline.type === 'closed'),
+      deadlineText: (p.deadline && p.deadline.text) || '',
+      remaining, remainingAbs: Math.abs(remaining), over, notOver: !over,
+      budgetMax: max,
+      engagedLabel: engaged + ' pts',
+      filled, filledLabel: filled + ' / 13',
+      barPct: usedPct + '%',
+      barColor: over ? '#C0392B' : '#C8A84B',
+      groups,
+      isEdit, isReadonly, isAwaiting,
+      showSearch: isEdit && !!p.searchOpen,
+      showEmptyHint: isEdit && filled === 0,
+      warnings, hasWarnings: warnings.length > 0,
+      showWarnSummary: isEdit && warnings.length > 0,
+      showConforme: isEdit && warnings.length === 0 && filled === 13,
+      showIncomplete: isEdit && warnings.length === 0 && filled !== 13,
+      remainingToFill: 13 - filled,
+      submitted: p.submitted || '',
+      closedMsg: p.closedMsg || '',
+      awaitingMsg: p.awaitingMsg || '',
+      catalog: [
+        { name: 'Bradley Barcola', club: 'Paris SG', poste: 'ATT', initials: 'BB' },
+        { name: 'Désiré Doué', club: 'Paris SG', poste: 'MIL', initials: 'DD' },
+        { name: 'Gardiens Marseille', club: 'OM', poste: 'G', initials: 'OM' },
+        { name: 'Quentin Merlin', club: 'Marseille', poste: 'DEF', initials: 'QM' },
+        { name: 'Andy Diouf', club: 'RC Lens', poste: 'MIL', initials: 'AD' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
