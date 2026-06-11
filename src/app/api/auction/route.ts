@@ -71,9 +71,9 @@ export async function GET(request: Request) {
 
   // My bids for current round (include player_out for winter)
   const myBids = await prisma.$queryRawUnsafe<{
-    player_id: number; amount: number; status: string; fname: string; lname: string; club_name: string; player_out_id: number | null;
+    player_id: number; amount: number; status: string; fname: string; lname: string; club_name: string; position: string; player_out_id: number | null;
   }[]>(
-    `SELECT b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, b.player_out_id
+    `SELECT b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position, b.player_out_id
      FROM AUCTION_BID b JOIN PLAYER p ON b.player_id = p.ID_PLAYER JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
      WHERE b.auction_id = ? AND b.round = ? AND b.user_id = ?`,
     a.id, a.current_round, userId
@@ -151,6 +151,7 @@ export async function GET(request: Request) {
       playerId: Number(b.player_id),
       playerName: `${b.fname} ${b.lname}`.trim(),
       clubName: b.club_name,
+      position: b.position,
       amount: Number(b.amount),
       status: b.status,
       playerOutId: b.player_out_id ? Number(b.player_out_id) : null,

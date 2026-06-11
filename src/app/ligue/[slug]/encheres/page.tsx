@@ -54,6 +54,7 @@ interface MyBid {
   playerId: number;
   playerName: string;
   clubName: string;
+  position: string;
   amount: number;
   status: string;
   playerOutId?: number | null;
@@ -555,7 +556,7 @@ export default function EncheresPage() {
           playerId: b.playerId,
           playerName: b.playerName,
           clubName: b.clubName,
-          position: "MID", // position non fournie par myBids — sera corrigé si besoin
+          position: b.position,
           amount: b.amount,
         })));
       }
