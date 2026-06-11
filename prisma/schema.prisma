@@ -255,3 +255,18 @@ model AppConfig {
 
   @@map("APP_CONFIG")
 }
+
+// Table gérée via $queryRawUnsafe (pas de migrate Prisma — migrations manuelles dans sql/).
+// Modèle documentaire uniquement ; ne pas utiliser prisma.auction.* dans le code.
+model Auction {
+  id             Int       @id @default(autoincrement()) @map("id") @db.UnsignedInt
+  leagueId       Int       @map("league_id") @db.UnsignedInt
+  status         String    @default("open") @map("status") @db.VarChar(20)
+  currentRound   Int       @default(1) @map("current_round")
+  budgetPerUser  Int       @default(130) @map("budget_per_user")
+  playersPerUser Int       @default(13) @map("players_per_user")
+  type           String?   @map("type") @db.VarChar(20)
+  roundDeadline  DateTime? @map("round_deadline") @db.DateTime(0)
+
+  @@map("AUCTION")
+}
