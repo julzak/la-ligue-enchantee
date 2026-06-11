@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { Loader2, Search, X, Clock, Send, Lock, ArrowRightLeft, Minus, Plus } from "lucide-react";
 import { validateSubmission } from "@/lib/auction-engine";
 import type { Line, EnginePlayer } from "@/lib/auction-engine";
-import { checkGoalkeeperLimit } from "@/lib/auction-goalkeeper-limit";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -75,6 +74,8 @@ function positionToLine(pos: string): Line {
 function positionLabel(pos: string): string {
   const line = positionToLine(pos);
   if (line === "GK") return "G";
+  // N7-fix : "MID" → "MIL" pour cohérence avec DEF/MIL/ATT (palette française)
+  if (line === "MID") return "MIL";
   return line;
 }
 
@@ -658,16 +659,21 @@ export default function EncheresPage() {
 
   // Erreur BLOQUANTE : plus d'un gardien dans la mise (acquis compris).
   // Décision 2026-06-11 — seul cas de rejet pour motif de composition.
-  const gkCheck = checkGoalkeeperLimit(
-    wonPlayers.map((p) => ({ position: p.position })),
-    draftBids.map((b) => ({ position: b.position }))
-  );
-  const blockingError: string | null = gkCheck.rejected
-    ? `Votre mise contient ${gkCheck.totalGoalkeepers} gardiens (acquis compris). Maximum autorisé : 1. La soumission est refusée tant que cette erreur n'est pas corrigée (règle du 2026-06-11).`
+  // N2-fix : utilise positionToLine (même mapping que le compteur de ligne UI) pour
+  // compter les GK, plutôt que checkGoalkeeperLimit (qui ne reconnaît pas les
+  // positions courtes "G" du seed recette et pourrait diverger de l'affichage).
+  const gkCountUI =
+    wonPlayers.filter((p) => positionToLine(p.position) === "GK").length +
+    draftBids.filter((b) => positionToLine(b.position) === "GK").length;
+  // On délègue toujours à checkGoalkeeperLimit côté serveur ; côté UI on se base
+  // sur gkCountUI pour ne jamais avoir compteur et erreur qui se contredisent.
+  const blockingError: string | null = gkCountUI > 1
+    ? `Votre mise contient ${gkCountUI} gardiens (acquis compris). Maximum autorisé : 1. La soumission est refusée tant que cette erreur n'est pas corrigée (règle du 2026-06-11).`
     : null;
 
   const totalFilled = wonPlayers.length + draftBids.length;
-  const isConform = warnings.length === 0 && totalFilled === 13;
+  // N2-fix : la conformité tient également compte de l'excès de gardiens.
+  const isConform = warnings.length === 0 && totalFilled === 13 && !blockingError;
 
   // M4 : le dénominateur de la barre budget est le budget API (valeur fixe),
   // pas budget + totalDraft (qui varie à chaque frappe).
@@ -740,9 +746,15 @@ export default function EncheresPage() {
   const deadlinePassed = secondsLeft !== null && secondsLeft <= 0;
   const isReadonly = isClosed || deadlinePassed;
 
-  // M3 : mode "awaiting" = tour clôturé ET mise soumise
+  // M3 : mode "awaiting" = tour clôturé ET mise soumise (pending ou déjà résolue)
+  // N3-fix : après dépouillement les mises passent en won/removed/tie (plus de pending).
+  // Un participant qui a soumis ne doit pas voir le bandeau rouge "Soumission refusée" :
+  //   - hasPendingBid  = tour clôturé, en attente de dépouillement (bandeau or)
+  //   - hasTalliedBid  = tour dépouillé avec au moins une mise résolue (bandeau neutre/or)
+  //   - isAwaiting     = l'un ou l'autre → masque le rouge "Soumission refusée"
   const hasPendingBid = myBids.some((b) => b.status === "pending");
-  const isAwaiting = isReadonly && hasPendingBid;
+  const hasTalliedBid = myBids.some((b) => ["won", "removed", "tie", "lost"].includes(b.status));
+  const isAwaiting = isReadonly && (hasPendingBid || hasTalliedBid);
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
@@ -813,14 +825,27 @@ export default function EncheresPage() {
 
       <div className="px-4 pt-4 space-y-4">
 
-        {/* ── M3 : Bannière AWAITING (tour clôturé + mise soumise) ── */}
-        {isAwaiting && (
+        {/* ── M3 : Bannière AWAITING (tour clôturé + mise soumise, en attente) ── */}
+        {isAwaiting && hasPendingBid && !hasTalliedBid && (
           <div className="flex gap-3 p-3.5 bg-gold/[0.08] border border-gold/[0.30] rounded-lg">
             <span className="text-base flex-none mt-0.5">⏳</span>
             <div>
               <div className="text-[12.5px] font-bold text-[#D8BC63] mb-0.5">Tour clôturé — dépouillement en attente</div>
               <div className="text-[11.5px] text-[#A39E92] leading-relaxed">
                 Votre mise a bien été enregistrée. Les résultats seront disponibles après le dépouillement.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── N3 : Bannière TALLIED (tour dépouillé + participant avait soumis) ── */}
+        {isAwaiting && hasTalliedBid && (
+          <div className="flex gap-3 p-3.5 bg-gold/[0.06] border border-gold/[0.22] rounded-lg">
+            <span className="text-base flex-none mt-0.5">✓</span>
+            <div>
+              <div className="text-[12.5px] font-bold text-[#D8BC63] mb-0.5">Tour dépouillé — consultez vos résultats</div>
+              <div className="text-[11.5px] text-[#A39E92] leading-relaxed">
+                Votre mise a été traitée. Les acquisitions et résultats sont affichés ci-dessous.
               </div>
             </div>
           </div>
@@ -859,7 +884,8 @@ export default function EncheresPage() {
         )}
 
         {/* ── Avertissements de composition (bandeau ambre non bloquant) ── */}
-        {!isReadonly && warnings.length > 0 && (
+        {/* N4-fix : masqués à l'état vide (0 joueur), affichés dès qu'une mise ou un acquis existe */}
+        {!isReadonly && warnings.length > 0 && totalFilled > 0 && (
           <div className="bg-[#D69634]/[0.10] border border-[#D69634]/42 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2.5">
               <span className="text-sm">⚠️</span>
@@ -994,7 +1020,8 @@ export default function EncheresPage() {
                           : b.status === "lost"
                           ? "bg-rouge/[0.08] border-rouge/20 text-rouge/60"
                           : b.status === "tie"
-                          ? "bg-blue-400/[0.10] border-blue-400/25 text-blue-400/70"
+                          // N8-fix : or atténué (gold-dim) — remplace le bleu hors palette
+                          ? "bg-gold/[0.10] border-gold/25 text-gold-dim"
                           : "bg-white/[0.04] border-[#34322B] text-muted"
                       }`}>
                         {b.status === "won" ? "ACQUIS"
@@ -1105,7 +1132,8 @@ export default function EncheresPage() {
                   <span className="text-[12px]">🚫</span>
                   <span className="text-[11px] text-rouge font-semibold">Soumission bloquée — retirez un gardien</span>
                 </>
-              ) : warnings.length > 0 ? (
+              ) : warnings.length > 0 && totalFilled > 0 ? (
+                // N4-fix : le footer ambre n'apparaît qu'à partir du moment où le joueur a saisi quelque chose
                 <>
                   <span className="text-[12px]">⚠️</span>
                   <span className="text-[11px] text-[#E0A94E] font-semibold">Mise non conforme — soumission autorisée</span>
