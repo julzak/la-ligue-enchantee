@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { CLUB_GK_KEY_PREFIX } from "@/lib/club-goalkeeper";
 // import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(request: Request) {
@@ -33,6 +34,19 @@ export async function GET(request: Request) {
   // Build query conditions
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = { clubId: { gt: 0 } };
+  // Gardiens : seuls les pseudo-joueurs « Gardiens [Club] » (clé stable
+  // `gardiens_*` dans LINK) sont proposables à la mise ; aucun gardien nommé
+  // (règle 2.1 + décision 2026-06-10, docs/regles-encheres.md §7). Les
+  // gardiens nommés restent visibles dans l'explorateur, hors flux de mise.
+  // « ardien » couvre Gardien/gardien quelle que soit la collation.
+  where.AND = [
+    {
+      OR: [
+        { NOT: { position: { contains: "ardien" } } },
+        { link: { startsWith: CLUB_GK_KEY_PREFIX } },
+      ],
+    },
+  ];
   if (clubId) {
     where.clubId = clubId;
   }

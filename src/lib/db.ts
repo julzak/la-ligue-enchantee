@@ -5,6 +5,12 @@ import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "
 import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { leagueSlug } from "./season-key";
+import {
+  isClubGoalkeeper,
+  expandIdsForGoalkeeperResolution,
+  buildDayScoreResolver,
+  attributeClubGoalkeeperDayScores,
+} from "./club-goalkeeper";
 
 // ── Request-scoped caches (dedup within same render) ────
 // Scopées sur la saison courante quand elle a des données rattachées,
@@ -655,18 +661,21 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
     });
   }
 
-  const playerIds = lineup.map((l) => l.playerId);
-  const scores = await prisma.score.findMany({
-    where: { day, playerId: { in: playerIds } },
-  });
-  const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
-
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
 
+  // Pseudo-gardiens « Gardiens [Club] » : leur note est celle du gardien
+  // nommé aligné par leur club ce jour-là (docs/regles-encheres.md §7).
+  const playerIds = lineup.map((l) => l.playerId);
+  const queryIds = expandIdsForGoalkeeperResolution(playerIds, playerMap.values());
+  const scores = await prisma.score.findMany({
+    where: { day, playerId: { in: queryIds } },
+  });
+  const resolveScore = buildDayScoreResolver(playerMap.values(), scores);
+
   return lineup.map((l) => {
     const player = playerMap.get(l.playerId);
-    const score = scoreMap.get(l.playerId);
+    const score = resolveScore(l.playerId);
     const pos = player?.position ?? "";
     const total = score
       ? calcPlayerTotal(dec(score.points), score.goals, score.passes, pos, score.redCard, score.ownGoals, score.penaltySaved, scoringCfg)
@@ -696,19 +705,22 @@ export async function getRosterDayScores(rosterPlayerIds: number[], day: number)
   if (rosterPlayerIds.length === 0) return [];
   const scoringCfg = await getScoringConfig();
 
-  const scores = await prisma.score.findMany({
-    where: { day, playerId: { in: rosterPlayerIds } },
-  });
-  const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
-
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
 
+  // Pseudo-gardiens « Gardiens [Club] » : note du gardien nommé aligné par
+  // le club ce jour-là (docs/regles-encheres.md §7).
+  const queryIds = expandIdsForGoalkeeperResolution(rosterPlayerIds, playerMap.values());
+  const scores = await prisma.score.findMany({
+    where: { day, playerId: { in: queryIds } },
+  });
+  const resolveScore = buildDayScoreResolver(playerMap.values(), scores);
+
   return rosterPlayerIds
-    .filter((id) => scoreMap.has(id)) // only players with scores
+    .filter((id) => resolveScore(id) !== undefined) // only players with scores
     .map((id) => {
       const player = playerMap.get(id);
-      const score = scoreMap.get(id)!;
+      const score = resolveScore(id)!;
       const pos = player?.position ?? "";
       const total = calcPlayerTotal(
         dec(score.points), score.goals, score.passes, pos,
@@ -742,14 +754,26 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
   // Get unique player IDs
   const playerIds = Array.from(new Set(allLineups.map((l) => l.playerId)));
 
-  // Get all scores for these players up to current day
-  const allScores = await prisma.score.findMany({
-    where: { playerId: { in: playerIds }, day: { lte: currentDay } },
-  });
-
   // Get player details
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
+
+  // Get all scores for these players up to current day. Pour les
+  // pseudo-gardiens « Gardiens [Club] », la requête est élargie aux gardiens
+  // nommés de leur club, puis des lignes synthétiques portant l'id du
+  // pseudo-joueur sont fabriquées par journée (docs/regles-encheres.md §7).
+  const queryIds = expandIdsForGoalkeeperResolution(playerIds, playerMap.values());
+  const fetchedScores = await prisma.score.findMany({
+    where: { playerId: { in: queryIds }, day: { lte: currentDay } },
+  });
+  const pseudoGkIds = playerIds.filter((id) => {
+    const p = playerMap.get(id);
+    return p !== undefined && isClubGoalkeeper(p);
+  });
+  const allScores = [
+    ...fetchedScores,
+    ...attributeClubGoalkeeperDayScores(pseudoGkIds, playerMap.values(), fetchedScores),
+  ];
 
   // Build per-player: which days were they in the lineup?
   const playerDays = new Map<number, Set<number>>();

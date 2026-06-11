@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSeasonFilters } from "@/lib/season";
+import { buildDayScoreResolver } from "@/lib/club-goalkeeper";
 
 function dec(v: unknown): number {
   if (v === null || v === undefined) return 0;
@@ -32,11 +33,17 @@ export async function POST(request: Request) {
 
     // Get all scores for this day
     const scores = await prisma.score.findMany({ where: { day } });
-    const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
 
     // Get all players (for position)
     const players = await prisma.player.findMany({ where: filters.player });
     const playerMap = new Map(players.map((p) => [p.id, p]));
+
+    // Résolution des notes : pour un pseudo-gardien « Gardiens [Club] », la
+    // ligne SCORE utilisée est celle du gardien nommé aligné par son club ce
+    // jour-là ; pour tout autre joueur, sa propre ligne (inchangé). Pas de
+    // ligne résoluble = pas de points, comme tout joueur sans note.
+    // Cf docs/regles-encheres.md §7 (décision 2026-06-10).
+    const resolveScore = buildDayScoreResolver(players, scores);
 
     for (const league of leagues) {
       // Get all participants in this league
@@ -107,7 +114,7 @@ export async function POST(request: Request) {
         let playerUsed = 0;
 
         for (const playerId of lineup) {
-          const score = scoreMap.get(playerId);
+          const score = resolveScore(playerId);
           const player = playerMap.get(playerId);
           if (!score || !player) continue;
 
