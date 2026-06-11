@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSeasonFilters } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
+import { isClubGoalkeeper } from "@/lib/club-goalkeeper";
 
 // GET: fetch scores for a matchday
 export async function GET(request: Request) {
@@ -33,7 +34,15 @@ export async function GET(request: Request) {
   const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
   const takenPlayerIds = new Set(takenTeams.map((t) => t.playerId));
 
-  const data = players.map((p) => {
+  // M3 : exclure les pseudo-gardiens « Gardiens [Club] » de la grille de saisie.
+  // Leur note est synthétisée au publish depuis le gardien nommé aligné (§7).
+  // Laisser une ligne SCORE sur un pseudo-gardien crée un double comptage dans
+  // getParticipantCumulativeStats (ligne réelle + ligne synthétique).
+  const visiblePlayers = players.filter(
+    (p) => !isClubGoalkeeper({ position: p.position, link: p.link })
+  );
+
+  const data = visiblePlayers.map((p) => {
     const score = scoreMap.get(p.id);
     return {
       playerId: p.id,
