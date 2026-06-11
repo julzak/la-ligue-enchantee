@@ -26,9 +26,8 @@ n'est jamais cassé définitivement.
 **À savoir avant de commencer :**
 
 - **Désigner un admin « pilote effectifs »** : c'est lui qui prendra
-  l'abonnement photos (TheSportsDB, 9 $ pour UN mois au moment du lancement,
-  remboursé sur la caisse) et qui le résiliera début septembre. Voir phase
-  6bis et phase 8.
+  l'abonnement photos (TheSportsDB, 9 $ pour UN mois au moment du lancement)
+  et qui le résiliera début septembre. Voir phase 6bis et phase 8.
 - **Calendrier d'été** : les phases 1 à 5 se font début juillet (les listes
   de joueurs sont gratuites, pas besoin d'attendre). Les **enchères occupent
   juillet**, les équipes sont complètes début août, et le lancement
