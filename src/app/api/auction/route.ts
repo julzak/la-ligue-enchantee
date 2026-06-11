@@ -6,6 +6,7 @@ import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
 import { getSeasonFilters } from "@/lib/season";
 import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
+import { checkGoalkeeperLimit } from "@/lib/auction-goalkeeper-limit";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -305,6 +306,33 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+    }
+  }
+
+  // B2-GK : garde serveur — une mise ne peut pas contenir plus d'UN gardien
+  // (acquis compris). Seul cas de rejet pour motif de composition.
+  // Décision Julien 2026-06-11 (docs/regles-encheres.md §7).
+  if (!isWinter && bids.length > 0) {
+    // Positions des joueurs déjà acquis (won) par ce participant
+    const [bidPh2, bidVs2] = inParams(bids.map((b) => b.playerId));
+    const wonPositionRows = await prisma.$queryRawUnsafe<{ position: string }[]>(
+      `SELECT p.POSITION as position
+       FROM AUCTION_BID ab JOIN PLAYER p ON ab.player_id = p.ID_PLAYER
+       WHERE ab.auction_id = ? AND ab.user_id = ? AND ab.status = 'won'`,
+      a.id, userId
+    );
+    const draftPositionRows = await prisma.$queryRawUnsafe<{ position: string }[]>(
+      `SELECT p.POSITION as position FROM PLAYER p WHERE p.ID_PLAYER IN (${bidPh2})`,
+      ...bidVs2
+    );
+    const { rejected, totalGoalkeepers } = checkGoalkeeperLimit(wonPositionRows, draftPositionRows);
+    if (rejected) {
+      return NextResponse.json(
+        {
+          error: `Soumission refusée : votre mise contient ${totalGoalkeepers} gardiens (acquis compris). Maximum autorisé : 1 (règle 2026-06-11 — seul cas de rejet pour motif de composition).`,
+        },
+        { status: 400 }
+      );
     }
   }
 

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Loader2, Search, X, Clock, Send, Lock, ArrowRightLeft, Minus, Plus } from "lucide-react";
 import { validateSubmission } from "@/lib/auction-engine";
 import type { Line, EnginePlayer } from "@/lib/auction-engine";
+import { checkGoalkeeperLimit } from "@/lib/auction-goalkeeper-limit";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -655,6 +656,16 @@ export default function EncheresPage() {
   }));
   const warnings = validateSubmission(ownedEngine, bidsEngine, budget);
 
+  // Erreur BLOQUANTE : plus d'un gardien dans la mise (acquis compris).
+  // Décision 2026-06-11 — seul cas de rejet pour motif de composition.
+  const gkCheck = checkGoalkeeperLimit(
+    wonPlayers.map((p) => ({ position: p.position })),
+    draftBids.map((b) => ({ position: b.position }))
+  );
+  const blockingError: string | null = gkCheck.rejected
+    ? `Votre mise contient ${gkCheck.totalGoalkeepers} gardiens (acquis compris). Maximum autorisé : 1. La soumission est refusée tant que cette erreur n'est pas corrigée (règle du 2026-06-11).`
+    : null;
+
   const totalFilled = wonPlayers.length + draftBids.length;
   const isConform = warnings.length === 0 && totalFilled === 13;
 
@@ -830,6 +841,23 @@ export default function EncheresPage() {
           </div>
         )}
 
+        {/* ── Erreur BLOQUANTE : excès de gardiens (rouge, bouton désactivé) ── */}
+        {!isReadonly && blockingError && (
+          <div className="bg-rouge/[0.13] border border-rouge/50 rounded-lg overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2.5">
+              <span className="text-sm">🚫</span>
+              <span className="text-[11.5px] font-bold text-rouge tracking-tight">Soumission bloquée — composition invalide</span>
+            </div>
+            <div className="flex gap-2 px-3 py-2 border-t border-rouge/20">
+              <span className="text-rouge text-[12px] leading-relaxed mt-px">•</span>
+              <span className="text-[11.5px] text-[#E0B0A8] leading-relaxed">{blockingError}</span>
+            </div>
+            <div className="px-3 py-2 border-t border-rouge/20 text-[10.5px] text-rouge/70 italic">
+              Retirez un gardien de vos mises pour débloquer la soumission.
+            </div>
+          </div>
+        )}
+
         {/* ── Avertissements de composition (bandeau ambre non bloquant) ── */}
         {!isReadonly && warnings.length > 0 && (
           <div className="bg-[#D69634]/[0.10] border border-[#D69634]/42 rounded-lg overflow-hidden">
@@ -923,6 +951,66 @@ export default function EncheresPage() {
           </div>
         )}
 
+        {/* ── Résultats du tour précédent : mises avec statut resolved ── */}
+        {/* Inclut le statut 'removed' (pénalité dépouillement) pour que le participant
+            voit quels joueurs lui ont été retirés. Naît au dépouillement été. */}
+        {(() => {
+          const resolvedBids = myBids.filter((b) => b.status !== "pending");
+          if (resolvedBids.length === 0) return null;
+          return (
+            <div>
+              <div className="text-[10px] font-bold tracking-[1.4px] text-muted uppercase mb-2">Résultats du tour {auction.currentRound}</div>
+              <div className="space-y-1">
+                {resolvedBids.map((b) => (
+                  <div
+                    key={b.playerId}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
+                      b.status === "won"
+                        ? "bg-vert/[0.07] border-vert/30"
+                        : b.status === "removed"
+                        ? "bg-rouge/[0.08] border-rouge/25 opacity-70"
+                        : b.status === "lost" || b.status === "tie"
+                        ? "bg-[#1A1A18] border-[#272521] opacity-60"
+                        : "bg-[#1A1A18] border-[#272521]"
+                    }`}
+                  >
+                    <div className="w-8 h-8 flex-none rounded-full bg-[#242220] border border-[#34322B] flex items-center justify-center text-[11px] font-bold text-[#A8A294]">
+                      {initials(b.playerName)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold text-[#D8D3C7] truncate">{b.playerName}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10.5px] text-muted">{b.clubName}</span>
+                        <span className="text-[9px] font-bold px-1 py-px rounded bg-white/[0.04] border border-[#34322B] text-[#8C877C] tracking-wider">{positionLabel(b.position)}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[13px] font-bold text-[#C9C3B5] tabular-nums">{b.amount} pts</span>
+                      <span className={`text-[9px] font-bold tracking-wider px-1.5 py-px rounded-full border ${
+                        b.status === "won"
+                          ? "bg-vert/[0.15] border-vert/40 text-[#3FB873]"
+                          : b.status === "removed"
+                          ? "bg-rouge/[0.15] border-rouge/35 text-[#E0705F]"
+                          : b.status === "lost"
+                          ? "bg-rouge/[0.08] border-rouge/20 text-rouge/60"
+                          : b.status === "tie"
+                          ? "bg-blue-400/[0.10] border-blue-400/25 text-blue-400/70"
+                          : "bg-white/[0.04] border-[#34322B] text-muted"
+                      }`}>
+                        {b.status === "won" ? "ACQUIS"
+                          : b.status === "removed" ? "RETIRÉ (pénalité)"
+                          : b.status === "lost" ? "PERDU"
+                          : b.status === "tie" ? "ÉGALITÉ"
+                          : b.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
 
       {/* ── Drawer de recherche ── */}
@@ -1012,7 +1100,12 @@ export default function EncheresPage() {
           <div className="space-y-2">
             {/* Indicateur conformité */}
             <div className="flex items-center gap-2">
-              {warnings.length > 0 ? (
+              {blockingError ? (
+                <>
+                  <span className="text-[12px]">🚫</span>
+                  <span className="text-[11px] text-rouge font-semibold">Soumission bloquée — retirez un gardien</span>
+                </>
+              ) : warnings.length > 0 ? (
                 <>
                   <span className="text-[12px]">⚠️</span>
                   <span className="text-[11px] text-[#E0A94E] font-semibold">Mise non conforme — soumission autorisée</span>
@@ -1029,10 +1122,11 @@ export default function EncheresPage() {
                 </>
               )}
             </div>
-            {/* M2 : bouton activé si draftBids > 0 OU si 13 joueurs déjà acquis */}
+            {/* M2 : bouton activé si draftBids > 0 OU si 13 joueurs déjà acquis ; bloqué si erreur de composition */}
             <button
               onClick={submitBids}
-              disabled={submitting || (draftBids.length === 0 && wonPlayers.length < 13)}
+              disabled={submitting || !!blockingError || (draftBids.length === 0 && wonPlayers.length < 13)}
+              title={blockingError ?? undefined}
               className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-gold text-night font-bold text-[14.5px] rounded-xl hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
