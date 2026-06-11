@@ -307,23 +307,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "La date butoir est déjà passée — choisissez une date dans le futur." }, { status: 400 });
     }
 
-    // Create or reopen auction (resolved = phase close, on repart sur une nouvelle enchère)
-    const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      "SELECT id FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
+    // M2 : Garde d'état — on ne peut ouvrir un nouveau tour que si :
+    //   (a) aucune enchère active n'existe, OU
+    //   (b) l'enchère existante est au statut 'tallied' (dernier tour dépouillé).
+    // Un open rejoué sur une enchère 'open' ou 'closed' → 409.
+    const activeAuction = await prisma.$queryRawUnsafe<{ id: number; status: string }[]>(
+      "SELECT id, status FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
       leagueId
     );
 
-    if (existing.length > 0) {
-      // Reopen existing — reset deadline pour ce nouveau tour
+    if (activeAuction.length > 0) {
+      const currentStatus = activeAuction[0].status;
+      if (currentStatus === "open" || currentStatus === "closed") {
+        return NextResponse.json(
+          { error: `Impossible d'ouvrir un nouveau tour : l'enchère est en statut '${currentStatus}'. Clôturez et dépouiller le tour en cours d'abord.` },
+          { status: 409 }
+        );
+      }
+      // statut 'tallied' : on peut ouvrir le tour suivant
       if (deadlineDate !== null) {
         await prisma.$executeRawUnsafe(
           "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = ? WHERE id = ?",
-          deadlineDate, existing[0].id
+          deadlineDate, activeAuction[0].id
         );
       } else {
         await prisma.$executeRawUnsafe(
           "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = NULL WHERE id = ?",
-          existing[0].id
+          activeAuction[0].id
         );
       }
       return NextResponse.json({ ok: true, message: "Tour suivant ouvert" });
@@ -435,7 +445,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Écritures atomiques : statuts des mises + retraits motivés + statut du tour
+    // M1 : Anti-double-dépouillement.
+    // L'UPDATE conditionnel (WHERE status='closed') est placé EN PREMIER dans la
+    // transaction pour prendre le verrou immédiatement. Si affectedRows = 0,
+    // le tour a déjà été dépouillé par un appel concurrent → 409 sans écriture.
+    // Prisma.$transaction est séquentiel (pas de SAVEPOINT InnoDB) donc l'UPDATE
+    // est exécuté avant les INSERT AUCTION_BID / AUCTION_REMOVAL.
+    const lockResult = await prisma.$executeRawUnsafe(
+      "UPDATE AUCTION SET status = 'tallied' WHERE id = ? AND status = 'closed'",
+      auction.id
+    );
+    if (lockResult === 0) {
+      return NextResponse.json(
+        { error: "Ce tour a déjà été dépouillé (statut ≠ 'closed')" },
+        { status: 409 }
+      );
+    }
+
+    // Écritures des statuts de mises et des retraits motivés (verrou déjà posé ci-dessus).
     await prisma.$transaction([
       ...plan.updates.map((u) =>
         prisma.$executeRawUnsafe("UPDATE AUCTION_BID SET status = ? WHERE id = ?", u.status, u.bidId)
@@ -446,7 +473,6 @@ export async function POST(request: Request) {
           auction.id, auction.currentRound, r.userId, r.playerId, r.amount, r.reason
         )
       ),
-      prisma.$executeRawUnsafe("UPDATE AUCTION SET status = 'tallied' WHERE id = ?", auction.id),
     ]);
 
     const won = plan.updates.filter((u) => u.status === "won").length;
@@ -470,9 +496,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "La complétion d'office se fait après dépouillement, avant la clôture de phase" }, { status: 400 });
     }
 
+    // m3 : Dédoublonnage des playerIds fournis
+    const uniquePlayerIds = Array.from(new Set(playerIds));
+
+    // m5 : Vérifier que userId appartient bien à la ligue
+    const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+      "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+      leagueId, userId
+    );
+    if (Number(memberRows[0]?.cnt ?? 0) === 0) {
+      return NextResponse.json({ error: `L'utilisateur #${userId} ne fait pas partie de cette ligue` }, { status: 400 });
+    }
+
     const wonBids = await loadWonBids(auction.id);
     const takenIds = new Set(wonBids.map((w) => w.playerId));
-    for (const pid of playerIds) {
+    for (const pid of uniquePlayerIds) {
       if (takenIds.has(pid)) {
         return NextResponse.json({ error: `Joueur #${pid} déjà attribué dans cette enchère` }, { status: 400 });
       }
@@ -480,16 +518,22 @@ export async function POST(request: Request) {
 
     const players = await loadPlayers([
       ...wonBids.filter((w) => w.userId === userId).map((w) => w.playerId),
-      ...playerIds,
+      ...uniquePlayerIds,
     ]);
+
     // Gardiens nommés interdits (règle 2.1 : gardien = pseudo-joueur par club)
-    const [ph, vs] = inParams(playerIds);
+    // m5 : Scope les joueurs candidats à la saison courante
+    const seasonFilters = await getSeasonFilters();
+    const seasonClause = "seasonId" in seasonFilters.player
+      ? `AND p.ID_SEASON = ${Number((seasonFilters.player as { seasonId: number }).seasonId)}`
+      : "";
+    const [ph, vs] = inParams(uniquePlayerIds);
     const candidateRows = await prisma.$queryRawUnsafe<{ id: number; position: string; link: string | null }[]>(
-      `SELECT ID_PLAYER as id, POSITION as position, LINK as link FROM PLAYER WHERE ID_PLAYER IN (${ph})`,
+      `SELECT ID_PLAYER as id, POSITION as position, LINK as link FROM PLAYER p WHERE ID_PLAYER IN (${ph}) ${seasonClause}`,
       ...vs
     );
-    if (candidateRows.length !== playerIds.length) {
-      return NextResponse.json({ error: "Joueur inexistant dans la liste demandée" }, { status: 400 });
+    if (candidateRows.length !== uniquePlayerIds.length) {
+      return NextResponse.json({ error: "Joueur inexistant ou n'appartenant pas à la saison courante" }, { status: 400 });
     }
     for (const c of candidateRows) {
       if (isNamedGoalkeeper({ position: c.position, link: c.link })) {
@@ -507,7 +551,7 @@ export async function POST(request: Request) {
         const p = players.get(w.playerId);
         return { id: w.playerId, lastName: p?.lastName ?? "", line: lineFromPosition(p?.position ?? "") };
       });
-    for (const pid of playerIds) {
+    for (const pid of uniquePlayerIds) {
       const p = players.get(pid);
       const candidate: EnginePlayer = { id: pid, lastName: p?.lastName ?? "", line: lineFromPosition(p?.position ?? "") };
       const check = canCompleteWith(roster, candidate);
@@ -520,9 +564,19 @@ export async function POST(request: Request) {
       roster.push(candidate);
     }
 
+    // m5 : Vérification que l'effectif final respecte la taille players_per_user
+    // (remplace le 13 codé en dur là où c'est trivial : ici la taille attendue est
+    // disponible via auction.playersPerUser)
+    if (roster.length > auction.playersPerUser) {
+      return NextResponse.json(
+        { error: `La complétion dépasse le plafond de ${auction.playersPerUser} joueurs par participant` },
+        { status: 400 }
+      );
+    }
+
     // Acquisitions d'office à 1 pt, persistées comme mises gagnées du tour courant
     await prisma.$transaction(
-      playerIds.map((pid) =>
+      uniquePlayerIds.map((pid) =>
         prisma.$executeRawUnsafe(
           "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, 1, 'won')",
           auction.id, auction.currentRound, userId, pid
@@ -531,7 +585,7 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({
       ok: true,
-      message: `${playerIds.length} joueur(s) ajouté(s) d'office à 1 pt`,
+      message: `${uniquePlayerIds.length} joueur(s) ajouté(s) d'office à 1 pt`,
     });
   }
 
@@ -562,15 +616,34 @@ export async function POST(request: Request) {
       );
     }
 
-    // Garde-fou : ne jamais écraser des effectifs existants
+    // B2 : Logique de reprise pour close-phase avec TEAM en MyISAM.
+    // MyISAM ne supporte pas les rollbacks transactionnels : un échec à mi-INSERT
+    // laisse des lignes partielles dans TEAM. Dans ce cas la garde "TEAM non vide"
+    // renverrait 409 pour toujours, bloquant la reprise.
+    //
+    // Note : ici auction.status est forcément 'tallied' (vérification ci-dessus).
+    // Le 409 "phase déjà close" (statut 'resolved') est attrapé avant par
+    // getSummerAuction qui filtre status != 'resolved', combiné à la garde
+    // status !== 'tallied'. On ne peut donc jamais arriver ici avec 'resolved'.
+    //
+    // Sémantique :
+    //   - TEAM non vide ET statut 'tallied' → état partiel d'une tentative échouée
+    //                                          → PURGE des lignes scoped à la ligue
+    //                                          → ré-insertion propre
+    //   - TEAM vide                          → premier appel normal
     const teamCountRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-      "SELECT COUNT(*) as cnt FROM TEAM WHERE ID_LEAGUE = ?",
+      "SELECT COUNT(*) as cnt FROM TEAM WHERE ID_LEAGUE = ? AND DAY_FIRST = 1",
       leagueId
     );
-    if (Number(teamCountRows[0]?.cnt ?? 0) > 0) {
-      return NextResponse.json(
-        { error: "Des effectifs existent déjà dans TEAM pour cette ligue — clôture refusée (aucun écrasement)" },
-        { status: 409 }
+    const existingTeamRows = Number(teamCountRows[0]?.cnt ?? 0);
+
+    if (existingTeamRows > 0) {
+      // Statut 'tallied' avec lignes TEAM existantes : état partiel issu d'une
+      // tentative précédente qui a échoué en cours d'INSERT (MyISAM, pas de rollback).
+      // On purge les lignes scoped à cette ligue pour repartir proprement.
+      await prisma.$executeRawUnsafe(
+        "DELETE FROM TEAM WHERE ID_LEAGUE = ? AND DAY_FIRST = 1",
+        leagueId
       );
     }
 

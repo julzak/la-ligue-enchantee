@@ -86,11 +86,28 @@ export function buildEngineInput(input: ResolutionInput): ParticipantInput[] {
   return input.participantIds.map((userId) => {
     const won = wonByUser.get(userId) ?? [];
     const spent = won.reduce((s, w) => s + w.amount, 0);
+
+    // B3 : Défense double-won — toute mise pending portant sur un joueur déjà
+    // acquis (statut 'won') par ce même participant est rejetée immédiatement
+    // avec une erreur 409. Cela couvre le cas où un admin aurait inséré
+    // manuellement une mise en doublon ou soumis deux fois le dépouillement.
+    const wonPlayerIds = new Set(won.map((w) => w.playerId));
+    const pendingBids = pendingByUser.get(userId) ?? [];
+    for (const b of pendingBids) {
+      if (wonPlayerIds.has(b.playerId)) {
+        const player = input.players.get(b.playerId);
+        const name = player?.displayName ?? player?.lastName ?? `#${b.playerId}`;
+        throw new Error(
+          `Double-won détecté : le participant ${userId} a déjà remporté ${name} (joueur #${b.playerId}, mise #${b.id}). Dépouillement refusé.`
+        );
+      }
+    }
+
     return {
       userId,
       budget: input.budgetPerUser - spent, // règle 3.2.b : seuls les acquis décomptent
       owned: won.map((w) => toEnginePlayer(input.players, w.playerId)),
-      bids: (pendingByUser.get(userId) ?? []).map((b) => ({
+      bids: pendingBids.map((b) => ({
         player: toEnginePlayer(input.players, b.playerId),
         amount: b.amount,
       })),

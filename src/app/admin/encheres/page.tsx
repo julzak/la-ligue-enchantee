@@ -89,6 +89,9 @@ export default function AdminEncheresPage() {
   const [results, setResults] = useState<RoundResults | null>(null);
   const [seasonLabel, setSeasonLabel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // M1 : actionPending désactive tous les boutons d'action pendant une requête
+  // en cours pour empêcher un double-clic de déclencher un double-dépouillement.
+  const [actionPending, setActionPending] = useState(false);
   const [message, setMessage] = useState("");
   const [phaseCloseView, setPhaseCloseView] = useState(false);
 
@@ -132,6 +135,8 @@ export default function AdminEncheresPage() {
 
   async function handleAction(action: string, extraBody?: Record<string, unknown>, confirmMsg?: string) {
     if (confirmMsg && !confirm(confirmMsg)) return;
+    if (actionPending) return; // M1 : ignorer double-clic
+    setActionPending(true);
     setMessage("");
     try {
       const res = await fetch("/api/admin/auction", {
@@ -145,6 +150,8 @@ export default function AdminEncheresPage() {
       fetchAuction();
     } catch {
       setMessage("Erreur");
+    } finally {
+      setActionPending(false);
     }
   }
 
@@ -413,12 +420,14 @@ export default function AdminEncheresPage() {
                         <>
                           <button
                             onClick={s.onClick}
-                            className={`mt-2.5 w-full flex items-center justify-center gap-2 py-2.5 rounded text-[13px] font-bold ${
+                            disabled={actionPending}
+                            className={`mt-2.5 w-full flex items-center justify-center gap-2 py-2.5 rounded text-[13px] font-bold disabled:opacity-40 disabled:cursor-not-allowed ${
                               s.destructive
                                 ? "bg-rouge/15 border border-rouge/50 text-rouge hover:bg-rouge/25"
                                 : "bg-gold text-night hover:bg-gold/80"
                             }`}
                           >
+                            {actionPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                             {s.cta}
                           </button>
                           {s.destructive && (
@@ -607,7 +616,8 @@ export default function AdminEncheresPage() {
                                   `Compléter d'office l'effectif de ${p.userName} avec ${p.proposals.length} joueur(s) à 1 pt ?`
                                 )
                               }
-                              className="text-[12.5px] font-bold text-night bg-gold rounded px-3.5 py-2 hover:bg-gold/80"
+                              disabled={actionPending}
+                              className="text-[12.5px] font-bold text-night bg-gold rounded px-3.5 py-2 hover:bg-gold/80 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Compléter à 1 pt
                             </button>
@@ -645,9 +655,10 @@ export default function AdminEncheresPage() {
                       onClick={() =>
                         handleAction("close-phase", {}, "Clore la phase et constituer les effectifs ? Action irréversible.")
                       }
-                      disabled={incomplete.length > 0}
-                      className="text-[13.5px] font-bold text-night bg-gold rounded-lg px-5 py-3 hover:bg-gold/80 disabled:opacity-40 disabled:cursor-not-allowed"
+                      disabled={incomplete.length > 0 || actionPending}
+                      className="text-[13.5px] font-bold text-night bg-gold rounded-lg px-5 py-3 hover:bg-gold/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                     >
+                      {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                       Clore la phase et constituer les effectifs
                     </button>
                   </div>

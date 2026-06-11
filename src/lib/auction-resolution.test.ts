@@ -370,6 +370,43 @@ describe("mapping position DB → ligne moteur", () => {
   });
 });
 
+// ── B3 : Défense double-won ────────────────────────────────────────────────
+// Scénario : un participant soumet une mise sur un joueur qu'il a déjà remporté
+// lors d'un tour précédent (statut 'won'). La couche buildEngineInput doit rejeter
+// l'entrée avec une erreur avant tout appel au moteur.
+describe("B3 – défense double-won : re-mise sur un joueur déjà won → refus", () => {
+  const ALICE = 101;
+  // Joueur déjà remporté par Alice au tour précédent
+  const alreadyWon: WonBidRow = { userId: ALICE, playerId: savanier.id, amount: 20 };
+
+  it("une mise pending sur un joueur déjà won par le même participant lève une erreur", () => {
+    const dupInput: ResolutionInput = {
+      budgetPerUser: 130,
+      participantIds: [ALICE],
+      players: PLAYERS,
+      wonBids: [alreadyWon],
+      // Mise pending sur Savanier (déjà won)
+      pendingBids: [{ id: 9001, userId: ALICE, playerId: savanier.id, amount: 5 }],
+    };
+    expect(() => planResolution(dupInput)).toThrow(/[Dd]ouble[-\s]?won|déjà remporté/i);
+  });
+
+  // Sanity-check : sans la défense double-won, le même input ne lèverait pas
+  // d'erreur et Savanier apparaîtrait deux fois dans l'effectif d'Alice.
+  // On vérifie qu'un input sain (joueur distinct) passe bien.
+  it("sanity-check : une mise pending sur un joueur DIFFÉRENT du won ne lève pas", () => {
+    const safeInput: ResolutionInput = {
+      budgetPerUser: 130,
+      participantIds: [ALICE],
+      players: PLAYERS,
+      wonBids: [alreadyWon],
+      // Mise sur Terrier (non won), pas sur Savanier
+      pendingBids: [{ id: 9002, userId: ALICE, playerId: terrier.id, amount: 5 }],
+    };
+    expect(() => planResolution(safeInput)).not.toThrow();
+  });
+});
+
 describe("entrées moteur : budgets et acquis reconstruits depuis les mises won", () => {
   it("le budget d'un tour N+1 décompte uniquement les acquisitions", () => {
     const input = buildEngineInput({
