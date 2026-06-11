@@ -375,34 +375,51 @@ Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
       L'existant 2025-2026 = patchwork 46% hotlinké (409 Sportmonks abandonné
       + 50 TheSportsDB + 13 API-Football) : ne pas reproduire.
 
-      **Modèle validé par Julien (2026-06-11) : abonnement 1 SEUL mois, du
-      début à la fin août** (effectifs post-premiers transferts + recrues
-      tardives pour les jokers), résilié fin août. Rebelote 1 mois en janvier
-      pour le mercato d'hiver. Total ~18$/an. Géré par un admin « pilote
-      effectifs » (Patreon + carte perso remboursée), SANS Julien dans la
-      boucle. Contrôle qualité au moment de la souscription :
-      `scripts/diag-thesportsdb-photos.ts` avec la clé premium sur les 18
-      effectifs complets (mesure free du 2026-06-10 : 96% sur échantillon
-      biaisé 10 joueurs x 10 clubs) ; si décevant, bascule API-Football
-      19$/mois via l'abstraction football-api.ts.
+      **Modèle FINAL validé par Julien (2026-06-11, v2 après correction de
+      chronologie)** : les photos n'ont d'intérêt que pour les joueurs
+      SÉLECTIONNÉS dans les équipes, donc elles se récupèrent APRÈS les
+      enchères, au lancement. Conséquence :
+      - **Listes de joueurs (noms + postes) : football-data.org GRATUIT**
+        (seul tier gratuit avec effectifs complets Ligue 1 ; pas de photos,
+        on s'en moque à ce stade). Import début juillet, avant les enchères.
+        Avatars à initiales pendant toute la phase d'enchères.
+      - **Photos : TheSportsDB premium, 1 SEUL mois (~début août → début
+        septembre, 9$)**, souscrit AU LANCEMENT : photos des seuls joueurs
+        en équipe (~260) + recrues d'août pour les jokers. Résiliation début
+        septembre. Mercato d'hiver : à décider en décembre (noms gratuits
+        via football-data.org ; photos = re-souscrire 1 mois ou initiales).
+      - Géré par un admin « pilote effectifs » (Patreon + carte perso
+        remboursée), SANS Julien dans la boucle.
+      - ⚠️ **Risque tracé** : 2 fournisseurs = matching par nom entre nos
+        joueurs et les photos TheSportsDB, le mode d'échec 2025-2026.
+        Mitigation : matching PAR CLUB (30 vs 30, pas global), nom
+        normalisé, rapport des non-matchés avec correction manuelle admin.
+      - Contrôle qualité photos à la souscription :
+        `scripts/diag-thesportsdb-photos.ts` clé premium (mesure free du
+        2026-06-10 : 96% sur échantillon biaisé).
 
-      Les 3 briques d'autonomie à construire :
-      - [ ] **Brique 1 — clé API saisie dans l'admin** : champ « Clé API
-            effectifs » (Admin → Configuration), stockée en DB (pas d'env
-            var, pas de redéploiement), lue par football-api.ts avec
-            fallback env puis mock. Stocker aussi la date de saisie et
-            afficher le rappel « pensez à résilier fin août ».
-            ⚠️ DDL probable (table de config clé/valeur) = migration
-            manuelle AVANT push.
-      - [ ] **Brique 2 — photos locales à l'import** : l'import étape 2
-            télécharge strCutout/strThumb dans `public/players/` (gitignoré),
-            PHOTO_URL pointe le fichier local. Fallback avatar initiales
-            inchangé pour les manquants.
-      - [ ] **Brique 3 — « Rafraîchir l'effectif d'un club » post-lancement** :
-            ajout INCRÉMENTAL uniquement (diff API vs DB, insertion des
-            nouveaux joueurs avec photo, jamais de suppression ni de
-            modification des existants/équipes). Couvre les recrues d'août
-            cherchées en joker. Autorisé saison ACTIVE.
+      Les briques d'autonomie à construire :
+      - [ ] **Brique 0 — provider football-data.org** dans football-api.ts
+            (effectifs gratuits noms+postes, token gratuit à l'inscription,
+            10 req/min). Devient la source de l'étape 2 du stepper.
+      - [ ] **Brique 1 — clés API saisies dans l'admin** : champs « Clé
+            effectifs (football-data.org) » et « Clé photos (TheSportsDB
+            premium) » dans Admin → Configuration, stockées en DB (pas d'env
+            var, pas de redéploiement), avec date de saisie + rappel de
+            résiliation pour la clé photos. ⚠️ DDL probable (table config
+            clé/valeur) = migration manuelle AVANT push.
+      - [ ] **Brique 2 — « Récupérer les photos des équipes » AU LANCEMENT** :
+            bouton admin post-enchères. Pour chaque club : effectif complet
+            TheSportsDB (premium), matching club par club avec NOS joueurs
+            sélectionnés (nom normalisé), téléchargement local dans
+            `public/players/` (gitignoré), PHOTO_URL = fichier local.
+            Rapport des non-matchés + saisie manuelle d'une URL photo par
+            joueur. Rejouable (complète les manquants).
+      - [ ] **Brique 3 — recrues d'août** : pendant la fenêtre d'abonnement,
+            « Rafraîchir l'effectif d'un club » = ajout INCRÉMENTAL
+            (nouveaux joueurs + photos, jamais de suppression). Hors
+            fenêtre : ajout manuel via Admin → Joueurs (existe déjà),
+            avatar initiales.
 - [ ] **Sécurité — token Sportmonks en clair** dans
       `scripts/import-photos-sportmonks.ts` (committé) : révoquer le token et
       purger/déplacer en env var, le fournisseur n'est plus utilisé.

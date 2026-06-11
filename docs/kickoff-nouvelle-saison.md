@@ -41,18 +41,22 @@
 **À savoir avant de commencer :**
 
 - **Désigner un admin « pilote effectifs »** : c'est lui qui prendra
-  l'abonnement à la source des effectifs (TheSportsDB, 9 $ le mois d'août,
-  remboursé sur la caisse) et qui le résiliera fin août. Voir phase 1bis
-  et phase 8.
-- **Calendrier d'été** : les phases 1 à 6 se font début août, une fois les
-  premiers transferts du mercato passés (les effectifs importés sont alors
-  à jour). Les enchères suivent à la mi-août.
+  l'abonnement photos (TheSportsDB, 9 $ pour UN mois au moment du lancement,
+  remboursé sur la caisse) et qui le résiliera début septembre. Voir phase
+  6bis et phase 8.
+- **Calendrier d'été** : les phases 1 à 5 se font début juillet (les listes
+  de joueurs sont gratuites, pas besoin d'attendre). Les **enchères occupent
+  juillet**, les équipes sont complètes début août, et le lancement
+  (phase 6) suit. Pendant les enchères, les joueurs n'ont pas de photo
+  (avatar à initiales) : c'est voulu, les photos ne sont récupérées que
+  pour les joueurs réellement sélectionnés, au lancement.
 - **Le module enchères est en cours de développement** (livraison prévue
-  avant la mi-août) : après le lancement, les participants n'auront pas
+  avant juillet) : après le lancement, les participants n'auront pas
   d'équipe tant que les enchères n'auront pas eu lieu.
-- Les écrans « clé API effectifs » et « rafraîchir l'effectif d'un club »
-  décrits plus bas arrivent avec la mise à jour de juillet. Si vous lisez ce
-  guide avant et que vous ne les voyez pas, c'est normal.
+- Les écrans « clé effectifs », « clé photos », « récupérer les photos des
+  équipes » et « rafraîchir l'effectif d'un club » décrits plus bas arrivent
+  avec la mise à jour de fin juin. Si vous lisez ce guide avant et que vous
+  ne les voyez pas, c'est normal.
 
 ---
 
@@ -71,18 +75,16 @@
 
 ---
 
-## Phase 1bis : activer la source des effectifs (début août)
+## Phase 1bis : activer la source des effectifs (gratuite)
 
-**Qui : l'admin pilote effectifs, 10 minutes.**
+**Qui : l'admin pilote effectifs, 10 minutes, une seule fois.**
 
-- Souscrire l'abonnement TheSportsDB premium (Patreon, palier « Single
-  Developer » à 9 $/mois, sans engagement) et récupérer la clé API sur son
-  compte TheSportsDB.
-- Coller la clé dans **Admin → Configuration**, champ **« Clé API
-  effectifs »**.
-- Un rappel s'affichera dans l'admin tant que la clé est active : **la
-  résiliation fin août, c'est la phase 8**, à ne pas oublier (sinon le
-  Patreon refacture 9 $ chaque mois pour rien).
+- Créer un compte gratuit sur football-data.org et récupérer le token API
+  (c'est la source des listes de joueurs : effectifs complets de Ligue 1,
+  gratuits, sans photos).
+- Coller le token dans **Admin → Configuration**, champ **« Clé effectifs »**.
+- Rien à payer à cette étape. L'abonnement photos (9 $) n'arrive qu'au
+  lancement, phase 6bis.
 
 **Vérification :** l'étape 2 du stepper affiche « API live » comme source
 (et non plus « données simulées »).
@@ -101,10 +103,10 @@
   Attaque) : le menu déroulant est modifiable et c'est la classification de
   la Ligue qui fait foi, pas celle de l'API (qui est parfois approximative,
   surtout sur les milieux offensifs et les pistons).
-- Cliquer sur **Importer en base**. Les photos des joueurs sont copiées sur
-  notre serveur à ce moment-là : elles resteront affichées toute la saison,
-  même après la résiliation de l'abonnement. Un joueur sans photo chez la
-  source aura un avatar à initiales, c'est normal.
+- Cliquer sur **Importer en base**. À ce stade les joueurs n'ont **pas de
+  photo** (avatar à initiales) : c'est normal, les photos arrivent au
+  lancement (phase 6bis), uniquement pour les joueurs sélectionnés dans les
+  équipes.
 
 **Vérification :** le message « X clubs et Y joueurs importés » s'affiche.
 Dans « Saisons existantes », la ligne de la saison affiche les compteurs de
@@ -218,6 +220,25 @@ déroulant :
 
 ---
 
+## Phase 6bis : récupérer les photos des joueurs sélectionnés
+
+**Qui : l'admin pilote effectifs, juste après le lancement (début août).**
+
+- Souscrire l'abonnement TheSportsDB premium (Patreon, palier « Single
+  Developer » à 9 $/mois, sans engagement) et récupérer la clé API sur son
+  compte TheSportsDB.
+- Coller la clé dans **Admin → Configuration**, champ **« Clé photos »**.
+  Un rappel de résiliation s'affichera dans l'admin tant qu'elle est active.
+- Cliquer sur **« Récupérer les photos des équipes »** (page Nouvelle
+  saison) : le système télécharge sur notre serveur les photos des joueurs
+  présents dans les équipes (et seulement eux). Les photos restent ensuite
+  affichées toute la saison, abonnement résilié ou pas.
+- Le rapport listera les joueurs sans photo trouvée : on peut corriger à la
+  main (coller une URL de photo) ou laisser l'avatar à initiales.
+- L'opération est rejouable : recliquer complète les manquants.
+
+---
+
 ## Phase 7 : juste après le lancement
 
 **Qui : le pilote (ou n'importe quel admin), tout se fait dans l'admin.**
@@ -254,11 +275,15 @@ résiliation.**
   uniquement les nouveaux joueurs, avec leur photo : rien n'est supprimé ni
   modifié sur les joueurs existants et les équipes constituées. Rejouable à
   volonté.
-- **Fin août : RÉSILIER l'abonnement** TheSportsDB (le pilote, depuis son
-  compte Patreon). Tout continue de fonctionner à l'identique : les photos
-  sont chez nous, le calendrier et les scores tournent sur l'API gratuite.
-- **Mercato d'hiver (janvier)** : même mécanique, le pilote reprend
-  l'abonnement 1 mois pour importer les recrues, puis résilie.
+- **Début septembre : RÉSILIER l'abonnement photos** (le pilote, depuis son
+  compte Patreon, un mois pile après la souscription de la phase 6bis).
+  Tout continue de fonctionner à l'identique : les photos sont chez nous,
+  les listes de joueurs et le calendrier tournent sur les API gratuites.
+  Après la résiliation, une recrue s'ajoute à la main (Admin → Joueurs),
+  avec avatar à initiales.
+- **Mercato d'hiver (janvier)** : les recrues s'importent gratuitement
+  (listes) ; pour leurs photos, le pilote décidera en décembre : reprendre
+  1 mois d'abonnement ou laisser les initiales.
 
 ---
 
@@ -274,18 +299,20 @@ résiliation.**
 
 ## Récapitulatif en une ligne par phase
 
-| Phase | Quand | Action | Risque |
+| Phase | Quand | Action | Coût / risque |
 |---|---|---|---|
-| 0 | avant août | Clôturer l'ancienne saison + désigner le pilote effectifs | aucun |
-| 1 | début août | Créer la saison (libellé `2027`) | aucun |
-| 1bis | début août | Pilote : abonnement 9 $ + clé API dans l'admin | 9 $ |
-| 2 | début août | Importer clubs + joueurs (photos copiées en local) | aucun |
-| 3 | début août | Créer les 3 ligues (reprise de 2026) | aucun |
-| 4 | début août | Inscrire les participants (reprise + ajustements) | aucun |
-| 5 | début août | Ouvrir les enchères + revue collective | aucun |
-| 6 | mi-août | **Démarrer la saison** | **bascule le site** |
-| 7 | mi-août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
-| 8 | tout août | Rafraîchir les effectifs (recrues) puis **RÉSILIER fin août** | oubli = 9 $/mois |
+| 0 | juin | Clôturer l'ancienne saison + désigner le pilote effectifs | aucun |
+| 1 | début juillet | Créer la saison (libellé `2027`) | aucun |
+| 1bis | début juillet | Token gratuit football-data.org dans l'admin | 0 $ |
+| 2 | début juillet | Importer clubs + joueurs (sans photos, c'est normal) | aucun |
+| 3 | début juillet | Créer les 3 ligues (reprise de 2026) | aucun |
+| 4 | début juillet | Inscrire les participants (reprise + ajustements) | aucun |
+| 5 | début juillet | Ouvrir les enchères + revue collective | aucun |
+| — | juillet | Les enchères se jouent (équipes complètes début août) | aucun |
+| 6 | début août | **Démarrer la saison** | **bascule le site** |
+| 6bis | début août | Abonnement photos 9 $ + « Récupérer les photos des équipes » | 9 $ |
+| 7 | début août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
+| 8 | août | Rafraîchir les effectifs (recrues) puis **RÉSILIER début septembre** | oubli = 9 $/mois |
 
 *En cas de doute à n'importe quelle étape : capture d'écran sur le groupe
 admins (voir « voie d'exception » en tête de doc). Tout est prévu pour être
