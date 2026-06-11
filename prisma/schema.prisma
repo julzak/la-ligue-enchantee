@@ -270,3 +270,22 @@ model Auction {
 
   @@map("AUCTION")
 }
+
+// Table gérée via $queryRawUnsafe (migration manuelle :
+// sql/2026-06-encheres-depouillement.sql). Modèle documentaire uniquement ;
+// ne pas utiliser prisma.auctionRemoval.* dans le code.
+// Retraits de pénalité appliqués au dépouillement (règle 3.2.c), avec motif.
+model AuctionRemoval {
+  id        Int      @id @default(autoincrement()) @map("id") @db.UnsignedInt
+  auctionId Int      @map("auction_id") @db.UnsignedInt
+  round     Int      @map("round")
+  userId    Int      @map("user_id") @db.UnsignedInt
+  playerId  Int      @map("player_id") @db.UnsignedInt
+  amount    Int      @map("amount")
+  reason    String   @map("reason") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@index([auctionId, round], map: "idx_auction_round")
+  @@index([userId], map: "idx_user")
+  @@map("AUCTION_REMOVAL")
+}
