@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
 import { getSeasonFilters } from "@/lib/season";
 import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
-import { findAlreadyWonByOther } from "@/lib/auction-already-won";
+import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -246,6 +246,15 @@ export async function POST(request: Request) {
     if (conflicts.length > 0) {
       return NextResponse.json(
         { error: `Le joueur #${conflicts[0]} a déjà été attribué à un autre participant.` },
+        { status: 400 }
+      );
+    }
+    // B0b : garde "propres won" — règle 3.1 : les acquis sont reportés
+    // automatiquement sans nouvelle mise (évite double won + double budget).
+    const selfConflicts = findAlreadyWonBySelf(bids, userId, alreadyWon);
+    if (selfConflicts.length > 0) {
+      return NextResponse.json(
+        { error: `Vous avez déjà acquis ce joueur, il est reporté automatiquement (règle 3.1 — aucune nouvelle mise nécessaire).` },
         { status: 400 }
       );
     }

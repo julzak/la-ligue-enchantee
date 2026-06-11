@@ -452,16 +452,28 @@ function WinterPage({
           <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
             {myBids.map((b) => (
               <div key={b.playerId} className={`px-4 py-2 border-b border-white/[0.04] last:border-b-0 ${
-                b.status === "won" ? "bg-vert/5" : b.status === "lost" ? "bg-rouge/5 opacity-50" : b.status === "tie" ? "bg-blue-400/5" : ""
+                b.status === "won" ? "bg-vert/5"
+                : b.status === "lost" ? "bg-rouge/5 opacity-50"
+                : b.status === "tie" ? "bg-blue-400/5"
+                : b.status === "removed" ? "bg-rouge/5 opacity-40"
+                : ""
               }`}>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-white flex-1">{b.playerName}</span>
                   <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
                   <span className="text-sm text-blue-400 font-bold tabular-nums">{b.amount}</span>
                   <span className={`text-xs ${
-                    b.status === "won" ? "text-vert" : b.status === "lost" ? "text-rouge" : b.status === "tie" ? "text-blue-400" : "text-muted"
+                    b.status === "won" ? "text-vert"
+                    : b.status === "lost" ? "text-rouge"
+                    : b.status === "tie" ? "text-blue-400"
+                    : b.status === "removed" ? "text-rouge/60"
+                    : "text-muted"
                   }`}>
-                    {b.status === "won" ? "✓" : b.status === "lost" ? "✗" : b.status === "tie" ? "=" : "⏳"}
+                    {b.status === "won" ? "✓"
+                    : b.status === "lost" ? "✗"
+                    : b.status === "tie" ? "="
+                    : b.status === "removed" ? "Retirée (pénalité)"
+                    : "⏳"}
                   </span>
                 </div>
                 {b.playerOutName && (
