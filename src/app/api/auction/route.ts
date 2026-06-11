@@ -3,6 +3,8 @@ import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
+import { getSeasonFilters } from "@/lib/season";
+import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -244,6 +246,54 @@ export async function POST(request: Request) {
     for (const bid of bids) {
       if (!bid.playerOutId) {
         return NextResponse.json({ error: "Chaque enchere doit designer un joueur sortant (1 IN = 1 OUT)" }, { status: 400 });
+      }
+    }
+  }
+
+  // B1 : garde serveur — chaque playerId doit exister dans le perimetre de la
+  // saison courante ET ne pas etre un gardien nomme (position Gardien sans
+  // prefixe gardiens_). Les pseudo-gardiens « Gardiens [Club] » sont autorisés.
+  if (bids.length > 0) {
+    const bidPlayerIds = bids.map((b) => b.playerId);
+    const [ph, vs] = inParams(bidPlayerIds);
+    const seasonFilters = await getSeasonFilters();
+    // On charge seulement les colonnes utiles a la validation.
+    const foundPlayers = await prisma.$queryRawUnsafe<{
+      id: number; position: string; link: string | null;
+    }[]>(
+      `SELECT p.ID_PLAYER as id, p.POSITION as position, p.LINK as link
+       FROM PLAYER p
+       WHERE p.ID_PLAYER IN (${ph})`,
+      ...vs
+    );
+    // Filtrage selon le perimetre saison (seasonId NULL = legacy : pas de scope).
+    let scopedPlayerIds: Set<number>;
+    if ("seasonId" in seasonFilters.player) {
+      // La saison courante scope les joueurs : on exclut ceux hors saison.
+      const seasonId = (seasonFilters.player as { seasonId: number }).seasonId;
+      const scopedRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
+        `SELECT p.ID_PLAYER as id FROM PLAYER p
+         WHERE p.ID_PLAYER IN (${ph}) AND p.ID_SEASON = ?`,
+        ...vs, seasonId
+      );
+      scopedPlayerIds = new Set(scopedRows.map((r) => Number(r.id)));
+    } else {
+      scopedPlayerIds = new Set(foundPlayers.map((r) => Number(r.id)));
+    }
+
+    for (const bid of bids) {
+      if (!scopedPlayerIds.has(bid.playerId)) {
+        return NextResponse.json(
+          { error: `Joueur #${bid.playerId} inexistant ou hors perimetre de la saison courante.` },
+          { status: 400 }
+        );
+      }
+      const player = foundPlayers.find((p) => Number(p.id) === bid.playerId);
+      if (player && isNamedGoalkeeper({ position: player.position, link: player.link })) {
+        return NextResponse.json(
+          { error: `Joueur #${bid.playerId} est un gardien nomme : misez sur le pseudo-joueur « Gardiens [Club] » correspondant.` },
+          { status: 400 }
+        );
       }
     }
   }
