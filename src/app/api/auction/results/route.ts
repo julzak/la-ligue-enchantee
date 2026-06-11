@@ -18,6 +18,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { isMember } from "@/lib/auction-membership";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -29,6 +30,17 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
   if (!leagueId) return NextResponse.json({ error: "leagueId requis" }, { status: 400 });
+
+  // B1 : Vérification d'appartenance — le user doit être membre de la ligue demandée.
+  // Fuite inter-ligues : sans ce contrôle, n'importe quel user authentifié pouvait
+  // lire les résultats de n'importe quelle ligue en passant un leagueId arbitraire.
+  const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+    "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+    leagueId, userId
+  );
+  if (!isMember(Number(memberRows[0]?.cnt ?? 0))) {
+    return NextResponse.json({ error: "Accès refusé : vous n'êtes pas membre de cette ligue" }, { status: 403 });
+  }
 
   // Récupère l'enchère d'été (inclut 'resolved' contrairement à GET /api/auction)
   const auctionRows = await prisma.$queryRawUnsafe<{

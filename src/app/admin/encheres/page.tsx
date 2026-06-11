@@ -25,8 +25,20 @@ interface Bid {
   playerId: number;
   playerName: string;
   clubName: string;
+  position: string;
   amount: number;
   status: string;
+}
+
+// M1 : Acquisition d'un tour quelconque (tous tours confondus)
+interface WonBid {
+  userId: number;
+  playerId: number;
+  playerName: string;
+  clubName: string;
+  position: string;
+  amount: number;
+  round: number;
 }
 
 interface Proposal {
@@ -88,6 +100,7 @@ export default function AdminEncheresPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [results, setResults] = useState<RoundResults | null>(null);
   const [seasonLabel, setSeasonLabel] = useState<string | null>(null);
+  const [allWonBids, setAllWonBids] = useState<WonBid[]>([]);
   const [loading, setLoading] = useState(false);
   // M1 : actionPending désactive tous les boutons d'action pendant une requête
   // en cours pour empêcher un double-clic de déclencher un double-dépouillement.
@@ -122,6 +135,7 @@ export default function AdminEncheresPage() {
       } else {
         setAuction(data.auction);
         setBids(data.bids ?? []);
+        setAllWonBids(data.allWonBids ?? []);
         setParticipants(data.participants ?? []);
         setResults(data.results ?? null);
         setSeasonLabel(data.seasonLabel ?? null);
@@ -262,6 +276,7 @@ export default function AdminEncheresPage() {
   ].map((s, i) => ({ ...s, status: stepStatuses[i], num: i + 1 }));
 
   // Acquisitions du tour courant par participant (statut won des bids du tour)
+  // Utilisé pour l'affichage du tableau de résultats admin (tour courant uniquement).
   const acquisitionsByUser = new Map<number, Bid[]>();
   for (const b of bids) {
     if (b.status !== "won") continue;
@@ -270,14 +285,37 @@ export default function AdminEncheresPage() {
     acquisitionsByUser.set(b.userId, arr);
   }
 
+  // M1 : Acquisitions de TOUS les tours par participant (pour le récap cumulé).
+  const allAcquisitionsByUser = new Map<number, WonBid[]>();
+  for (const b of allWonBids) {
+    const arr = allAcquisitionsByUser.get(b.userId) ?? [];
+    arr.push(b);
+    allAcquisitionsByUser.set(b.userId, arr);
+  }
+
+  // M2 : Map playerId → { userName, amount } pour les bids won du tour courant
+  // (permet d'afficher "obtenu par Dupont à 18 pts" dans les pertes du récap).
+  const winnerByPlayerIdCurrentRound = new Map<number, { userName: string; amount: number }>();
+  for (const b of bids) {
+    if (b.status !== "won") continue;
+    const p = participants.find((u) => u.userId === b.userId);
+    if (p) {
+      winnerByPlayerIdCurrentRound.set(b.playerId, { userName: p.userName, amount: b.amount });
+    }
+  }
+
   // ── Récap copiable (BRIEF-06) ─────────────────────────────────────────────
-  // Construit les données récap pour chaque participant (tour courant dépouillé)
+  // Construit les données récap pour chaque participant.
+  // M1 : Les acquisitions couvrent TOUS les tours (allAcquisitionsByUser).
+  // M2 : Les pertes du tour courant affichent le NOM du gagnant ("obtenu par Dupont à 18 pts").
+  // B2 : La position est la vraie position du joueur, pas le club.
   function buildRecaps(): ParticipantRoundRecap[] {
     if (!auction || (auction.status !== "tallied" && auction.status !== "resolved")) return [];
     return participants.map((p) => {
-      const acqs = (acquisitionsByUser.get(p.userId) ?? []).map((b) => ({
+      // M1 : toutes acquisitions, tous tours
+      const acqs = (allAcquisitionsByUser.get(p.userId) ?? []).map((b) => ({
         playerName: b.playerName,
-        position: b.clubName, // clubName used as position label fallback
+        position: b.position, // B2 : vraie position (ATT, MID, DEF, GK)
         clubName: b.clubName,
         amount: b.amount,
       }));
@@ -286,30 +324,29 @@ export default function AdminEncheresPage() {
         amount: r.amount,
         reason: r.reason,
       }));
+      // Pertes du DERNIER tour dépouillé (tour courant côté admin)
       const losses = bids
         .filter((b) => b.userId === p.userId && (b.status === "lost" || b.status === "tie"))
         .map((b) => {
           if (b.status === "tie") {
             return {
               playerName: b.playerName,
-              position: b.clubName,
+              position: b.position, // B2 : vraie position
               yourBid: b.amount,
               reasonType: "tie" as const,
               detail: "personne — égalité, remis en jeu au tour suivant",
               refund: b.amount,
             };
           }
-          // lost : on cherche qui a gagné
-          const winnerBid = bids.find(
-            (w) => w.playerId === b.playerId && w.userId !== p.userId && w.status === "won"
-          );
+          // M2 : nom du gagnant depuis la map construite au-dessus
+          const winner = winnerByPlayerIdCurrentRound.get(b.playerId);
           return {
             playerName: b.playerName,
-            position: b.clubName,
+            position: b.position, // B2 : vraie position
             yourBid: b.amount,
             reasonType: "surenchere" as const,
-            detail: winnerBid
-              ? `obtenu par un autre participant à ${winnerBid.amount} pts`
+            detail: winner
+              ? `obtenu par ${winner.userName} à ${winner.amount} pts`
               : "surenchéri",
           };
         });
@@ -521,6 +558,12 @@ export default function AdminEncheresPage() {
                             <div className="flex items-center gap-1.5 mt-1.5">
                               <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
                               <span className="text-[10.5px] text-amber-400 leading-tight">Action irréversible — confirmation requise.</span>
+                            </div>
+                          )}
+                          {/* m1 : avertissement si des complétions d'office sont en cours */}
+                          {s.num === 4 && participants.some((p) => p.proposals.length > 0) && (
+                            <div className="mt-1.5 text-[10px] text-muted italic leading-snug">
+                              La clôture peut échouer si les complétions se chevauchent ; le serveur re-validera.
                             </div>
                           )}
                         </>
