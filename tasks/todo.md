@@ -370,12 +370,39 @@ Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
 - [ ] **Prérequis parallèle — effectifs réels + photos**. Architecture décidée
       (2026-06-10, leçon des tentatives 2025-2026, cf mémoire
       photos-joueurs-historique-sources) : UN fournisseur (TheSportsDB premium
-      9$/mois, abonnement SAISONNIER juillet-août + janvier, ~27$/an ; bascule
-      API-Football 19$/mois si fraîcheur mercato insuffisante au contrôle de
-      juillet), et photos TÉLÉCHARGÉES en local à l'import (modèle logos
-      clubs Wikipedia : fiable, zéro CORS, zéro hotlink, résiliation sans
-      risque). L'existant 2025-2026 = patchwork 46% hotlinké (409 Sportmonks
-      abandonné + 50 TheSportsDB + 13 API-Football) : ne pas reproduire.
+      9$), et photos TÉLÉCHARGÉES en local à l'import (modèle logos clubs
+      Wikipedia : fiable, zéro CORS, zéro hotlink, résiliation sans risque).
+      L'existant 2025-2026 = patchwork 46% hotlinké (409 Sportmonks abandonné
+      + 50 TheSportsDB + 13 API-Football) : ne pas reproduire.
+
+      **Modèle validé par Julien (2026-06-11) : abonnement 1 SEUL mois, du
+      début à la fin août** (effectifs post-premiers transferts + recrues
+      tardives pour les jokers), résilié fin août. Rebelote 1 mois en janvier
+      pour le mercato d'hiver. Total ~18$/an. Géré par un admin « pilote
+      effectifs » (Patreon + carte perso remboursée), SANS Julien dans la
+      boucle. Contrôle qualité au moment de la souscription :
+      `scripts/diag-thesportsdb-photos.ts` avec la clé premium sur les 18
+      effectifs complets (mesure free du 2026-06-10 : 96% sur échantillon
+      biaisé 10 joueurs x 10 clubs) ; si décevant, bascule API-Football
+      19$/mois via l'abstraction football-api.ts.
+
+      Les 3 briques d'autonomie à construire :
+      - [ ] **Brique 1 — clé API saisie dans l'admin** : champ « Clé API
+            effectifs » (Admin → Configuration), stockée en DB (pas d'env
+            var, pas de redéploiement), lue par football-api.ts avec
+            fallback env puis mock. Stocker aussi la date de saisie et
+            afficher le rappel « pensez à résilier fin août ».
+            ⚠️ DDL probable (table de config clé/valeur) = migration
+            manuelle AVANT push.
+      - [ ] **Brique 2 — photos locales à l'import** : l'import étape 2
+            télécharge strCutout/strThumb dans `public/players/` (gitignoré),
+            PHOTO_URL pointe le fichier local. Fallback avatar initiales
+            inchangé pour les manquants.
+      - [ ] **Brique 3 — « Rafraîchir l'effectif d'un club » post-lancement** :
+            ajout INCRÉMENTAL uniquement (diff API vs DB, insertion des
+            nouveaux joueurs avec photo, jamais de suppression ni de
+            modification des existants/équipes). Couvre les recrues d'août
+            cherchées en joker. Autorisé saison ACTIVE.
 - [ ] **Sécurité — token Sportmonks en clair** dans
       `scripts/import-photos-sportmonks.ts` (committé) : révoquer le token et
       purger/déplacer en env var, le fournisseur n'est plus utilisé.

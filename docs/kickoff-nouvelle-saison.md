@@ -40,14 +40,19 @@
 
 **À savoir avant de commencer :**
 
-- **Les clubs importés sont réels, mais les joueurs sont pour l'instant
-  SIMULÉS** (données de démonstration, en attendant le branchement de la
-  source officielle des effectifs). C'est normal de voir des noms fantaisistes
-  pendant les essais. Ne pas corriger les joueurs à la main un par un, ça sera
-  écrasé au branchement de la vraie source.
-- **Le module enchères n'existe pas encore** sur la plateforme : après le
-  lancement, les participants n'auront pas d'équipe tant que les enchères
-  n'auront pas eu lieu (module prévu avant le mercato d'août).
+- **Désigner un admin « pilote effectifs »** : c'est lui qui prendra
+  l'abonnement à la source des effectifs (TheSportsDB, 9 $ le mois d'août,
+  remboursé sur la caisse) et qui le résiliera fin août. Voir phase 1bis
+  et phase 8.
+- **Calendrier d'été** : les phases 1 à 6 se font début août, une fois les
+  premiers transferts du mercato passés (les effectifs importés sont alors
+  à jour). Les enchères suivent à la mi-août.
+- **Le module enchères est en cours de développement** (livraison prévue
+  avant la mi-août) : après le lancement, les participants n'auront pas
+  d'équipe tant que les enchères n'auront pas eu lieu.
+- Les écrans « clé API effectifs » et « rafraîchir l'effectif d'un club »
+  décrits plus bas arrivent avec la mise à jour de juillet. Si vous lisez ce
+  guide avant et que vous ne les voyez pas, c'est normal.
 
 ---
 
@@ -66,6 +71,24 @@
 
 ---
 
+## Phase 1bis : activer la source des effectifs (début août)
+
+**Qui : l'admin pilote effectifs, 10 minutes.**
+
+- Souscrire l'abonnement TheSportsDB premium (Patreon, palier « Single
+  Developer » à 9 $/mois, sans engagement) et récupérer la clé API sur son
+  compte TheSportsDB.
+- Coller la clé dans **Admin → Configuration**, champ **« Clé API
+  effectifs »**.
+- Un rappel s'affichera dans l'admin tant que la clé est active : **la
+  résiliation fin août, c'est la phase 8**, à ne pas oublier (sinon le
+  Patreon refacture 9 $ chaque mois pour rien).
+
+**Vérification :** l'étape 2 du stepper affiche « API live » comme source
+(et non plus « données simulées »).
+
+---
+
 ## Phase 2 : importer les clubs et les joueurs
 
 **Qui : le pilote. Comptez 10-15 minutes.**
@@ -76,10 +99,12 @@
 - Pour chaque club : cliquer sur **Charger l'effectif**.
 - Contrôler le **poste** de chaque joueur (Gardien / Défense / Milieu /
   Attaque) : le menu déroulant est modifiable et c'est la classification de
-  la Ligue qui fait foi, pas celle de l'API. (Avec les joueurs simulés
-  actuels, ne perdez pas de temps là-dessus, ce sera à refaire avec les vrais
-  effectifs.)
-- Cliquer sur **Importer en base**.
+  la Ligue qui fait foi, pas celle de l'API (qui est parfois approximative,
+  surtout sur les milieux offensifs et les pistons).
+- Cliquer sur **Importer en base**. Les photos des joueurs sont copiées sur
+  notre serveur à ce moment-là : elles resteront affichées toute la saison,
+  même après la résiliation de l'abonnement. Un joueur sans photo chez la
+  source aura un avatar à initiales, c'est normal.
 
 **Vérification :** le message « X clubs et Y joueurs importés » s'affiche.
 Dans « Saisons existantes », la ligne de la saison affiche les compteurs de
@@ -217,13 +242,31 @@ déroulant :
 
 ---
 
+## Phase 8 : le mois d'août, recrues et résiliation
+
+**Qui : n'importe quel admin pour les recrues, le pilote effectifs pour la
+résiliation.**
+
+- **Recrues du mercato** : quand un transfert arrive en Ligue 1 après
+  l'import (et jusqu'à fin août, pour que les participants puissent aller
+  chercher ces joueurs en joker), un admin clique sur **« Rafraîchir
+  l'effectif »** du club concerné (page Nouvelle saison). Le système ajoute
+  uniquement les nouveaux joueurs, avec leur photo : rien n'est supprimé ni
+  modifié sur les joueurs existants et les équipes constituées. Rejouable à
+  volonté.
+- **Fin août : RÉSILIER l'abonnement** TheSportsDB (le pilote, depuis son
+  compte Patreon). Tout continue de fonctionner à l'identique : les photos
+  sont chez nous, le calendrier et les scores tournent sur l'API gratuite.
+- **Mercato d'hiver (janvier)** : même mécanique, le pilote reprend
+  l'abonnement 1 mois pour importer les recrues, puis résilie.
+
+---
+
 ## Et ensuite
 
-- **Enchères** : module en cours de développement, livré avant le mercato
-  d'août. C'est lui qui donnera leurs équipes aux participants. D'ici là,
-  les pages « Mon équipe » resteront vides : normal.
-- **Vrais effectifs de joueurs** : branchement d'une source officielle prévu
-  avant les enchères. Les joueurs simulés seront remplacés à ce moment-là.
+- **Enchères** : module en cours de développement, livré avant la mi-août.
+  C'est lui qui donnera leurs équipes aux participants. D'ici là, les pages
+  « Mon équipe » resteront vides : normal.
 - **Coupe** : le tirage se fait comme d'habitude dans Admin → Coupe, une fois
   la saison lancée.
 
@@ -231,16 +274,18 @@ déroulant :
 
 ## Récapitulatif en une ligne par phase
 
-| Phase | Action | Risque |
-|---|---|---|
-| 0 | Clôturer l'ancienne saison si ce n'est pas déjà fait | aucun |
-| 1 | Créer la saison (libellé `2027`) | aucun |
-| 2 | Importer clubs + joueurs | aucun |
-| 3 | Créer les 3 ligues (reprise de 2026) | aucun |
-| 4 | Inscrire les participants (reprise + ajustements) | aucun |
-| 5 | Ouvrir les enchères + revue collective | aucun |
-| 6 | **Démarrer la saison** | **bascule le site** |
-| 7 | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
+| Phase | Quand | Action | Risque |
+|---|---|---|---|
+| 0 | avant août | Clôturer l'ancienne saison + désigner le pilote effectifs | aucun |
+| 1 | début août | Créer la saison (libellé `2027`) | aucun |
+| 1bis | début août | Pilote : abonnement 9 $ + clé API dans l'admin | 9 $ |
+| 2 | début août | Importer clubs + joueurs (photos copiées en local) | aucun |
+| 3 | début août | Créer les 3 ligues (reprise de 2026) | aucun |
+| 4 | début août | Inscrire les participants (reprise + ajustements) | aucun |
+| 5 | début août | Ouvrir les enchères + revue collective | aucun |
+| 6 | mi-août | **Démarrer la saison** | **bascule le site** |
+| 7 | mi-août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
+| 8 | tout août | Rafraîchir les effectifs (recrues) puis **RÉSILIER fin août** | oubli = 9 $/mois |
 
 *En cas de doute à n'importe quelle étape : capture d'écran sur le groupe
 admins (voir « voie d'exception » en tête de doc). Tout est prévu pour être
