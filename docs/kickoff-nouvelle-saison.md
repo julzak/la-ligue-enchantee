@@ -1,25 +1,10 @@
 # Kick-off nouvelle saison : mode d'emploi pas à pas
 
-> Pour les admins de la Ligue Enchantée. Suivez les phases DANS L'ORDRE.
-> Chaque phase dit : qui la fait, comment la faire, et comment vérifier
-> qu'elle est bien faite avant de passer à la suivante.
->
-> **Tout le kick-off se fait en autonomie, depuis l'admin du site.**
->
-> **Voie d'exception** (la seule raison de solliciter Julien) : un message
-> d'erreur inattendu, ou le cas signalé « voie d'exception » plus bas.
-> Dans ce cas : ne forcez pas, notez le **libellé du bouton** cliqué et
-> le **message affiché** (capture d'écran idéale), et postez ça sur le groupe
-> admins. Tout est rejouable, rien n'est cassé définitivement.
-
-**Les deux règles d'or :**
-
-1. Les phases 1 à 5 sont **sans danger** : elles préparent la saison en
-   coulisses, le site public ne change pas. Vous pouvez vous y reprendre à
-   plusieurs fois.
-2. La phase 6 (bouton « Démarrer la saison ») **bascule tout le site
-   immédiatement** sur la nouvelle saison. On ne la fait qu'une fois, quand
-   tout le monde est d'accord que c'est prêt.
+Tout se fait depuis l'admin du site, dans l'ordre des phases ci-dessous.
+Les phases 1 à 5 sont rejouables sans risque ; seule la phase 6 (« Démarrer
+la saison ») bascule le site public, et elle ne se fait qu'une fois. En cas
+de message d'erreur inattendu : capture d'écran sur le groupe admins, rien
+n'est jamais cassé définitivement.
 
 ---
 
@@ -117,8 +102,8 @@ clubs et joueurs.
   précédent (pas de doublons). Si vous avez oublié un club, recommencez
   l'étape en entier (re-cocher les clubs, recharger les effectifs, ré-importer).
 - Club absent de la liste (promu manquant, club fantaisie type Légion
-  étrangère) : **voie d'exception**, l'ajout manuel n'est pas encore dans
-  l'admin.
+  étrangère) : à signaler sur le groupe admins, l'ajout manuel d'un club
+  n'est pas encore dans l'admin.
 
 ---
 
@@ -315,5 +300,4 @@ résiliation.**
 | 8 | août | Rafraîchir les effectifs (recrues) puis **RÉSILIER début septembre** | oubli = 9 $/mois |
 
 *En cas de doute à n'importe quelle étape : capture d'écran sur le groupe
-admins (voir « voie d'exception » en tête de doc). Tout est prévu pour être
-rejouable.*
+admins. Tout est prévu pour être rejouable.*
