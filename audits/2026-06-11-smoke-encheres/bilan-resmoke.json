@@ -1,0 +1,29 @@
+{
+  "anomalies": [
+    {
+      "severity": "MEDIUM",
+      "scenario": "S5c-bis",
+      "desc": "Ni bandeau OR ni bandeau rouge visible — statut affiché indéterminé",
+      "capture": "42-s5c-j1-bandeau-or-tour-cloture-bis.png"
+    }
+  ],
+  "captures": [
+    "34-m2-admin-etat-tallied-bis.png",
+    "35-m2-admin-tour2-ouvert-bis.png",
+    "36-s2c-j1-etat-initial-tour2-bis.png",
+    "37-s2c-j1-13-joueurs-prepares-bis.png",
+    "38-s2c-j1-soumission-confirmation-bis.png",
+    "39-s4-j1-reload-mises-pending-bis.png",
+    "40-s7e-j2-mise-egalite-soumise-bis.png",
+    "41-s5c-admin-tour-cloture-bis.png",
+    "42-s5c-j1-bandeau-or-tour-cloture-bis.png",
+    "43-s6e-admin-avant-depouillement-bis.png",
+    "44-s6e-admin-post-depouillement-bis.png",
+    "45-s6e-admin-resultats-egalite-bis.png",
+    "46-s6e-j1-apres-egalite-bis.png",
+    "47-s6e-j1-resultats-egalite-bis.png",
+    "48-s6e-j2-apres-egalite-bis.png",
+    "49-s6e-j2-resultats-egalite-bis.png"
+  ],
+  "timestamp": "2026-06-11T15:52:48.442Z"
+}

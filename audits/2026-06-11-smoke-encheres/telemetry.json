@@ -1,0 +1,51 @@
+{
+  "console_errors": [
+    {
+      "scenario": "S1",
+      "msg": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "scenario": "S1",
+      "msg": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "scenario": "S1",
+      "msg": "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+    },
+    {
+      "scenario": "S3",
+      "msg": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "scenario": "S3",
+      "msg": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    }
+  ],
+  "network_errors": [
+    {
+      "scenario": "S1",
+      "url": "http://localhost:3100/api/admin/deadline",
+      "status": 500
+    },
+    {
+      "scenario": "S1",
+      "url": "http://localhost:3100/api/is-admin",
+      "status": 500
+    },
+    {
+      "scenario": "S1",
+      "url": "http://localhost:3100/api/auction",
+      "status": 400
+    },
+    {
+      "scenario": "S3",
+      "url": "http://localhost:3100/api/is-admin",
+      "status": 500
+    },
+    {
+      "scenario": "S3",
+      "url": "http://localhost:3100/api/admin/deadline",
+      "status": 500
+    }
+  ]
+}

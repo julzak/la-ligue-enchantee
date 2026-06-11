@@ -32,14 +32,14 @@ Parallélisme possible : 01, 02 et 03 sont indépendants. 04 et 05 peuvent avanc
 
 ## État
 
-- BRIEF-01-moteur-encheres — à faire
-- BRIEF-02-deadline-cloture — à faire
-- BRIEF-03-gardiens-par-club — à faire
-- BRIEF-04-soumission-conforme — à faire
-- BRIEF-05-depouillement-pont-team — à faire
-- BRIEF-06-resultats — à faire
-- BRIEF-07-recette-simulee — à faire
-- BRIEF-08-runbook-kickoff — à faire
+- BRIEF-01-moteur-encheres — mergé (PR #4, 2026-06-11)
+- BRIEF-02-deadline-cloture — mergé (PR #5, 2026-06-11 ; migration round_deadline appliquée en prod)
+- BRIEF-03-gardiens-par-club — mergé (PR #6, 2026-06-11 ; seed reporté au kick-off de juillet, garde-fou en place)
+- BRIEF-04-soumission-conforme — mergé (PR #8, 2026-06-11 ; smoke E2E + review design passés)
+- BRIEF-05-depouillement-pont-team — mergé (PR #9, 2026-06-11 ; migration AUCTION_REMOVAL + ENUM→VARCHAR appliquée en prod)
+- BRIEF-06-resultats — à faire (reprendre aussi : récap copiable admin, horodatage du message de clôture, griser « Clore la phase » tant que tous les effectifs ne sont pas à 13/13 — findings N5/N6 de la review design)
+- BRIEF-07-recette-simulee — à faire (environnement prêt : audits/recette-encheres-env.md, conteneur ligue-recette-mysql port 3310, comptes recette2026)
+- BRIEF-08-runbook-kickoff — à faire (inclure : ordre saison → clubs → joueurs → seed gardiens → enchères ; procédure de réparation close-phase ; DDL ADMIN_USER/SCORING_CONFIG à régulariser dans sql/)
 
 ## Blocages
 
