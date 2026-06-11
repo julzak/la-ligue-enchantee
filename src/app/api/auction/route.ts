@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
 import { getSeasonFilters } from "@/lib/season";
 import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
+import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
+import { checkGoalkeeperLimit } from "@/lib/auction-goalkeeper-limit";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -70,9 +72,9 @@ export async function GET(request: Request) {
 
   // My bids for current round (include player_out for winter)
   const myBids = await prisma.$queryRawUnsafe<{
-    player_id: number; amount: number; status: string; fname: string; lname: string; club_name: string; player_out_id: number | null;
+    player_id: number; amount: number; status: string; fname: string; lname: string; club_name: string; position: string; player_out_id: number | null;
   }[]>(
-    `SELECT b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, b.player_out_id
+    `SELECT b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position, b.player_out_id
      FROM AUCTION_BID b JOIN PLAYER p ON b.player_id = p.ID_PLAYER JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
      WHERE b.auction_id = ? AND b.round = ? AND b.user_id = ?`,
     a.id, a.current_round, userId
@@ -150,6 +152,7 @@ export async function GET(request: Request) {
       playerId: Number(b.player_id),
       playerName: `${b.fname} ${b.lname}`.trim(),
       clubName: b.club_name,
+      position: b.position,
       amount: Number(b.amount),
       status: b.status,
       playerOutId: b.player_out_id ? Number(b.player_out_id) : null,
@@ -210,31 +213,9 @@ export async function POST(request: Request) {
 
   const isWinter = a.type === "winter";
 
-  // Determine user's budget
-  let userBudgetTotal = a.budget_per_user;
-  if (isWinter) {
-    const budgetRows = await prisma.$queryRawUnsafe<{ budget: number }[]>(
-      "SELECT budget FROM AUCTION_BUDGET WHERE auction_id = ? AND user_id = ?",
-      a.id, userId
-    );
-    if (budgetRows.length > 0) {
-      userBudgetTotal = Number(budgetRows[0].budget);
-    }
-  }
-
-  // Calculate remaining budget
-  const [spentRow] = await prisma.$queryRawUnsafe<{ total: number }[]>(
-    "SELECT COALESCE(SUM(amount),0) as total FROM AUCTION_BID WHERE auction_id = ? AND user_id = ? AND status = 'won'",
-    a.id, userId
-  );
-  const spent = Number(spentRow.total);
-  const budget = userBudgetTotal - spent;
-
-  // Validate total bids don't exceed budget
-  const totalBids = bids.reduce((sum, b) => sum + b.amount, 0);
-  if (totalBids > budget) {
-    return NextResponse.json({ error: `Budget insuffisant (${budget} pts restants, ${totalBids} mises)` }, { status: 400 });
-  }
+  // NOTE (règle 3.2.c) : le total des mises peut dépasser le budget.
+  // Un dépassement ne bloque PAS la soumission — une pénalité sera appliquée
+  // au dépouillement par le moteur. Aucun calcul de budget restant nécessaire ici.
 
   // Validate amounts > 0
   if (bids.some((b) => b.amount <= 0)) {
@@ -247,6 +228,36 @@ export async function POST(request: Request) {
       if (!bid.playerOutId) {
         return NextResponse.json({ error: "Chaque enchere doit designer un joueur sortant (1 IN = 1 OUT)" }, { status: 400 });
       }
+    }
+  }
+
+  // B0 : garde serveur — chaque joueur misé ne doit pas déjà être attribué
+  // (status='won') à un autre participant lors de la même enchère.
+  // La recherche côté client exclut déjà ces joueurs, mais le serveur rejoue le
+  // contrôle (le client n'est jamais la seule barrière — BRIEF-04).
+  if (bids.length > 0) {
+    const [bidPh, bidVs] = inParams(bids.map((b) => b.playerId));
+    const alreadyWon = await prisma.$queryRawUnsafe<{ player_id: number; user_id: number }[]>(
+      `SELECT player_id, user_id FROM AUCTION_BID
+       WHERE auction_id = ? AND status = 'won' AND player_id IN (${bidPh})`,
+      a.id, ...bidVs
+    );
+    // Utilise la logique pure (testable sans DB) pour détecter les conflits
+    const conflicts = findAlreadyWonByOther(bids, userId, alreadyWon);
+    if (conflicts.length > 0) {
+      return NextResponse.json(
+        { error: `Le joueur #${conflicts[0]} a déjà été attribué à un autre participant.` },
+        { status: 400 }
+      );
+    }
+    // B0b : garde "propres won" — règle 3.1 : les acquis sont reportés
+    // automatiquement sans nouvelle mise (évite double won + double budget).
+    const selfConflicts = findAlreadyWonBySelf(bids, userId, alreadyWon);
+    if (selfConflicts.length > 0) {
+      return NextResponse.json(
+        { error: `Vous avez déjà acquis ce joueur, il est reporté automatiquement (règle 3.1 — aucune nouvelle mise nécessaire).` },
+        { status: 400 }
+      );
     }
   }
 
@@ -295,6 +306,33 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+    }
+  }
+
+  // B2-GK : garde serveur — une mise ne peut pas contenir plus d'UN gardien
+  // (acquis compris). Seul cas de rejet pour motif de composition.
+  // Décision Julien 2026-06-11 (docs/regles-encheres.md §7).
+  if (!isWinter && bids.length > 0) {
+    // Positions des joueurs déjà acquis (won) par ce participant
+    const [bidPh2, bidVs2] = inParams(bids.map((b) => b.playerId));
+    const wonPositionRows = await prisma.$queryRawUnsafe<{ position: string }[]>(
+      `SELECT p.POSITION as position
+       FROM AUCTION_BID ab JOIN PLAYER p ON ab.player_id = p.ID_PLAYER
+       WHERE ab.auction_id = ? AND ab.user_id = ? AND ab.status = 'won'`,
+      a.id, userId
+    );
+    const draftPositionRows = await prisma.$queryRawUnsafe<{ position: string }[]>(
+      `SELECT p.POSITION as position FROM PLAYER p WHERE p.ID_PLAYER IN (${bidPh2})`,
+      ...bidVs2
+    );
+    const { rejected, totalGoalkeepers } = checkGoalkeeperLimit(wonPositionRows, draftPositionRows);
+    if (rejected) {
+      return NextResponse.json(
+        {
+          error: `Soumission refusée : votre mise contient ${totalGoalkeepers} gardiens (acquis compris). Maximum autorisé : 1 (règle 2026-06-11 — seul cas de rejet pour motif de composition).`,
+        },
+        { status: 400 }
+      );
     }
   }
 

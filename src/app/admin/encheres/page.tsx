@@ -126,7 +126,8 @@ export default function AdminEncheresPage() {
         setEditingDeadline(false);
       }
     } catch {
-      setMessage("Erreur chargement");
+      // N12-fix : message explicite avec invitation à recharger
+      setMessage("Impossible de charger les données de l'enchère. Vérifiez votre connexion puis rechargez la page (F5).");
     }
     setLoading(false);
   }, [selectedLeague]);
