@@ -111,17 +111,23 @@ Pas le même mécanisme que le mercato d'été. À traiter dans un module sépar
 
 ### Contrat de test pour le module enchères
 
-Avant tout déploiement du module enchères en prod, ces tests doivent exister et passer :
+**Source de vérité : `src/lib/auction-engine.test.ts`** (vitest, tourne dans `npm test` et la gate CI).
 
-- `scripts/test-encheres-egalite.ts` : 2 participants même mise sur même joueur → personne ne l'obtient, points rendus aux deux
-- `scripts/test-encheres-quota-gardien.ts` : mise sans gardien → retrait d'1 joueur sur la plus grosse acquisition
-- `scripts/test-encheres-depassement-budget.ts` : mise totalisant 131 pts → retrait d'1 joueur
-- `scripts/test-encheres-depassement-attaquants.ts` : 5 attaquants misés et 5 obtenus → retrait d'1 attaquant (le plus cher)
-- `scripts/test-encheres-report-points.ts` : participant ayant misé 130 pts, obtenu 80 pts au T1 → entame T2 avec un budget qui inclut les 50 pts perdus
-- `scripts/test-encheres-retrait-insuffisant.ts` : pénalité de 2 retraits mais 1 seule acquisition → 1 seul retrait, pas de dette portée
-- `scripts/test-encheres-deadline.ts` : soumission 1s après deadline → rejet, mise marquée invalide
+Les 7 cas du contrat sont portés sous vitest depuis le chantier BRIEF-01 (2026-06-11) :
 
-Chaque test inclut un sanity-check sur la valeur attendue (ex: assert que sans la logique d'égalité, le test détecterait bien la régression).
+| Cas | Describe vitest | Règle |
+|---|---|---|
+| Égalité de mise | `égalité de mise : personne n'obtient le joueur` | 3.2.a |
+| Mise sans gardien | `mise sans gardien : retrait d'1 joueur sur la plus chère (alphabétique)` | 3.2.c |
+| Dépassement de budget | `dépassement de budget : retrait d'1 joueur (la plus grosse acquisition)` | 3.2.c |
+| Excès d'attaquants | `excès d'attaquants : retrait dans la ligne ATT uniquement` | 3.2.c |
+| Report des points | `report des points : mises perdues récupérées au tour suivant` | 3.2.b |
+| Retrait insuffisant | `retrait insuffisant : pénalité bornée aux acquisitions réelles, pas de dette` | 3.2.c.4 |
+| Deadline tolérance zéro | `deadline : tolérance zéro, tour fermé = rejet` | 3.1 |
+
+Chaque describe inclut un sanity-check qui prouve que le test détecterait la régression qu'il garde.
+
+**Wrappers CLI** : les scripts `scripts/test-encheres-*.ts` sont des wrappers qui délèguent à vitest avec un filtre de nom. Ils permettent l'exécution ad-hoc ciblée (`./node_modules/.bin/tsx scripts/test-encheres-egalite.ts`). Ne pas y remettre de logique : toute modification doit se faire dans `src/lib/auction-engine.test.ts`.
 
 ### Tests à effectuer en recette fonctionnelle
 
