@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Search, X, Clock, Send, Lock } from "lucide-react";
+import { Loader2, Search, X, Clock, Send, Lock, ArrowRightLeft, Minus, Plus } from "lucide-react";
 import { validateSubmission } from "@/lib/auction-engine";
 import type { Line, EnginePlayer } from "@/lib/auction-engine";
 
@@ -32,12 +32,32 @@ interface FreePlayer {
   clubName: string;
 }
 
+interface SquadPlayer {
+  playerId: number;
+  playerName: string;
+  position: string;
+  clubName: string;
+}
+
 interface DraftBid {
   playerId: number;
   playerName: string;
   clubName: string;
   position: string;
   amount: number;
+  // winter only
+  playerOutId?: number;
+  playerOutName?: string;
+}
+
+interface MyBid {
+  playerId: number;
+  playerName: string;
+  clubName: string;
+  amount: number;
+  status: string;
+  playerOutId?: number | null;
+  playerOutName?: string | null;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -181,6 +201,300 @@ function EmptySlot({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+// ── UI Mercato d'hiver (mode winter) ──────────────────────────────────────
+// Rendu conditionnel : si isWinter, on utilise cette UI dédiée héritée de
+// l'ancienne page (chemin de soumission complet avec sélecteur joueur sortant).
+
+function WinterPage({
+  auction,
+  budget,
+  leagueDbId,
+  wonPlayers,
+  myBids,
+  squad,
+  fetchAuction,
+}: {
+  auction: AuctionState;
+  budget: number;
+  leagueDbId: number;
+  wonPlayers: WonPlayer[];
+  myBids: MyBid[];
+  squad: SquadPlayer[];
+  fetchAuction: () => void;
+}) {
+  const [draftBids, setDraftBids] = useState<DraftBid[]>([]);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<FreePlayer[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!leagueDbId || search.length < 2) { setSearchResults([]); return; }
+    const timer = setTimeout(() => {
+      fetch(`/api/admin/jokers/free?leagueId=${leagueDbId}&search=${encodeURIComponent(search)}`)
+        .then((r) => r.json())
+        .then((d) => setSearchResults(d.players ?? []))
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [leagueDbId, search]);
+
+  function addBid(player: FreePlayer) {
+    if (draftBids.some((b) => b.playerId === player.id)) return;
+    setDraftBids((prev) => [...prev, {
+      playerId: player.id,
+      playerName: player.name,
+      clubName: player.clubName,
+      position: player.position,
+      amount: 1,
+    }]);
+    setSearch("");
+    setSearchResults([]);
+  }
+
+  function updateBidAmount(playerId: number, delta: number) {
+    setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? { ...b, amount: Math.max(1, b.amount + delta) } : b));
+  }
+
+  function setBidAmount(playerId: number, amount: number) {
+    setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? { ...b, amount: Math.max(1, amount) } : b));
+  }
+
+  function setPlayerOut(playerId: number, playerOutId: number) {
+    const outPlayer = squad.find((s) => s.playerId === playerOutId);
+    setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? {
+      ...b,
+      playerOutId,
+      playerOutName: outPlayer?.playerName ?? "",
+    } : b));
+  }
+
+  function removeBid(playerId: number) {
+    setDraftBids((prev) => prev.filter((b) => b.playerId !== playerId));
+  }
+
+  const totalDraft = draftBids.reduce((sum, b) => sum + b.amount, 0);
+  const budgetAfter = budget - totalDraft;
+  const usedOutIds = new Set(draftBids.map((b) => b.playerOutId).filter((id): id is number => !!id));
+  const winterValid = draftBids.every((b) => b.playerOutId && b.playerOutId > 0);
+
+  async function submitBids() {
+    if (draftBids.length === 0) return;
+    if (!winterValid) { setMessage("Chaque enchere doit designer un joueur sortant"); return; }
+    setSubmitting(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/auction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leagueId: leagueDbId,
+          bids: draftBids.map((b) => ({
+            playerId: b.playerId,
+            amount: b.amount,
+            playerOutId: b.playerOutId,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessage(data.message);
+        setDraftBids([]);
+        fetchAuction();
+      } else {
+        setMessage("Erreur: " + data.error);
+      }
+    } catch {
+      setMessage("Erreur réseau");
+    }
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      {/* Header */}
+      <div className="bg-surface rounded-lg border border-white/[0.07] p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <ArrowRightLeft className="w-6 h-6 text-blue-400" />
+          <h2 className="font-serif text-xl text-white">
+            Mercato d&apos;hiver — Tour {auction.currentRound}
+          </h2>
+          <span className={`text-xs px-2 py-1 rounded ${auction.isOpen ? "bg-vert/20 text-vert" : "bg-rouge/20 text-rouge"}`}>
+            {auction.isOpen ? "Ouvert" : "Fermé"}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div>
+            <span className="text-2xl font-serif font-bold text-blue-400">{budget}</span>
+            <p className="text-xs text-muted mt-1">Points restants</p>
+          </div>
+          <div>
+            <span className="text-2xl font-serif font-bold text-white">{wonPlayers.length}</span>
+            <p className="text-xs text-muted mt-1">Joueurs recrutés</p>
+          </div>
+        </div>
+        <p className="text-xs text-muted text-center mt-3 flex items-center justify-center gap-1.5">
+          <ArrowRightLeft className="w-3.5 h-3.5" />
+          Chaque recrutement implique la libération d&apos;un joueur (1 IN = 1 OUT)
+        </p>
+      </div>
+
+      {message && (
+        <div className={`px-4 py-2 rounded text-sm ${message.includes("Erreur") ? "bg-rouge/10 text-rouge" : "bg-vert/10 text-vert"}`}>
+          {message}
+        </div>
+      )}
+
+      {/* Place bids (only when open) */}
+      {auction.isOpen && (
+        <div className="space-y-4">
+          <h3 className="font-serif text-base text-white">Placer vos enchères (mercato d&apos;hiver)</h3>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input
+              type="text"
+              placeholder="Chercher un joueur..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-surface-2 border border-white/[0.07] rounded pl-9 pr-3 py-2 text-sm text-white placeholder:text-muted focus:outline-none focus:border-blue-400"
+            />
+          </div>
+
+          {searchResults.length > 0 && (
+            <div className="bg-surface rounded-lg border border-white/[0.07] max-h-48 overflow-y-auto">
+              {searchResults.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => addBid(p)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/[0.03] border-b border-white/[0.04] last:border-b-0"
+                >
+                  <Plus className="w-3 h-3 text-vert" />
+                  <span className="text-[10px] text-muted w-8">{p.position.slice(0, 3)}</span>
+                  <span className="flex-1 text-left truncate">{p.name}</span>
+                  <span className="text-[10px] text-muted">{p.clubName.split(" ")[0]}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Draft bids */}
+          {draftBids.length > 0 && (
+            <div className="bg-surface rounded-lg border border-blue-400/20 overflow-hidden">
+              {draftBids.map((b) => (
+                <div key={b.playerId} className="border-b border-white/[0.04] last:border-b-0">
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <button onClick={() => removeBid(b.playerId)} className="text-rouge hover:text-rouge/70">
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-sm text-white flex-1 truncate">{b.playerName}</span>
+                    <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateBidAmount(b.playerId, -1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">-</button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={budget}
+                        value={b.amount}
+                        onChange={(e) => setBidAmount(b.playerId, parseInt(e.target.value) || 1)}
+                        className="w-14 h-6 rounded bg-surface-2 border border-white/[0.07] text-sm text-blue-400 font-bold text-center tabular-nums focus:outline-none focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button onClick={() => updateBidAmount(b.playerId, 1)} className="w-6 h-6 rounded bg-surface-2 text-muted hover:text-white flex items-center justify-center text-xs">+</button>
+                    </div>
+                  </div>
+                  {/* Player OUT selector */}
+                  <div className="px-4 pb-2">
+                    <div className="flex items-center gap-2">
+                      <ArrowRightLeft className="w-3.5 h-3.5 text-rouge shrink-0" />
+                      <span className="text-xs text-muted shrink-0">Joueur sortant :</span>
+                      <select
+                        value={b.playerOutId ?? ""}
+                        onChange={(e) => setPlayerOut(b.playerId, Number(e.target.value))}
+                        className="flex-1 bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-400"
+                      >
+                        <option value="">Choisir un joueur à libérer...</option>
+                        {squad
+                          .filter((s) => !usedOutIds.has(s.playerId) || s.playerId === b.playerOutId)
+                          .map((s) => (
+                            <option key={s.playerId} value={s.playerId}>
+                              {s.playerName} ({s.position.slice(0, 3)}) - {s.clubName.split(" ")[0]}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center justify-between px-4 py-3 bg-surface-2">
+                <span className={`text-sm ${budgetAfter < 0 ? "text-rouge" : "text-muted"}`}>
+                  Reste après enchères : <strong className="text-white">{budgetAfter}</strong> pts
+                </span>
+                <button
+                  onClick={submitBids}
+                  disabled={submitting || !winterValid}
+                  className="h-9 px-4 bg-blue-500 text-white font-semibold rounded text-sm hover:opacity-90 flex items-center gap-2 disabled:opacity-50"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Enchérir
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* My current bids */}
+      {myBids.length > 0 && (
+        <div>
+          <h3 className="font-serif text-base text-white mb-3">Mes enchères (tour {auction.currentRound})</h3>
+          <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+            {myBids.map((b) => (
+              <div key={b.playerId} className={`px-4 py-2 border-b border-white/[0.04] last:border-b-0 ${
+                b.status === "won" ? "bg-vert/5" : b.status === "lost" ? "bg-rouge/5 opacity-50" : b.status === "tie" ? "bg-blue-400/5" : ""
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-white flex-1">{b.playerName}</span>
+                  <span className="text-[10px] text-muted">{b.clubName.split(" ")[0]}</span>
+                  <span className="text-sm text-blue-400 font-bold tabular-nums">{b.amount}</span>
+                  <span className={`text-xs ${
+                    b.status === "won" ? "text-vert" : b.status === "lost" ? "text-rouge" : b.status === "tie" ? "text-blue-400" : "text-muted"
+                  }`}>
+                    {b.status === "won" ? "✓" : b.status === "lost" ? "✗" : b.status === "tie" ? "=" : "⏳"}
+                  </span>
+                </div>
+                {b.playerOutName && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <ArrowRightLeft className="w-3 h-3 text-rouge" />
+                    <span className="text-[11px] text-muted">Sortant : <span className="text-rouge/80">{b.playerOutName}</span></span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Won players */}
+      {wonPlayers.length > 0 && (
+        <div>
+          <h3 className="font-serif text-base text-white mb-3">Recrutés cet hiver ({wonPlayers.length})</h3>
+          <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+            {wonPlayers.map((p) => (
+              <div key={p.playerId} className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.04] last:border-b-0">
+                <span className="text-[10px] text-muted w-8">{p.position.slice(0, 3)}</span>
+                <span className="text-sm text-white flex-1">{p.playerName}</span>
+                <span className="text-[10px] text-muted">{p.clubName.split(" ")[0]}</span>
+                <span className="text-xs text-blue-400 tabular-nums">{p.amount} pts</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page principale ────────────────────────────────────────────────────────
 
 export default function EncheresPage() {
@@ -190,6 +504,8 @@ export default function EncheresPage() {
   const [auction, setAuction] = useState<AuctionState | null>(null);
   const [budget, setBudget] = useState(0);
   const [wonPlayers, setWonPlayers] = useState<WonPlayer[]>([]);
+  const [myBids, setMyBids] = useState<MyBid[]>([]);
+  const [squad, setSquad] = useState<SquadPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -229,6 +545,20 @@ export default function EncheresPage() {
       setAuction(data.auction);
       setBudget(data.budget ?? 0);
       setWonPlayers(data.wonPlayers ?? []);
+      setMyBids(data.myBids ?? []);
+      setSquad(data.squad ?? []);
+
+      // M1 : charger les mises pending du tour dans draftBids
+      const pending: MyBid[] = (data.myBids ?? []).filter((b: MyBid) => b.status === "pending");
+      if (pending.length > 0) {
+        setDraftBids(pending.map((b) => ({
+          playerId: b.playerId,
+          playerName: b.playerName,
+          clubName: b.clubName,
+          position: "MID", // position non fournie par myBids — sera corrigé si besoin
+          amount: b.amount,
+        })));
+      }
     } catch {}
     setLoading(false);
   }, [leagueDbId]);
@@ -315,16 +645,16 @@ export default function EncheresPage() {
   const totalFilled = wonPlayers.length + draftBids.length;
   const isConform = warnings.length === 0 && totalFilled === 13;
 
-  // Calcul bar budget
-  const spentDraft = totalDraft;
-  const budgetMax = budget + totalDraft; // = budget initial restant avant draft
-  // On affiche sur base du budget restant (avant engagement du draft)
-  const usedPct = budgetMax > 0 ? Math.min(100, Math.round((spentDraft / budgetMax) * 100)) : 0;
+  // M4 : le dénominateur de la barre budget est le budget API (valeur fixe),
+  // pas budget + totalDraft (qui varie à chaque frappe).
+  const budgetMax = budget;
+  const usedPct = budgetMax > 0 ? Math.min(100, Math.round((totalDraft / budgetMax) * 100)) : 0;
 
   // ── Soumission ────────────────────────────────────────────────────────────
 
   async function submitBids() {
-    if (draftBids.length === 0 && wonPlayers.length === 0) return;
+    // M2 : pas d'exigence draftBids.length > 0 si 13 joueurs acquis (dernier tour)
+    if (draftBids.length === 0 && wonPlayers.length < 13) return;
     setSubmitting(true);
     setMessage(null);
     try {
@@ -366,10 +696,29 @@ export default function EncheresPage() {
     );
   }
 
+  // B2 : mode winter → UI dédiée héritée avec sélecteur joueur sortant
   const isWinter = auction.type === "winter";
+  if (isWinter) {
+    return (
+      <WinterPage
+        auction={auction}
+        budget={budget}
+        leagueDbId={leagueDbId}
+        wonPlayers={wonPlayers}
+        myBids={myBids}
+        squad={squad}
+        fetchAuction={fetchAuction}
+      />
+    );
+  }
+
   const isClosed = !auction.isOpen;
   const deadlinePassed = secondsLeft !== null && secondsLeft <= 0;
   const isReadonly = isClosed || deadlinePassed;
+
+  // M3 : mode "awaiting" = tour clôturé ET mise soumise
+  const hasPendingBid = myBids.some((b) => b.status === "pending");
+  const isAwaiting = isReadonly && hasPendingBid;
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
@@ -434,14 +783,27 @@ export default function EncheresPage() {
           />
         </div>
         <div className="mt-1.5 text-[10.5px] text-[#7C776C]">
-          {spentDraft > 0 ? `${spentDraft} pts engagés ce tour` : "Aucun point engagé"} · {totalFilled} / 13 joueurs
+          {totalDraft > 0 ? `${totalDraft} pts engagés ce tour` : "Aucun point engagé"} · {totalFilled} / 13 joueurs
         </div>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
 
-        {/* ── Bannière CLÔTURÉ ── */}
-        {isReadonly && (
+        {/* ── M3 : Bannière AWAITING (tour clôturé + mise soumise) ── */}
+        {isAwaiting && (
+          <div className="flex gap-3 p-3.5 bg-gold/[0.08] border border-gold/[0.30] rounded-lg">
+            <span className="text-base flex-none mt-0.5">⏳</span>
+            <div>
+              <div className="text-[12.5px] font-bold text-[#D8BC63] mb-0.5">Tour clôturé — dépouillement en attente</div>
+              <div className="text-[11.5px] text-[#A39E92] leading-relaxed">
+                Votre mise a bien été enregistrée. Les résultats seront disponibles après le dépouillement.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Bannière READONLY (tour clôturé + PAS de mise soumise) ── */}
+        {isReadonly && !isAwaiting && (
           <div className="flex gap-3 p-3.5 bg-rouge/[0.10] border border-rouge/40 rounded-lg">
             <Lock className="w-4 h-4 text-[#E0705F] flex-none mt-0.5" />
             <div>
@@ -540,11 +902,11 @@ export default function EncheresPage() {
           );
         })}
 
-        {/* ── Hint "premier tour vide" ── */}
+        {/* ── m1 : Hint "premier tour vide" — uniquement quand les mises sont ouvertes ── */}
         {!isReadonly && totalFilled === 0 && wonPlayers.length === 0 && (
           <div className="text-center py-4 px-4">
             <p className="font-serif italic text-[17px] text-paper mb-1.5">Constituez votre équipe</p>
-            <p className="text-[12px] text-muted leading-relaxed">13 joueurs · {budget} points · mises fermées.<br />Ajoutez vos joueurs ligne par ligne ci-dessus.</p>
+            <p className="text-[12px] text-muted leading-relaxed">13 joueurs · {budgetMax} points · ajoutez vos joueurs ligne par ligne ci-dessus.</p>
           </div>
         )}
 
@@ -611,53 +973,62 @@ export default function EncheresPage() {
       )}
 
       {/* ── FOOTER sticky : bouton soumission ── */}
-      {!isWinter && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#16160F] border-t border-[#2A2824] px-4 py-3">
-          {isReadonly ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-center gap-2 px-4 py-3.5 bg-[#201F1C] border border-[#322F2A] rounded-xl">
-                <Lock className="w-4 h-4 text-[#6E6A60]" />
-                <span className="text-[14px] font-bold text-[#7C776C]">Soumission close</span>
-              </div>
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#16160F] border-t border-[#2A2824] px-4 py-3">
+        {/* M3 : mode awaiting → footer vert "Mise soumise" */}
+        {isAwaiting ? (
+          <div className="flex gap-3 px-4 py-3.5 bg-vert/[0.10] border border-vert/40 rounded-xl">
+            <span className="w-5 h-5 flex-none rounded-full bg-vert/25 border border-vert flex items-center justify-center text-[10px] text-[#3FB873]">✓</span>
+            <div>
+              <div className="text-[13px] font-bold text-[#3FB873]">Mise soumise</div>
               {submittedAt && (
-                <div className="text-center text-[10.5px] text-muted">Dernière soumission : {submittedAt}</div>
+                <div className="text-[11px] text-[#A39E92] mt-0.5">{submittedAt} · résultats à venir après dépouillement.</div>
               )}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Indicateur conformité */}
-              <div className="flex items-center gap-2">
-                {warnings.length > 0 ? (
-                  <>
-                    <span className="text-[12px]">⚠️</span>
-                    <span className="text-[11px] text-[#E0A94E] font-semibold">Mise non conforme — soumission autorisée</span>
-                  </>
-                ) : isConform ? (
-                  <>
-                    <span className="w-4 h-4 rounded-full bg-vert/20 border border-vert flex items-center justify-center text-[9px] text-[#3FB873]">✓</span>
-                    <span className="text-[11px] text-[#3FB873] font-semibold">Composition conforme · 13 / 13 joueurs</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-muted" />
-                    <span className="text-[11px] text-[#9C978B] font-semibold">{totalFilled} / 13 joueurs · complétez votre mise</span>
-                  </>
-                )}
-              </div>
-              {/* Bouton soumettre */}
-              <button
-                onClick={submitBids}
-                disabled={submitting || draftBids.length === 0}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-gold text-night font-bold text-[14.5px] rounded-xl hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Soumettre ma mise
-              </button>
-              <div className="text-center text-[10px] text-muted italic">Remplace toute mise précédente de ce tour.</div>
+          </div>
+        ) : isReadonly ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-center gap-2 px-4 py-3.5 bg-[#201F1C] border border-[#322F2A] rounded-xl">
+              <Lock className="w-4 h-4 text-[#6E6A60]" />
+              <span className="text-[14px] font-bold text-[#7C776C]">Soumission close</span>
             </div>
-          )}
-        </div>
-      )}
+            {submittedAt && (
+              <div className="text-center text-[10.5px] text-muted">Dernière soumission : {submittedAt}</div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {/* Indicateur conformité */}
+            <div className="flex items-center gap-2">
+              {warnings.length > 0 ? (
+                <>
+                  <span className="text-[12px]">⚠️</span>
+                  <span className="text-[11px] text-[#E0A94E] font-semibold">Mise non conforme — soumission autorisée</span>
+                </>
+              ) : isConform ? (
+                <>
+                  <span className="w-4 h-4 rounded-full bg-vert/20 border border-vert flex items-center justify-center text-[9px] text-[#3FB873]">✓</span>
+                  <span className="text-[11px] text-[#3FB873] font-semibold">Composition conforme · 13 / 13 joueurs</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-muted" />
+                  <span className="text-[11px] text-[#9C978B] font-semibold">{totalFilled} / 13 joueurs · complétez votre mise</span>
+                </>
+              )}
+            </div>
+            {/* M2 : bouton activé si draftBids > 0 OU si 13 joueurs déjà acquis */}
+            <button
+              onClick={submitBids}
+              disabled={submitting || (draftBids.length === 0 && wonPlayers.length < 13)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-gold text-night font-bold text-[14.5px] rounded-xl hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Soumettre ma mise
+            </button>
+            <div className="text-center text-[10px] text-muted italic">Remplace toute mise précédente de ce tour.</div>
+          </div>
+        )}
+      </div>
 
     </div>
   );

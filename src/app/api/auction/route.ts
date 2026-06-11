@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
 import { getSeasonFilters } from "@/lib/season";
 import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
+import { findAlreadyWonByOther } from "@/lib/auction-already-won";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -210,31 +211,9 @@ export async function POST(request: Request) {
 
   const isWinter = a.type === "winter";
 
-  // Determine user's budget
-  let userBudgetTotal = a.budget_per_user;
-  if (isWinter) {
-    const budgetRows = await prisma.$queryRawUnsafe<{ budget: number }[]>(
-      "SELECT budget FROM AUCTION_BUDGET WHERE auction_id = ? AND user_id = ?",
-      a.id, userId
-    );
-    if (budgetRows.length > 0) {
-      userBudgetTotal = Number(budgetRows[0].budget);
-    }
-  }
-
-  // Calculate remaining budget
-  const [spentRow] = await prisma.$queryRawUnsafe<{ total: number }[]>(
-    "SELECT COALESCE(SUM(amount),0) as total FROM AUCTION_BID WHERE auction_id = ? AND user_id = ? AND status = 'won'",
-    a.id, userId
-  );
-  const spent = Number(spentRow.total);
-  const budget = userBudgetTotal - spent;
-
-  // Validate total bids don't exceed budget
-  const totalBids = bids.reduce((sum, b) => sum + b.amount, 0);
-  if (totalBids > budget) {
-    return NextResponse.json({ error: `Budget insuffisant (${budget} pts restants, ${totalBids} mises)` }, { status: 400 });
-  }
+  // NOTE (règle 3.2.c) : le total des mises peut dépasser le budget.
+  // Un dépassement ne bloque PAS la soumission — une pénalité sera appliquée
+  // au dépouillement par le moteur. Aucun calcul de budget restant nécessaire ici.
 
   // Validate amounts > 0
   if (bids.some((b) => b.amount <= 0)) {
@@ -261,13 +240,13 @@ export async function POST(request: Request) {
        WHERE auction_id = ? AND status = 'won' AND player_id IN (${bidPh})`,
       a.id, ...bidVs
     );
-    for (const w of alreadyWon) {
-      if (Number(w.user_id) !== userId) {
-        return NextResponse.json(
-          { error: `Le joueur #${w.player_id} a déjà été attribué à un autre participant.` },
-          { status: 400 }
-        );
-      }
+    // Utilise la logique pure (testable sans DB) pour détecter les conflits
+    const conflicts = findAlreadyWonByOther(bids, userId, alreadyWon);
+    if (conflicts.length > 0) {
+      return NextResponse.json(
+        { error: `Le joueur #${conflicts[0]} a déjà été attribué à un autre participant.` },
+        { status: 400 }
+      );
     }
   }
 
