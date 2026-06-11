@@ -398,31 +398,31 @@ Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
         `scripts/diag-thesportsdb-photos.ts` clé premium (mesure free du
         2026-06-10 : 96% sur échantillon biaisé).
 
-      Les briques d'autonomie à construire :
-      - [ ] **Brique 0 — provider football-data.org** dans football-api.ts
+      Les briques d'autonomie : LIVRÉES le 2026-06-11 (migration APP_CONFIG appliquée en prod). Reste la vérification live avec un vrai token football-data.org (compte gratuit à créer par l'admin pilote ou Julien).
+      - [x] **Brique 0 — provider football-data.org** dans football-api.ts
             (effectifs gratuits noms+postes, token gratuit à l'inscription,
             10 req/min). Devient la source de l'étape 2 du stepper.
-      - [ ] **Brique 1 — clés API saisies dans l'admin** : champs « Clé
+      - [x] **Brique 1 — clés API saisies dans l'admin** : champs « Clé
             effectifs (football-data.org) » et « Clé photos (TheSportsDB
             premium) » dans Admin → Configuration, stockées en DB (pas d'env
             var, pas de redéploiement), avec date de saisie + rappel de
             résiliation pour la clé photos. ⚠️ DDL probable (table config
             clé/valeur) = migration manuelle AVANT push.
-      - [ ] **Brique 2 — « Récupérer les photos des équipes » AU LANCEMENT** :
+      - [x] **Brique 2 — « Récupérer les photos des équipes » AU LANCEMENT** :
             bouton admin post-enchères. Pour chaque club : effectif complet
             TheSportsDB (premium), matching club par club avec NOS joueurs
             sélectionnés (nom normalisé), téléchargement local dans
             `public/players/` (gitignoré), PHOTO_URL = fichier local.
             Rapport des non-matchés + saisie manuelle d'une URL photo par
             joueur. Rejouable (complète les manquants).
-      - [ ] **Brique 3 — recrues d'août** : pendant la fenêtre d'abonnement,
+      - [x] **Brique 3 — recrues d'août** : pendant la fenêtre d'abonnement,
             « Rafraîchir l'effectif d'un club » = ajout INCRÉMENTAL
             (nouveaux joueurs + photos, jamais de suppression). Hors
             fenêtre : ajout manuel via Admin → Joueurs (existe déjà),
             avatar initiales.
-- [ ] **Sécurité — token Sportmonks en clair** dans
-      `scripts/import-photos-sportmonks.ts` (committé) : révoquer le token et
-      purger/déplacer en env var, le fournisseur n'est plus utilisé.
+- [x] **Sécurité — token Sportmonks** : scripts legacy supprimés du repo
+      (2026-06-11). Le token reste dans l'HISTORIQUE git : révocation côté
+      compte Sportmonks À FAIRE PAR JULIEN.
 
 ## Décisions à valider avec Julien (avant E1)
 1. Modélisation gardien par club.
