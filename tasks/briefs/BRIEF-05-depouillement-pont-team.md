@@ -1,11 +1,11 @@
 # BRIEF-05 — Dépouillement branché sur le moteur et pont vers les équipes
 
 ## Objectif
-L'admin clôture un tour et le dépouillement applique le règlement via le moteur (BRIEF-01) ; à la fin de la phase, les effectifs sont écrits dans TEAM : sans ce pont, pas d'équipes et pas de scoring.
+L'admin clôture un tour et le dépouillement applique le règlement via le moteur existant ; à la fin de la phase, les effectifs sont écrits dans TEAM : sans ce pont, pas d'équipes et pas de scoring.
 
 ## Contexte
 - Resolveur actuel dans `/api/admin/auction` (resolve-round, resolve-tiebreak, close-auction). resolve-tiebreak (tirage au sort) doit DISPARAÎTRE : décision tracée du 2026-06-10, l'aléatoire n'a jamais été au règlement.
-- Le moteur pur de BRIEF-01 rend acquisitions, restitutions, retraits motivés, complétion d'office. Ce chantier le branche sur la DB (AUCTION_BID statuts won/lost/tie) et persiste les retraits AVEC leur motif (nouvelle structure si besoin, migration via `sql/`, appliquée par Julien avant merge).
+- Le moteur pur existant (`src/lib/auction-engine.ts`, commit c52f685 du 2026-06-10) rend acquisitions, restitutions, retraits motivés, complétion d'office. Ce chantier le branche sur la DB (AUCTION_BID statuts won/lost/tie) et persiste les retraits AVEC leur motif (nouvelle structure si besoin, migration via `sql/`, appliquée par Julien avant merge).
 - Pont TEAM : seuls les jokers écrivent dans TEAM aujourd'hui. S'inspirer de ce chemin d'écriture existant.
 - Fin de phase (règle 4) : quand tous les participants ont 13 joueurs valides, ou complétion d'office à 1 pt par l'admin.
 
@@ -20,7 +20,7 @@ L'admin clôture un tour et le dépouillement applique le règlement via le mote
 La page de résultats participant (BRIEF-06). L'UI de mise. Les notifications.
 
 ## Dépendances
-BRIEF-01 (moteur), BRIEF-03 (pseudo-gardiens dans les effectifs écrits).
+BRIEF-03 (pseudo-gardiens dans les effectifs écrits). Le moteur existe déjà ; BRIEF-01 (tests dans la gate CI) est fortement recommandé avant, pour que la CI protège ce branchement.
 
 ## Budget et conditions d'arrêt
 - ~8 fichiers : `/api/admin/auction`, page admin enchères, persistance des retraits (schema + sql/), pont TEAM, tests d'intégration du branchement.

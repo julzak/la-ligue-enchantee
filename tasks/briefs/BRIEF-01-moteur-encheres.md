@@ -1,34 +1,32 @@
-# BRIEF-01 — Moteur d'enchères pur
+# BRIEF-01 — Tests du moteur dans la gate CI
 
 ## Objectif
-Toute la logique de dépouillement du règlement dans une lib pure, testée, sans dépendance DB : c'est elle qui rendra le dépouillement automatisé digne de confiance.
+Les 7 tests du contrat protègent le moteur d'enchères à chaque PR, pas seulement quand quelqu'un pense à les lancer.
 
 ## Contexte
-- Source de vérité : `docs/regles-encheres.md` §3.2 (attribution, restitution, pénalités) et §4 (complétion d'office). Le code suit le règlement, jamais l'inverse.
-- Le résolveur actuel vit dans `/api/admin/auction` (resolve-round) : plus haute mise gagne, égalité = statut tie. Il sera branché sur ce moteur au BRIEF-05 ; ce chantier-ci ne touche PAS aux routes.
-- Modèle existant : tables AUCTION, AUCTION_BID (round, statuts pending/won/lost/tie). Le moteur prend des structures en mémoire, pas des rows Prisma.
-- Contrat de tests : CLAUDE.md liste 7 cas `scripts/test-encheres-*.ts`. Décision de ce brief : les implémenter en **vitest** (`src/lib/auction-engine.test.ts`, un describe par cas du contrat) pour qu'ils tournent dans la gate CI, et mettre à jour la section correspondante de CLAUDE.md. L'intention (les 7 cas + sanity-checks) est inchangée.
+- Le moteur pur EXISTE : `src/lib/auction-engine.ts` (commit c52f685 du 2026-06-10, E0+E1) : attribution, égalités, restitution, pénalités/retraits, complétion d'office. Les 7 tests du contrat existent en scripts tsx (`scripts/test-encheres-*.ts`, helpers dans `scripts/lib/test-encheres-helpers.ts`) et passent (vérifié le 2026-06-11).
+- Problème : la gate CI (`.github/workflows/ci.yml`) lance `npm test` = vitest, qui ne voit pas ces scripts. Un chantier qui casse le moteur passerait la CI.
+- Source de vérité des règles : `docs/regles-encheres.md`. Ne PAS modifier la logique du moteur dans ce chantier.
 
 ## Critères d'acceptation
-- [ ] Une fonction de dépouillement prend les mises d'un tour et rend : acquisitions par participant, joueurs remis en jeu (égalités), points restitués, retraits de pénalité avec motif lisible par un humain, budget restant par participant.
-- [ ] Les 7 cas du contrat passent : égalité → personne et points rendus ; mise sans gardien → retrait de 1 joueur (la plus grosse acquisition) ; 131 pts → retrait de 1 joueur ; 5 attaquants obtenus → retrait du plus cher ; report des points non dépensés au tour suivant ; pénalité de 2 retraits avec 1 seule acquisition → 1 retrait, pas de dette ; soumission 1 s après la deadline → rejetée.
-- [ ] Règles de sélection du retrait respectées : plus grosse mise, ordre alphabétique (nom de famille) en cas d'égalité, par ligne pour les excès de ligne.
-- [ ] Complétion d'office (règle 4) : une fonction prend les effectifs incomplets et une liste de joueurs disponibles et rend les ajouts à 1 pt.
-- [ ] Chaque test inclut un sanity-check prouvant qu'il détecterait la régression qu'il garde.
+- [ ] Les 7 cas du contrat tournent sous vitest (donc dans `npm test` et la CI), chacun avec son sanity-check conservé.
+- [ ] Pas de double maintenance : une seule source pour chaque cas de test (porter les scripts en `src/lib/auction-engine.test.ts` et réduire les scripts tsx à de simples wrappers, ou les supprimer si CLAUDE.md est mis à jour en conséquence).
+- [ ] La section « contrat de tests » de CLAUDE.md reflète le nouvel emplacement.
+- [ ] Une régression volontaire introduite localement dans le moteur (puis annulée) fait échouer `npm test` : preuve que la gate protège.
 
 ## Hors périmètre
-Aucune route API, aucune page, aucune table, aucune migration. Pas de logique gardien-par-club (BRIEF-03) au-delà du quota « exactement 1 gardien ».
+Toute modification de la logique du moteur. Les routes API. Le branchement DB (BRIEF-05).
 
 ## Dépendances
 Aucune.
 
 ## Budget et conditions d'arrêt
-- ~3 fichiers : `src/lib/auction-engine.ts`, `src/lib/auction-engine.test.ts`, CLAUDE.md (section contrat).
-- Arrêt SUCCÈS : `npm test` vert (21 tests existants + les nouveaux), typecheck vert, PR ouverte.
-- Arrêt SUSPENSION : une règle du règlement est ambiguë → l'écrire dans PLAN.md ## Blocages avec le cas concret chiffré, passer au chantier suivant.
+- ~4 fichiers : le fichier de test vitest, les scripts existants (réduits ou supprimés), CLAUDE.md.
+- Arrêt SUCCÈS : `npm test` vert avec les 7 cas inclus, preuve de détection de régression faite, PR ouverte.
+- Arrêt SUSPENSION : si un test révèle un écart entre moteur et règlement, NE PAS corriger le moteur : tracer dans PLAN.md ## Blocages.
 
 ## Vérification
-`npm test` en local et en CI. Revue du motif de chaque retrait sur un cas multi-pénalités construit à la main.
+`npm test` en local et CI verte sur la PR. Le test de régression volontaire documenté dans la PR.
 
 ## Questions ouvertes
 (aucune)
