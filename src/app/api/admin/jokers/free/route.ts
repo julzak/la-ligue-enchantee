@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CLUB_GK_KEY_PREFIX } from "@/lib/club-goalkeeper";
+import { getSeasonFilters } from "@/lib/season";
 // import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(request: Request) {
@@ -46,9 +47,16 @@ export async function GET(request: Request) {
     wonBids.forEach((b) => takenIds.add(Number(b.player_id)));
   }
 
+  // Périmètre saison courant — DOIT être identique à la garde B1 de POST /api/auction
+  // pour éviter toute incohérence recherche/soumission (bug smoke HIGH 2026-06-11).
+  // Mode legacy (saison sans scope joueurs) : seasonFilters.player = {} → pas de
+  // filtre ID_SEASON, tous les joueurs sont proposables, la garde accepte également tout.
+  const seasonFilters = await getSeasonFilters();
+  const seasonPlayerFilter = seasonFilters.player; // {} ou { seasonId: N }
+
   // Build query conditions
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { clubId: { gt: 0 } };
+  const where: any = { clubId: { gt: 0 }, ...seasonPlayerFilter };
   // Gardiens : seuls les pseudo-joueurs « Gardiens [Club] » (clé stable
   // `gardiens_*` dans LINK) sont proposables à la mise ; aucun gardien nommé
   // (règle 2.1 + décision 2026-06-10, docs/regles-encheres.md §7). Les
