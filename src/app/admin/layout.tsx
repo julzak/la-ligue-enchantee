@@ -23,6 +23,7 @@ const utilLinks = [
 
 const foireLinks = [
   { href: "/admin/encheres", label: "Mercato d'été", icon: Gavel },
+  { href: "/admin/aide-encheres", label: "Aide enchères", icon: BookOpen },
   { href: "/admin/mercato-hiver", label: "Mercato d'hiver", icon: Snowflake },
   { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
 ];
