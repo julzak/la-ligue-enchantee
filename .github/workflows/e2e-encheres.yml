@@ -1,0 +1,81 @@
+name: E2E Enchères
+
+# Tests fonctionnels de bout en bout du module enchères (étages 2 et 3 de la
+# pyramide) : MySQL de service + fixture seedée + app en mode dev + scénarios
+# HTTP. SÉPARÉ de la gate rapide `CI` (lint/vitest/typecheck, sans DB).
+#
+# Déclenchement MANUEL pour l'instant (workflow_dispatch) : ce job n'a pas
+# encore été validé par un run réel sur GitHub (impossible à éprouver en
+# local). Une fois un run vert obtenu, ajouter le trigger `pull_request` sur
+# les chemins du module pour le rendre bloquant. NE touche jamais la prod.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-encheres-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: recette2026
+          MYSQL_DATABASE: ligueenc_recette
+          MYSQL_USER: recette
+          MYSQL_PASSWORD: recette2026
+        ports:
+          - 3310:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -precette2026"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    env:
+      DATABASE_URL: "mysql://recette:recette2026@127.0.0.1:3310/ligueenc_recette"
+      NEXTAUTH_SECRET: "ci-e2e-secret"
+      NEXTAUTH_URL: "http://localhost:3100"
+      E2E_BASE_URL: "http://localhost:3100"
+      RECETTE_PASSWORD: "recette2026"
+      PORT: "3100"
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+
+      # Schéma Prisma sur base vide (la prod n'utilise jamais migrate ; ici on
+      # part d'une base neuve, db push est sûr et rapide).
+      - name: Schéma Prisma
+        run: ./node_modules/.bin/prisma db push --skip-generate --accept-data-loss
+
+      # Fixture représentative : saison AUCTION courante, 6 clubs, joueurs
+      # (postes au format prod), 4 participants, ligue de recette.
+      - name: Seed fixture
+        run: |
+          ./node_modules/.bin/tsx scripts/seed-recette-encheres.ts --apply
+          ./node_modules/.bin/tsx scripts/seed-gardiens-club.ts --apply
+
+      # Tables hors-schéma Prisma (AUCTION*, ADMIN_USER) + admin opérateur +
+      # AUCTION ouverte. Exporte E2E_LEAGUE_ID.
+      - name: Bootstrap enchères
+        run: ./node_modules/.bin/tsx tests/e2e/ci-setup.ts
+
+      # App en mode dev : pas de prerender (les pages SSG / et /coupe ont besoin
+      # de données que la fixture n'a pas ; le dev compile les routes à la demande).
+      - name: Démarrer l'app (dev)
+        run: |
+          npx next dev -p 3100 > /tmp/app.log 2>&1 &
+          until curl -sf -o /dev/null http://localhost:3100/api/auth/csrf; do sleep 2; done
+          echo "app prête"
+
+      - name: Tests E2E
+        run: npm run test:e2e
+
+      - name: Logs app (si échec)
+        if: failure()
+        run: tail -120 /tmp/app.log
