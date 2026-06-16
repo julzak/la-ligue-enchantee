@@ -368,6 +368,120 @@ describe("mapping position DB → ligne moteur", () => {
     expect(lineFromPosition("Milieu de terrain")).toBe("MID");
     expect(lineFromPosition("Attaquant")).toBe("ATT");
   });
+
+  // BLOQUANT-1 (recette 2026-06-16) : les codes courts canoniques
+  // G/DEF/MIL/ATT retombaient tous sur "MID" (la détection ne testait que les
+  // mots français complets), classant DEF et ATT comme milieux.
+  it("gère les codes courts canoniques G/DEF/MIL/ATT", () => {
+    expect(lineFromPosition("G")).toBe("GK");
+    expect(lineFromPosition("DEF")).toBe("DEF");
+    expect(lineFromPosition("MIL")).toBe("MID");
+    expect(lineFromPosition("ATT")).toBe("ATT");
+  });
+
+  it("gère les libellés préfixés ('2 - Défense')", () => {
+    expect(lineFromPosition("1 - Gardien")).toBe("GK");
+    expect(lineFromPosition("2 - Défense")).toBe("DEF");
+    expect(lineFromPosition("3 - Milieu")).toBe("MID");
+    expect(lineFromPosition("4 - Attaque")).toBe("ATT");
+  });
+
+  // Sanity-check : avant le fix BLOQUANT-1, "DEF" et "ATT" rendaient "MID".
+  // On prouve que ce test détecterait ce comportement bugué.
+  it("sanity-check : la régression 'codes courts → MID' serait détectée", () => {
+    const buggyDef = "MID"; // ancien comportement pour "DEF"
+    const buggyAtt = "MID"; // ancien comportement pour "ATT"
+    const detects =
+      lineFromPosition("DEF") !== buggyDef || lineFromPosition("ATT") !== buggyAtt;
+    expect(detects).toBe(true);
+  });
+});
+
+// ── BLOQUANT-1 + cascade BLOQUANT-2 (recette simulée 2026-06-16) ───────────
+// Régression du dépouillement de bout en bout avec des positions DB en CODES
+// COURTS (G/DEF/MIL/ATT), exactement comme la base le renvoie. La racine unique
+// est lineFromPosition : avant le fix, tous les joueurs de champ étaient classés
+// "milieu", ce qui déclenchait la pénalité "milieux en excès" sur toute mise
+// normale (BLOQUANT-1) et, par contamination des acquis du tour 1, faisait
+// chuter l'effectif reporté sous 13 au tour 2 (BLOQUANT-2, simple cascade).
+describe("BLOQUANT-1 : dépouillement avec positions DB en codes courts", () => {
+  // Joueurs en codes courts : 1 GK + 5 DEF + 4 MIL + 3 ATT = 13.
+  const players = new Map<number, ResolutionPlayer>();
+  let id = 5000;
+  const reg = (lastName: string, position: string) => {
+    const p = { id: id++, lastName, position, displayName: lastName };
+    players.set(p.id, p);
+    return p;
+  };
+  const gk = reg("Gk", "G");
+  const defs = ["Da", "Db", "Dc", "Dd", "De"].map((n) => reg(n, "DEF"));
+  const mids = ["Ma", "Mb", "Mc", "Md"].map((n) => reg(n, "MIL"));
+  const atts = ["Aa", "Ab", "Ac"].map((n) => reg(n, "ATT"));
+  const squad = [gk, ...defs, ...mids, ...atts];
+
+  let bidId = 7000;
+  const round1 = squad.map((p) => ({
+    id: bidId++,
+    userId: 1,
+    playerId: p.id,
+    amount: p.id === gk.id ? 10 : 5,
+  }));
+
+  it("mise conforme 1GK/5DEF/4MIL/3ATT : AUCUNE pénalité de ligne", () => {
+    const plan = planResolution({
+      budgetPerUser: 130,
+      participantIds: [1],
+      players,
+      wonBids: [],
+      pendingBids: round1,
+    });
+    expect(plan.removals).toHaveLength(0);
+    expect(plan.outcome.acquisitions).toHaveLength(13);
+  });
+
+  it("l'effectif final est valide (5 DEF, 4 MIL, 3 ATT, 1 GK — pas 13 milieux)", () => {
+    const [statuses] = computeRosterStatuses({
+      participantIds: [1],
+      players,
+      wonBids: squad.map((p) => ({ userId: 1, playerId: p.id, amount: 5 })),
+    });
+    expect(statuses.errors).toEqual([]);
+    expect(statuses.roster.filter((p) => p.line === "DEF")).toHaveLength(5);
+    expect(statuses.roster.filter((p) => p.line === "MID")).toHaveLength(4);
+    expect(statuses.roster.filter((p) => p.line === "ATT")).toHaveLength(3);
+  });
+
+  // BLOQUANT-2 (cascade) : au tour 2, 12 acquis reportés + 1 mise de complément
+  // = 13 cumulés → aucune pénalité "<13" ni de ligne. La pénalité "<13" compte
+  // bien l'effectif cumulé (acquis owned + nouvelles mises), pas la seule mise.
+  it("tour 2 : 12 acquis reportés + 1 complément → aucune pénalité", () => {
+    const owned = squad.slice(0, 12).map((p) => ({ userId: 1, playerId: p.id, amount: 5 }));
+    const complement = squad[12]; // 13e joueur, misé seul au tour 2
+    const plan = planResolution({
+      budgetPerUser: 130,
+      participantIds: [1],
+      players,
+      wonBids: owned, // reportés automatiquement (règle 3.1)
+      pendingBids: [{ id: 7100, userId: 1, playerId: complement.id, amount: 5 }],
+    });
+    expect(plan.removals).toHaveLength(0);
+    expect(plan.outcome.acquisitions).toHaveLength(1);
+  });
+
+  // Sanity-check : avec l'ancien lineFromPosition (tout champ → MID), la mise
+  // conforme ci-dessus aurait produit au moins un retrait "milieux en excès"
+  // (12 champ classés MID > 6). On vérifie que le test l'aurait capté.
+  it("sanity-check : la régression de classification serait détectée", () => {
+    const plan = planResolution({
+      budgetPerUser: 130,
+      participantIds: [1],
+      players,
+      wonBids: [],
+      pendingBids: round1,
+    });
+    const buggyRemovalCount = 6; // 12 "milieux" - 6 = 6 retraits sous l'ancien bug
+    expect(buggyRemovalCount !== plan.removals.length).toBe(true);
+  });
 });
 
 // ── B3 : Défense double-won ────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { getSeasonFilters } from "@/lib/season";
 import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
 import { checkGoalkeeperLimit } from "@/lib/auction-goalkeeper-limit";
+import { findDuplicatePlayerIds } from "@/lib/auction-duplicate-bids";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -220,6 +221,18 @@ export async function POST(request: Request) {
   // Validate amounts > 0
   if (bids.some((b) => b.amount <= 0)) {
     return NextResponse.json({ error: "Les mises doivent etre > 0" }, { status: 400 });
+  }
+
+  // B3 : garde serveur — une soumission ne peut pas contenir deux mises sur le
+  // même playerId. Un payload avec doublon est malformé : il fausserait le
+  // décompte de joueurs (quotas, pénalité >13) et le dépouillement (deux lignes
+  // AUCTION_BID pour un seul joueur). Rejet explicite, pas une pénalité.
+  const duplicateIds = findDuplicatePlayerIds(bids);
+  if (duplicateIds.length > 0) {
+    return NextResponse.json(
+      { error: `Le joueur #${duplicateIds[0]} apparait plusieurs fois dans la soumission : une seule mise par joueur est autorisee.` },
+      { status: 400 }
+    );
   }
 
   // For winter: validate each bid has a player_out_id
