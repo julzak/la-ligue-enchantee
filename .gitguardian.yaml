@@ -1,0 +1,18 @@
+# Configuration GitGuardian.
+#
+# On ignore le mot de passe "recette2026" : c'est l'identifiant du conteneur
+# Docker de RECETTE (base locale éphémère, port 127.0.0.1:3310, données 100%
+# fictives). Il ne protège aucun service réel et n'existe que sur la machine
+# du dev. Documenté à dessein pour pouvoir utiliser l'environnement de recette
+# du module enchères (cf audits/recette-encheres-env.md). Faux positif assumé.
+#
+# Aucun VRAI secret (DB prod, NEXTAUTH_SECRET, clés API) ne doit jamais être
+# committé : eux ne sont pas ignorés et resteront détectés.
+version: 2
+secret:
+  ignored-matches:
+    - name: "Mot de passe du conteneur de recette local (test, non sensible)"
+      match: recette2026
+  ignored-paths:
+    - "audits/**"
+    - "scripts/seed-recette-encheres.ts"
