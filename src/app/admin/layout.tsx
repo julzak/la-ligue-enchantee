@@ -2,29 +2,36 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users, UserPlus, BookOpen, Settings, Shield, ArrowUpDown, CalendarPlus, Rocket } from "lucide-react";
+import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users, UserPlus, BookOpen, Settings, Shield, ArrowUpDown, CalendarPlus, Rocket, HelpCircle } from "lucide-react";
 
+// Opérations courantes de la saison en cours.
 const mainLinks = [
-  { href: "/admin/kickoff", label: "Kick-off saison", icon: Rocket },
-  { href: "/admin/nouvelle-saison", label: "Nouvelle saison", icon: CalendarPlus },
   { href: "/admin/notes", label: "Notes", icon: ClipboardList },
   { href: "/admin/jokers", label: "Jokers", icon: Zap },
   { href: "/admin/equipes", label: "Équipes", icon: Users },
   { href: "/admin/coupe-france", label: "Coupe", icon: Trophy },
 ];
 
-const utilLinks = [
-  { href: "/admin/joueurs", label: "Joueurs", icon: UserPlus },
-  { href: "/admin/promotions", label: "Mouvements", icon: ArrowUpDown },
-  { href: "/admin/utilisateurs", label: "Admins", icon: Shield },
-  { href: "/admin/config", label: "Configuration", icon: Settings },
-  { href: "/admin/guide", label: "Guide admin", icon: BookOpen },
-];
-
 const foireLinks = [
   { href: "/admin/encheres", label: "Mercato d'été", icon: Gavel },
   { href: "/admin/mercato-hiver", label: "Mercato d'hiver", icon: Snowflake },
+];
+
+// Gestion (peu fréquent) : Nouvelle saison s'utilise une fois par an, placée ici.
+const utilLinks = [
+  { href: "/admin/joueurs", label: "Joueurs", icon: UserPlus },
+  { href: "/admin/promotions", label: "Mouvements", icon: ArrowUpDown },
   { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
+  { href: "/admin/utilisateurs", label: "Admins", icon: Shield },
+  { href: "/admin/nouvelle-saison", label: "Nouvelle saison", icon: CalendarPlus },
+  { href: "/admin/config", label: "Configuration", icon: Settings },
+];
+
+// Guides & aide.
+const guideLinks = [
+  { href: "/admin/kickoff", label: "Kick-off saison", icon: Rocket },
+  { href: "/admin/guide", label: "Guide admin", icon: BookOpen },
+  { href: "/admin/aide-encheres", label: "Aide Mercato", icon: HelpCircle },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -72,6 +79,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="mt-6 pt-4 border-t border-white/[0.05]">
           <nav className="space-y-1">
             {utilLinks.map((link) => (
+              <NavLink key={link.href} {...link} />
+            ))}
+          </nav>
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-white/[0.05]">
+          <p className="text-[10px] uppercase tracking-wider text-muted px-3 mb-2">Guides &amp; aide</p>
+          <nav className="space-y-1">
+            {guideLinks.map((link) => (
               <NavLink key={link.href} {...link} />
             ))}
           </nav>
