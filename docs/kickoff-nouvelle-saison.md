@@ -26,14 +26,19 @@ n'est jamais cassé définitivement.
 **À savoir avant de commencer :**
 
 - **Désigner un admin « pilote effectifs »** : c'est lui qui prendra
-  l'abonnement photos (TheSportsDB, 9 $ pour UN mois au moment du lancement)
-  et qui le résiliera mi-septembre. Voir phase 6bis et phase 8.
-- **Calendrier d'été** : les phases 1 à 5 se font début juillet. Les
-  **enchères occupent la mi-juillet à la mi-août**, les équipes sont
-  complètes mi-août, et le lancement (phase 6) suit, avant la première
-  journée de Ligue 1 (autour du 23 août). Pendant les enchères, les joueurs
-  n'ont pas de photo (avatar à initiales) : c'est voulu, les photos ne sont
-  récupérées que pour les joueurs réellement sélectionnés, au lancement.
+  l'abonnement photos (TheSportsDB, 9 $ pour UN mois) et le résiliera
+  mi-septembre. Voir phases 8 et 10.
+- **Calendrier d'été** : préparation (phases 1 à 4) début juillet. On
+  **démarre la saison vers la mi-juillet** (phase 6) : c'est ce qui la rend
+  « courante » et **ouvre l'accès des participants à leurs enchères**. Les
+  **enchères se jouent ensuite de la mi-juillet à la mi-août** (phase 7) et
+  constituent les équipes. La première journée de Ligue 1 est autour du
+  **23 août**. Pendant les enchères, les joueurs n'ont pas de photo (avatar à
+  initiales) : c'est voulu, les photos ne sont récupérées qu'une fois les
+  équipes constituées (phase 8).
+- Conséquence assumée : dès le démarrage (mi-juillet), le site public pointe
+  la nouvelle saison, avec classements et équipes vides jusqu'à ce que les
+  enchères les remplissent. C'est normal.
 - Les écrans « clé photos », « récupérer les photos des équipes » et
   « rafraîchir l'effectif d'un club » décrits plus bas arrivent avec la mise
   à jour de fin juin.
@@ -136,7 +141,9 @@ déroulant :
 **Qui : tous les admins, ensemble.**
 
 - Dans « Saisons existantes », cliquer sur **Ouvrir les enchères** (la saison
-  passe en `AUCTION`). C'est encore sans effet sur le site public.
+  passe en `AUCTION`). C'est encore sans effet sur le site public. Attention :
+  ce bouton ne fait que préparer le statut ; le **déroulé réel des enchères**
+  (les tours de mises) se fait en phase 7, une fois la saison démarrée.
 - Passer en revue, à plusieurs :
   - les compteurs de la saison (ligues, clubs, joueurs),
   - la répartition des participants par ligue,
@@ -149,16 +156,17 @@ déroulant :
   enchères »**.
 - Bonus recommandé : cliquer dès maintenant sur **« Synchroniser le
   calendrier »** (ligne de la saison). Si le calendrier de la Ligue 1 est déjà
-  publié, autant l'avoir avant le lancement ; sinon le message vous dira de
-  réessayer plus tard, sans conséquence.
+  publié, autant l'avoir tôt ; sinon le message vous dira de réessayer plus
+  tard, sans conséquence.
 
-**STOP ici tant que tout le monde n'a pas validé.** La phase 6 bascule le site.
+**STOP ici tant que tout le monde n'a pas validé.** La phase 6 rend la saison
+courante et fait pointer le site public dessus.
 
 ---
 
-## Phase 6 : LANCEMENT (bascule du site)
+## Phase 6 : démarrer la saison (la rendre courante)
 
-**Qui : un admin, prévenir les autres juste avant.**
+**Qui : un admin, prévenir les autres juste avant. Vers la mi-juillet.**
 
 - Dans « Saisons existantes », cliquer sur **Démarrer la saison**.
 - Le système vérifie d'abord une **checklist** : ligues créées, clubs et
@@ -169,20 +177,70 @@ déroulant :
   - Si tout est bon : la saison passe en `ACTIVE`, devient la saison
     **courante**, et les réglages (barème de scoring, jokers) sont créés
     automatiquement en copiant ceux de l'an dernier.
-- À partir de cet instant, tout le site (classements, listes de joueurs,
-  mon équipe, explorateur) montre la nouvelle saison.
+- À partir de cet instant, tout le site pointe la nouvelle saison **et les
+  participants peuvent accéder à leurs enchères** (c'est ce qui débloque la
+  phase 7). Les équipes et les classements sont **vides jusqu'à ce que les
+  enchères les remplissent** : c'est normal.
 
 **Vérification immédiate (5 minutes, à plusieurs) :**
 - La page d'accueil et les 3 pages de ligues s'affichent sans erreur.
-- Les classements sont vides ou à zéro : **c'est normal**, la saison n'a pas
-  commencé.
+- Classements et « mon équipe » vides : **normal**, les enchères n'ont pas
+  encore eu lieu.
 - Chaque admin se connecte et vérifie qu'il voit bien sa ligue.
 
 ---
 
-## Phase 6bis : récupérer les photos des joueurs sélectionnés
+## Phase 7 : conduire les enchères (mi-juillet → mi-août)
 
-**Qui : l'admin pilote effectifs, juste après le lancement (mi-août).**
+**Qui : un admin opérateur, dans Admin → Mercato d'été. C'est l'étape qui
+constitue les équipes. Elle s'étale sur plusieurs tours, sur ~1 mois.**
+
+Tout se passe dans **[Admin → Mercato d'été](/admin/encheres)**, une ligue à
+la fois (sélecteur de ligue en haut). Les participants, eux, misent depuis
+leur page **Enchères** de leur ligue. Rappel du règlement : budget de 130
+points, effectif final de 13 joueurs (1 gardien, 3-6 défenseurs, 3-6 milieux,
+1-4 attaquants), le gardien se mise **par club** (« Gardiens [Club] »).
+
+Pour **chaque tour** :
+
+1. **Ouvrir un tour** : bouton **« Ouvrir un tour »**. Optionnel mais
+   recommandé : renseigner une **heure butoir** (champ date/heure). Si elle
+   est renseignée, toute mise reçue après est refusée automatiquement
+   (tolérance zéro) ; sinon, c'est votre clôture manuelle qui fait foi.
+   Annoncez la date butoir aux participants.
+2. **Les participants misent** sur leur page Enchères : ils répartissent leur
+   budget sur 13 joueurs (les joueurs déjà acquis aux tours précédents sont
+   reportés automatiquement). Le système les avertit en cas de quota dépassé.
+3. **Clôturer le tour** : bouton **« Clôturer le tour »** (verrouille les
+   soumissions).
+4. **Dépouiller** : bouton **« Dépouiller »**. Le système applique le
+   règlement tout seul : plus haute mise gagne, **égalité = personne ne
+   l'obtient** (joueur remis au tour suivant, points rendus), points non
+   dépensés reportés, et pénalités de composition (retraits motivés sur les
+   acquisitions les plus chères). Les résultats deviennent visibles côté
+   participant (onglet **Résultats** de leur page Enchères).
+5. **Notifier les participants** : boutons **« Copier »** (un participant) ou
+   **« Tout copier »** : ça met un récap en texte brut dans le presse-papier,
+   à **coller dans l'email ou le groupe** des participants. L'envoi est
+   **manuel** (les modérateurs), il n'y a pas d'email automatique.
+6. **Relancer** : **« Ouvrir le tour suivant »** et reprendre au point 1,
+   jusqu'à ce que les effectifs approchent 13 joueurs (4 à 5 tours en général).
+
+**Compléter les effectifs incomplets** : si un participant termine sous
+13 joueurs après le dernier tour, l'admin le **complète d'office** à 1 point
+par joueur (le système propose des joueurs valides pour respecter les quotas).
+
+**Clore la phase** : quand tous les effectifs sont valides, bouton
+**« Clore la phase et constituer les effectifs »**. Action **irréversible** :
+elle écrit les équipes définitives (chaque joueur acquis rejoint l'effectif du
+participant pour toute la saison). Après ça, « mon équipe » est remplie côté
+participants.
+
+---
+
+## Phase 8 : récupérer les photos des joueurs sélectionnés
+
+**Qui : l'admin pilote effectifs, une fois les équipes constituées (mi-août).**
 
 - Souscrire l'abonnement TheSportsDB premium (Patreon, palier « Single
   Developer » à 9 $/mois, sans engagement) et récupérer la clé API sur son
@@ -199,7 +257,7 @@ déroulant :
 
 ---
 
-## Phase 7 : juste après le lancement
+## Phase 9 : réglages avant la première journée
 
 **Qui : le pilote (ou n'importe quel admin), tout se fait dans l'admin.**
 
@@ -223,7 +281,7 @@ déroulant :
 
 ---
 
-## Phase 8 : le mois d'août, recrues et résiliation
+## Phase 10 : le mois d'août, recrues et résiliation
 
 **Qui : n'importe quel admin pour les recrues, le pilote effectifs pour la
 résiliation.**
@@ -236,7 +294,7 @@ résiliation.**
   modifié sur les joueurs existants et les équipes constituées. Rejouable à
   volonté.
 - **Mi-septembre : RÉSILIER l'abonnement photos** (le pilote, depuis son
-  compte Patreon, un mois pile après la souscription de la phase 6bis).
+  compte Patreon, un mois pile après la souscription de la phase 8).
   Tout continue de fonctionner à l'identique : les photos sont chez nous,
   les listes de joueurs et le calendrier tournent sur les API gratuites.
   Après la résiliation, une recrue s'ajoute à la main (Admin → Joueurs),
@@ -263,12 +321,12 @@ résiliation.**
 | 2 | début juillet | Importer clubs + joueurs (sans photos) | aucun |
 | 3 | début juillet | Créer les 3 ligues (reprise de 2026) | aucun |
 | 4 | début juillet | Inscrire les participants (reprise + ajustements) | aucun |
-| 5 | mi-juillet | Ouvrir les enchères + revue collective | aucun |
-| — | mi-juillet → mi-août | Les enchères se jouent (équipes complètes mi-août) | aucun |
-| 6 | mi-août | **Démarrer la saison** (avant la J1, autour du 23 août) | **bascule le site** |
-| 6bis | mi-août | Abonnement photos 9 $ + « Récupérer les photos des équipes » | 9 $ |
-| 7 | mi-août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
-| 8 | fin août | Rafraîchir les effectifs (recrues) puis **RÉSILIER mi-septembre** | oubli = 9 $/mois |
+| 5 | mi-juillet | Ouvrir les enchères (statut) + revue collective | aucun |
+| 6 | mi-juillet | **Démarrer la saison** (la rend courante, débloque les enchères) | **bascule le site** |
+| 7 | mi-juillet → mi-août | **Conduire les enchères** (tours dans Admin → Mercato d'été) → équipes constituées | aucun |
+| 8 | mi-août | Abonnement photos 9 $ + « Récupérer les photos des équipes » | 9 $ |
+| 9 | mi-août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
+| 10 | fin août | Rafraîchir les effectifs (recrues) puis **RÉSILIER mi-septembre** | oubli = 9 $/mois |
 
 *En cas de doute à n'importe quelle étape : capture d'écran sur le groupe
 admins. Tout est prévu pour être rejouable.*

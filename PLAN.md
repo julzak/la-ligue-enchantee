@@ -24,6 +24,7 @@ Parallélisme possible : 01, 02 et 03 sont indépendants. 04 et 05 peuvent avanc
 - Égalité de mise = personne n'obtient le joueur ; aucun tirage au sort (code existant à retirer).
 - Résultats : plateforme + email MANUEL par les modérateurs (récap copiable). Pas d'infra email.
 - Migrations SQL : jamais exécutées par un agent. Le chantier livre le fichier dans `sql/`, Julien l'applique avant de merger.
+- Ordre du kick-off (décidé 2026-06-16) : « Démarrer la saison » (qui rend la saison `isCurrent`) se fait AVANT de conduire les enchères. Sinon les participants n'accèdent pas à leur ligue, car `getLeagues()` est scopé sur la saison courante (et les slugs entrent en collision avec l'ancienne saison). Aucun changement de code : le runbook (BRIEF-08) place le démarrage en phase 6 et les enchères en phase 7.
 
 ## Échéances
 
