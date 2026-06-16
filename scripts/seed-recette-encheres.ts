@@ -62,11 +62,15 @@ const FIRSTNAMES = [
 // avec isGkPosition() (cherche "gardien"), positionToLine() et checkGoalkeeperLimit().
 // "G", "MIL" etc. (format court) sont reconnus par positionToLine côté UI mais PAS
 // par isGkPosition côté serveur → incohérence silencieuse. Toujours utiliser le format prod.
+// Intitulés EXACTEMENT au format prod (PLAYER.POSITION = "Gardien"/"Défense"/
+// "Milieu"/"Attaque"), reconnus par lineFromPosition côté moteur. Les codes
+// courts "DEF/MIL/ATT" ne sont PAS reconnus (ils retombent tous sur MID) :
+// c'est le défaut de fixture qui a faussé la 1re recette du 2026-06-16.
 const PLAYERS_PER_CLUB_BY_POS: Record<string, number> = {
-  Gardien: 2, // 2 gardiens/club  (prod : "1 - Gardien" ou "Gardien")
-  DEF:     5, // 5 défenseurs/club
-  MIL:     4, // 4 milieux/club
-  ATT:     3, // 3 attaquants/club
+  Gardien: 2, // 2 gardiens nommés/club
+  Défense: 5, // 5 défenseurs/club
+  Milieu:  4, // 4 milieux/club
+  Attaque: 3, // 3 attaquants/club
 };
 // Total : 14 joueurs/club × 6 clubs = 84 joueurs (> 80 demandés)
 

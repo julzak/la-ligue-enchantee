@@ -37,8 +37,8 @@ Parallélisme possible : 01, 02 et 03 sont indépendants. 04 et 05 peuvent avanc
 - BRIEF-03-gardiens-par-club — mergé (PR #6, 2026-06-11 ; seed reporté au kick-off de juillet, garde-fou en place)
 - BRIEF-04-soumission-conforme — mergé (PR #8, 2026-06-11 ; smoke E2E + review design passés)
 - BRIEF-05-depouillement-pont-team — mergé (PR #9, 2026-06-11 ; migration AUCTION_REMOVAL + ENUM→VARCHAR appliquée en prod)
-- BRIEF-06-resultats — en review (PR #11, 2026-06-11 ; findings N5/N6 traités, récap copiable admin, onglet résultats participant, 18 tests vitest)
-- BRIEF-07-recette-simulee — à faire (environnement prêt : audits/recette-encheres-env.md, conteneur ligue-recette-mysql port 3310, comptes recette2026)
+- BRIEF-06-resultats — mergé (PR #11, 2026-06-16)
+- BRIEF-07-recette-simulee — en review (verdict **GO**, 2026-06-16 ; 4 participants fictifs, 2 tours + fin de phase joués en HTTP, 5 cas limites couverts, 52 lignes TEAM écrites, 0 bloquant. Rapport : audits/2026-06-16-recette-encheres/rapport-recette.md. NB : 1er passage invalidé par un défaut de fixture — postes en codes courts au lieu du format prod — corrigé dans scripts/seed-recette-encheres.ts ; run1 conservé comme preuve. Findings mineurs non bloquants : playerId dupliqué accepté en double dans une mise → backlog)
 - BRIEF-08-runbook-kickoff — à faire (inclure : ordre saison → clubs → joueurs → seed gardiens → enchères ; procédure de réparation close-phase ; DDL ADMIN_USER/SCORING_CONFIG à régulariser dans sql/)
 
 ## Blocages
