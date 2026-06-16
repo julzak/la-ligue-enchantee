@@ -17,6 +17,7 @@ import {
   type EnginePlayer,
   type Line,
 } from "./auction-engine";
+import { findDuplicatePlayerIds } from "./auction-duplicate-bids";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 let nextId = 1;
@@ -583,5 +584,52 @@ describe("validateSubmission : avertissements de composition (BRIEF-04)", () => 
     const warnings = validateSubmission(owned, bids, 130);
     // On s'attend à au moins 2 avertissements (pas de gardien + < 13 joueurs)
     expect(warnings.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ── Garde B3 : playerId en doublon dans une soumission ───────────────────────
+describe("doublon de playerId : soumission malformée rejetée", () => {
+  it("deux mises sur le même playerId : doublon détecté", () => {
+    // Cas observé en recette : bids [{12402,10},{12402,20}] tous deux persistés.
+    const bids = [
+      { playerId: 12402, amount: 10 },
+      { playerId: 12402, amount: 20 },
+    ];
+    expect(findDuplicatePlayerIds(bids)).toEqual([12402]);
+  });
+
+  it("plusieurs doublons distincts : tous remontés une seule fois", () => {
+    const bids = [
+      { playerId: 1, amount: 5 },
+      { playerId: 2, amount: 5 },
+      { playerId: 1, amount: 7 },
+      { playerId: 2, amount: 9 },
+      { playerId: 2, amount: 3 },
+    ];
+    expect(findDuplicatePlayerIds(bids).sort((x, y) => x - y)).toEqual([1, 2]);
+  });
+
+  it("soumission saine : aucun doublon", () => {
+    const bids = [
+      { playerId: 1, amount: 5 },
+      { playerId: 2, amount: 5 },
+      { playerId: 3, amount: 5 },
+    ];
+    expect(findDuplicatePlayerIds(bids)).toEqual([]);
+  });
+
+  it("soumission vide : aucun doublon", () => {
+    expect(findDuplicatePlayerIds([])).toEqual([]);
+  });
+
+  // Sanity-check : prouve que le test détecterait la régression qu'il garde.
+  // Si findDuplicatePlayerIds retournait toujours [] (doublon non détecté,
+  // comportement buggé d'origine), ce cas échouerait.
+  it("sanity-check : le détecteur repère bien le doublon buggé d'origine", () => {
+    const buggedPayload = [
+      { playerId: 12402, amount: 10 },
+      { playerId: 12402, amount: 20 },
+    ];
+    expect(findDuplicatePlayerIds(buggedPayload).length).toBeGreaterThan(0);
   });
 });

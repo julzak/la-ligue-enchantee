@@ -20,14 +20,20 @@ import {
 } from "./auction-engine";
 
 // ── Mapping position DB → ligne moteur ─────────────────────────────────────
-// Même logique que mapPosition de db.ts (non importable hors RSC : react.cache).
+// PLAYER.POSITION existe sous plusieurs formes en base : libellés complets
+// ("Gardien", "Défense", "Milieu", "Attaque"), libellés préfixés ("2 - Défense")
+// ET codes courts canoniques ("G", "DEF", "MIL", "ATT"). Le mapping doit couvrir
+// les trois (BLOQUANT-1 : les codes courts retombaient tous sur "MID" car la
+// détection ne testait que les mots français complets, classant DEF/ATT comme
+// milieux et déclenchant des pénalités de ligne sur toute mise normale).
 export function lineFromPosition(dbPosition: string): Line {
-  const lower = dbPosition.toLowerCase();
-  if (lower.includes("gardien")) return "GK";
-  if (lower.includes("fense") || lower.includes("défense")) return "DEF";
-  if (lower.includes("milieu")) return "MID";
-  if (lower.includes("attaq")) return "ATT";
-  return "MID"; // fallback aligné sur db.ts
+  // Normalise : minuscules + retrait d'un éventuel préfixe "N - " ("2 - Défense").
+  const raw = (dbPosition ?? "").toLowerCase().replace(/^\s*\d+\s*-\s*/, "").trim();
+  if (raw === "g" || raw.includes("gardien")) return "GK";
+  if (raw === "d" || raw === "def" || raw.includes("fense")) return "DEF";
+  if (raw === "a" || raw === "att" || raw.includes("attaq")) return "ATT";
+  if (raw === "m" || raw === "mil" || raw === "mid" || raw.includes("milieu")) return "MID";
+  return "MID"; // fallback historique (aligné sur db.ts mapPosition)
 }
 
 // ── Types d'entrée (projections des lignes DB) ─────────────────────────────
