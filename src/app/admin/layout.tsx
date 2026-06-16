@@ -15,13 +15,13 @@ const mainLinks = [
 const foireLinks = [
   { href: "/admin/encheres", label: "Mercato d'été", icon: Gavel },
   { href: "/admin/mercato-hiver", label: "Mercato d'hiver", icon: Snowflake },
-  { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
 ];
 
 // Gestion (peu fréquent) : Nouvelle saison s'utilise une fois par an, placée ici.
 const utilLinks = [
   { href: "/admin/joueurs", label: "Joueurs", icon: UserPlus },
   { href: "/admin/promotions", label: "Mouvements", icon: ArrowUpDown },
+  { href: "/admin/paiements", label: "Paiements", icon: CreditCard },
   { href: "/admin/utilisateurs", label: "Admins", icon: Shield },
   { href: "/admin/nouvelle-saison", label: "Nouvelle saison", icon: CalendarPlus },
   { href: "/admin/config", label: "Configuration", icon: Settings },
