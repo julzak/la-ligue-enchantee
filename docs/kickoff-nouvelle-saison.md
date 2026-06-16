@@ -25,9 +25,11 @@ n'est jamais cassé définitivement.
 
 **À savoir avant de commencer :**
 
-- **Désigner un admin « pilote effectifs »** : c'est lui qui prendra
-  l'abonnement photos (TheSportsDB, 9 $ pour UN mois) et le résiliera
-  mi-septembre. Voir phases 8 et 10.
+- **Aucun compte externe à créer côté admin.** Les abonnements aux services
+  tiers (listes de joueurs, photos) sont détenus et gérés par le responsable
+  du site, qui dépose les clés dans Admin → Configuration. Vous n'avez jamais
+  à vous inscrire à un service tiers avec un compte de la Ligue Enchantée :
+  votre rôle se limite à cliquer dans l'admin une fois les clés en place.
 - **Calendrier d'été** : préparation (phases 1 à 4) début juillet. On
   **démarre la saison vers la mi-juillet** (phase 6) : c'est ce qui la rend
   « courante » et **ouvre l'accès des participants à leurs enchères**. Les
@@ -240,14 +242,15 @@ participants.
 
 ## Phase 8 : récupérer les photos des joueurs sélectionnés
 
-**Qui : l'admin pilote effectifs, une fois les équipes constituées (mi-août).**
+**Qui : le responsable du site fournit la clé ; ensuite n'importe quel admin,
+une fois les équipes constituées (mi-août).**
 
-- Souscrire l'abonnement TheSportsDB premium (Patreon, palier « Single
-  Developer » à 9 $/mois, sans engagement) et récupérer la clé API sur son
-  compte TheSportsDB.
-- Coller la clé dans **Admin → Configuration**, champ **« Clé photos »**.
-  Un rappel de résiliation s'affichera dans l'admin tant qu'elle est active.
-- Cliquer sur **« Récupérer les photos des équipes »** (page Nouvelle
+- **Le responsable du site** souscrit l'abonnement photos (TheSportsDB, son
+  compte) et dépose la clé dans **Admin → Configuration**, champ **« Clé
+  photos »**. Les admins n'ont aucun compte à créer. Un rappel de résiliation
+  s'affiche tant que la clé est active.
+- Une fois la clé en place, **n'importe quel admin** clique sur
+  **« Récupérer les photos des équipes »** (page Nouvelle
   saison) : le système télécharge sur notre serveur les photos des joueurs
   présents dans les équipes (et seulement eux). Les photos restent ensuite
   affichées toute la saison, abonnement résilié ou pas.
@@ -259,7 +262,7 @@ participants.
 
 ## Phase 9 : réglages avant la première journée
 
-**Qui : le pilote (ou n'importe quel admin), tout se fait dans l'admin.**
+**Qui : n'importe quel admin, tout se fait dans l'admin.**
 
 1. **Synchroniser le calendrier de la Ligue 1** (dates des matchs,
    indispensable pour les deadlines de composition) : bouton
@@ -283,8 +286,8 @@ participants.
 
 ## Phase 10 : le mois d'août, recrues et résiliation
 
-**Qui : n'importe quel admin pour les recrues, le pilote effectifs pour la
-résiliation.**
+**Qui : n'importe quel admin pour les recrues ; le responsable du site pour la
+résiliation de l'abonnement.**
 
 - **Recrues du mercato** : quand un transfert arrive en Ligue 1 après
   l'import (et jusqu'à fin août, pour que les participants puissent aller
@@ -293,15 +296,15 @@ résiliation.**
   uniquement les nouveaux joueurs, avec leur photo : rien n'est supprimé ni
   modifié sur les joueurs existants et les équipes constituées. Rejouable à
   volonté.
-- **Mi-septembre : RÉSILIER l'abonnement photos** (le pilote, depuis son
-  compte Patreon, un mois pile après la souscription de la phase 8).
+- **Mi-septembre : RÉSILIER l'abonnement photos** — le responsable du site,
+  depuis son compte, un mois pile après la souscription de la phase 8.
   Tout continue de fonctionner à l'identique : les photos sont chez nous,
   les listes de joueurs et le calendrier tournent sur les API gratuites.
   Après la résiliation, une recrue s'ajoute à la main (Admin → Joueurs),
   avec avatar à initiales.
 - **Mercato d'hiver (janvier)** : les recrues s'importent gratuitement
-  (listes) ; pour leurs photos, le pilote décidera en décembre : reprendre
-  1 mois d'abonnement ou laisser les initiales.
+  (listes) ; pour leurs photos, le responsable du site décide en décembre :
+  reprendre 1 mois d'abonnement ou laisser les initiales.
 
 ---
 
@@ -316,7 +319,7 @@ résiliation.**
 
 | Phase | Quand | Action | Coût / risque |
 |---|---|---|---|
-| 0 | juin | Clôturer l'ancienne saison + désigner le pilote effectifs | aucun |
+| 0 | juin | Clôturer l'ancienne saison (les comptes externes sont gérés par le responsable du site) | aucun |
 | 1 | début juillet | Créer la saison (libellé `2027`) | aucun |
 | 2 | début juillet | Importer clubs + joueurs (sans photos) | aucun |
 | 3 | début juillet | Créer les 3 ligues (reprise de 2026) | aucun |
@@ -324,7 +327,7 @@ résiliation.**
 | 5 | mi-juillet | Ouvrir les enchères (statut) + revue collective | aucun |
 | 6 | mi-juillet | **Démarrer la saison** (la rend courante, débloque les enchères) | **bascule le site** |
 | 7 | mi-juillet → mi-août | **Conduire les enchères** (tours dans Admin → Mercato d'été) → équipes constituées | aucun |
-| 8 | mi-août | Abonnement photos 9 $ + « Récupérer les photos des équipes » | 9 $ |
+| 8 | mi-août | « Récupérer les photos des équipes » (clé fournie par le responsable du site) | — |
 | 9 | mi-août | Synchroniser le calendrier + dates jokers + vérif barème | à faire vite |
 | 10 | fin août | Rafraîchir les effectifs (recrues) puis **RÉSILIER mi-septembre** | oubli = 9 $/mois |
 
