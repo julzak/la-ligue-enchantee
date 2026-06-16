@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Loader2, Search, X, Clock, Send, Lock, ArrowRightLeft, Minus, Plus } from "lucide-react";
 import { validateSubmission } from "@/lib/auction-engine";
 import type { Line, EnginePlayer } from "@/lib/auction-engine";
+import { ResultsSection } from "./ResultsSection";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -526,6 +527,11 @@ export default function EncheresPage() {
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 
+  // Onglet actif : 'bid' (soumettre ma mise) | 'results' (résultats)
+  const [activeTab, setActiveTab] = useState<"bid" | "results">("bid");
+  // Indique si des tours ont été dépouillés (pour afficher l'onglet Résultats)
+  const [hasResults, setHasResults] = useState(false);
+
   // Compte à rebours
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
@@ -574,6 +580,12 @@ export default function EncheresPage() {
           amount: b.amount,
         })));
       }
+
+      // Afficher l'onglet Résultats dès qu'il existe des mises résolues
+      const resolved: MyBid[] = (data.myBids ?? []).filter((b: MyBid) =>
+        ["won", "lost", "tie", "removed"].includes(b.status)
+      );
+      if (resolved.length > 0) setHasResults(true);
     } catch {}
     setLoading(false);
   }, [leagueDbId]);
@@ -758,8 +770,50 @@ export default function EncheresPage() {
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
+  // Si l'onglet Résultats est actif, on délègue entièrement à ResultsSection
+  if (activeTab === "results" && hasResults) {
+    return (
+      <div className="max-w-lg mx-auto">
+        {/* Tabs */}
+        <div className="flex border-b border-[#232220] px-4 pt-3">
+          <button
+            onClick={() => setActiveTab("bid")}
+            className="text-[13.5px] font-semibold px-4 pb-3 text-muted hover:text-paper transition-colors border-b-2 border-transparent"
+          >
+            Ma mise
+          </button>
+          <button
+            onClick={() => setActiveTab("results")}
+            className="text-[13.5px] font-semibold px-4 pb-3 text-gold border-b-2 border-gold"
+          >
+            Résultats
+          </button>
+        </div>
+        <ResultsSection leagueDbId={leagueDbId} />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-lg mx-auto space-y-0 pb-24">
+
+      {/* Tabs — visibles si des tours ont été dépouillés */}
+      {hasResults && (
+        <div className="flex border-b border-[#232220] px-4 pt-3">
+          <button
+            onClick={() => setActiveTab("bid")}
+            className="text-[13.5px] font-semibold px-4 pb-3 text-gold border-b-2 border-gold"
+          >
+            Ma mise
+          </button>
+          <button
+            onClick={() => setActiveTab("results")}
+            className="text-[13.5px] font-semibold px-4 pb-3 text-muted hover:text-paper transition-colors border-b-2 border-transparent"
+          >
+            Résultats
+          </button>
+        </div>
+      )}
 
       {/* ── HEADER : Tour + deadline + budget ── */}
       <div className="px-4 pt-4 pb-4 border-b border-[#232220] bg-gradient-to-b from-[#16160F] to-[#141414]">

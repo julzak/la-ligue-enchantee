@@ -1,13 +1,13 @@
 "use client";
 
-// Console d'administration des enchères d'été (BRIEF-05).
+// Console d'administration des enchères d'été (BRIEF-05 + BRIEF-06).
 // Contrat de design : design_handoff/encheres/AdminConsole.dc.html
 // (4 états : tour ouvert → clôturé → dépouillé → clôture de phase).
-// Le récap copiable par participant appartient au BRIEF-06 : seule sa
-// zone (emplacement + état) est posée ici, pas sa logique.
+// BRIEF-06 : récap copiable par participant + "Tout copier" + griser "Clore la phase" (N6).
 
 import { useState, useEffect, useCallback } from "react";
-import { Gavel, Loader2, Clock, AlertTriangle, Check } from "lucide-react";
+import { Gavel, Loader2, Clock, AlertTriangle, Check, Copy, ClipboardCheck } from "lucide-react";
+import { formatParticipantRecap, formatAllRecaps, type ParticipantRoundRecap } from "@/lib/auction-recap";
 
 interface AuctionData {
   id: number;
@@ -25,8 +25,20 @@ interface Bid {
   playerId: number;
   playerName: string;
   clubName: string;
+  position: string;
   amount: number;
   status: string;
+}
+
+// M1 : Acquisition d'un tour quelconque (tous tours confondus)
+interface WonBid {
+  userId: number;
+  playerId: number;
+  playerName: string;
+  clubName: string;
+  position: string;
+  amount: number;
+  round: number;
 }
 
 interface Proposal {
@@ -88,12 +100,16 @@ export default function AdminEncheresPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [results, setResults] = useState<RoundResults | null>(null);
   const [seasonLabel, setSeasonLabel] = useState<string | null>(null);
+  const [allWonBids, setAllWonBids] = useState<WonBid[]>([]);
   const [loading, setLoading] = useState(false);
   // M1 : actionPending désactive tous les boutons d'action pendant une requête
   // en cours pour empêcher un double-clic de déclencher un double-dépouillement.
   const [actionPending, setActionPending] = useState(false);
   const [message, setMessage] = useState("");
   const [phaseCloseView, setPhaseCloseView] = useState(false);
+
+  // Récap copiable (BRIEF-06) : feedback visuel par participant
+  const [copiedUserId, setCopiedUserId] = useState<number | "all" | null>(null);
 
   // Butoir
   const [deadlineInput, setDeadlineInput] = useState("");
@@ -119,6 +135,7 @@ export default function AdminEncheresPage() {
       } else {
         setAuction(data.auction);
         setBids(data.bids ?? []);
+        setAllWonBids(data.allWonBids ?? []);
         setParticipants(data.participants ?? []);
         setResults(data.results ?? null);
         setSeasonLabel(data.seasonLabel ?? null);
@@ -259,6 +276,7 @@ export default function AdminEncheresPage() {
   ].map((s, i) => ({ ...s, status: stepStatuses[i], num: i + 1 }));
 
   // Acquisitions du tour courant par participant (statut won des bids du tour)
+  // Utilisé pour l'affichage du tableau de résultats admin (tour courant uniquement).
   const acquisitionsByUser = new Map<number, Bid[]>();
   for (const b of bids) {
     if (b.status !== "won") continue;
@@ -266,6 +284,111 @@ export default function AdminEncheresPage() {
     arr.push(b);
     acquisitionsByUser.set(b.userId, arr);
   }
+
+  // M1 : Acquisitions de TOUS les tours par participant (pour le récap cumulé).
+  const allAcquisitionsByUser = new Map<number, WonBid[]>();
+  for (const b of allWonBids) {
+    const arr = allAcquisitionsByUser.get(b.userId) ?? [];
+    arr.push(b);
+    allAcquisitionsByUser.set(b.userId, arr);
+  }
+
+  // M2 : Map playerId → { userName, amount } pour les bids won du tour courant
+  // (permet d'afficher "obtenu par Dupont à 18 pts" dans les pertes du récap).
+  const winnerByPlayerIdCurrentRound = new Map<number, { userName: string; amount: number }>();
+  for (const b of bids) {
+    if (b.status !== "won") continue;
+    const p = participants.find((u) => u.userId === b.userId);
+    if (p) {
+      winnerByPlayerIdCurrentRound.set(b.playerId, { userName: p.userName, amount: b.amount });
+    }
+  }
+
+  // ── Récap copiable (BRIEF-06) ─────────────────────────────────────────────
+  // Construit les données récap pour chaque participant.
+  // M1 : Les acquisitions couvrent TOUS les tours (allAcquisitionsByUser).
+  // M2 : Les pertes du tour courant affichent le NOM du gagnant ("obtenu par Dupont à 18 pts").
+  // B2 : La position est la vraie position du joueur, pas le club.
+  function buildRecaps(): ParticipantRoundRecap[] {
+    if (!auction || (auction.status !== "tallied" && auction.status !== "resolved")) return [];
+    return participants.map((p) => {
+      // M1 : toutes acquisitions, tous tours
+      const acqs = (allAcquisitionsByUser.get(p.userId) ?? []).map((b) => ({
+        playerName: b.playerName,
+        position: b.position, // B2 : vraie position (ATT, MID, DEF, GK)
+        clubName: b.clubName,
+        amount: b.amount,
+      }));
+      const removals = (results?.removals ?? []).filter((r) => r.userId === p.userId).map((r) => ({
+        playerName: r.playerName,
+        amount: r.amount,
+        reason: r.reason,
+      }));
+      // Pertes du DERNIER tour dépouillé (tour courant côté admin)
+      const losses = bids
+        .filter((b) => b.userId === p.userId && (b.status === "lost" || b.status === "tie"))
+        .map((b) => {
+          if (b.status === "tie") {
+            return {
+              playerName: b.playerName,
+              position: b.position, // B2 : vraie position
+              yourBid: b.amount,
+              reasonType: "tie" as const,
+              detail: "personne — égalité, remis en jeu au tour suivant",
+              refund: b.amount,
+            };
+          }
+          // M2 : nom du gagnant depuis la map construite au-dessus
+          const winner = winnerByPlayerIdCurrentRound.get(b.playerId);
+          return {
+            playerName: b.playerName,
+            position: b.position, // B2 : vraie position
+            yourBid: b.amount,
+            reasonType: "surenchere" as const,
+            detail: winner
+              ? `obtenu par ${winner.userName} à ${winner.amount} pts`
+              : "surenchéri",
+          };
+        });
+
+      return {
+        userName: p.userName,
+        round: auction.currentRound,
+        acquisitions: acqs,
+        losses,
+        removals,
+        budgetRemaining: p.budget,
+        playersWon: p.playersWon,
+        playersPerUser: auction.playersPerUser,
+      };
+    });
+  }
+
+  // ── Finding N6 : griser "Clore la phase" tant que tous les effectifs ne sont pas valides ──
+  // Le bouton reste actif si la complétion d'office peut combler (proposals disponibles).
+  // Il est grisé uniquement si des effectifs sont incomplets ET sans proposition de complétion.
+  const canClosePhase = (() => {
+    if (!auction || auction.status !== "tallied") return false;
+    const incompleteWithoutProposals = participants.filter(
+      (p) => !p.rosterValid && p.proposals.length === 0 && p.missingCount > 0
+    );
+    // Si tous les invalides ont des propositions disponibles → on peut clore (complete-roster avant)
+    // Si des invalides n'ont pas de propositions → impossible de clore proprement
+    return incompleteWithoutProposals.length === 0;
+  })();
+
+  const closePhaseTooltip = (() => {
+    if (!auction || auction.status !== "tallied") return undefined;
+    const incompleteCount = participants.filter((p) => !p.rosterValid).length;
+    if (incompleteCount === 0) return undefined;
+    const withoutProposals = participants.filter(
+      (p) => !p.rosterValid && p.proposals.length === 0 && p.missingCount > 0
+    ).length;
+    if (withoutProposals > 0) {
+      return `${withoutProposals} participant(s) sans proposition de complétion possible. Contactez l'administrateur.`;
+    }
+    return `${incompleteCount} effectif(s) incomplet(s) — complétez d'office avant de clore la phase.`;
+  })();
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -437,6 +560,12 @@ export default function AdminEncheresPage() {
                               <span className="text-[10.5px] text-amber-400 leading-tight">Action irréversible — confirmation requise.</span>
                             </div>
                           )}
+                          {/* m1 : avertissement si des complétions d'office sont en cours */}
+                          {s.num === 4 && participants.some((p) => p.proposals.length > 0) && (
+                            <div className="mt-1.5 text-[10px] text-muted italic leading-snug">
+                              La clôture peut échouer si les complétions se chevauchent ; le serveur re-validera.
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -549,23 +678,73 @@ export default function AdminEncheresPage() {
                     })}
                   </div>
 
-                  {/* Zone récap copiable — la logique appartient au BRIEF-06 */}
-                  <div className="bg-surface border border-white/[0.07] rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
-                      <div>
-                        <div className="text-[15px] font-bold text-paper">Récap copiable</div>
-                        <div className="text-[11.5px] text-muted mt-0.5">
-                          L&apos;email de notification est envoyé <span className="text-amber-400 font-semibold">manuellement</span> par les modérateurs.
+                  {/* Zone récap copiable (BRIEF-06) */}
+                  {(() => {
+                    const recaps = buildRecaps();
+                    const allText = formatAllRecaps(recaps);
+
+                    function copyAll() {
+                      navigator.clipboard.writeText(allText).then(() => {
+                        setCopiedUserId("all");
+                        setTimeout(() => setCopiedUserId(null), 2000);
+                      }).catch(() => {});
+                    }
+
+                    function copyOne(recap: ParticipantRoundRecap, userId: number) {
+                      const text = formatParticipantRecap(recap);
+                      navigator.clipboard.writeText(text).then(() => {
+                        setCopiedUserId(userId);
+                        setTimeout(() => setCopiedUserId(null), 2000);
+                      }).catch(() => {});
+                    }
+
+                    return (
+                      <div className="bg-surface border border-white/[0.07] rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
+                          <div>
+                            <div className="text-[15px] font-bold text-paper">Récap copiable</div>
+                            <div className="text-[11.5px] text-muted mt-0.5">
+                              L&apos;email est envoyé{" "}
+                              <span className="text-amber-400 font-semibold">manuellement</span>{" "}
+                              par les modérateurs — copiez et collez dans votre client mail.
+                            </div>
+                          </div>
+                          <button
+                            onClick={copyAll}
+                            className="flex items-center gap-2 text-[12.5px] font-bold text-night bg-gold rounded px-4 py-2 hover:bg-gold/80 transition-colors"
+                          >
+                            {copiedUserId === "all"
+                              ? <><ClipboardCheck className="w-3.5 h-3.5" /> Copié !</>
+                              : <><Copy className="w-3.5 h-3.5" /> Tout copier</>}
+                          </button>
+                        </div>
+                        <div className="divide-y divide-white/[0.04]">
+                          {recaps.map((recap, idx) => {
+                            const p = participants[idx];
+                            if (!p) return null;
+                            return (
+                              <div key={p.userId} className="px-5 py-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[13.5px] font-bold text-paper-dim">{p.userName}</span>
+                                  <button
+                                    onClick={() => copyOne(recap, p.userId)}
+                                    className="flex items-center gap-1.5 text-[11.5px] font-semibold text-gold border border-gold/30 rounded px-2.5 py-1 hover:bg-gold/[0.08] transition-colors"
+                                  >
+                                    {copiedUserId === p.userId
+                                      ? <><ClipboardCheck className="w-3 h-3" /> Copié</>
+                                      : <><Copy className="w-3 h-3" /> Copier</>}
+                                  </button>
+                                </div>
+                                <pre className="text-[11px] text-muted font-mono leading-relaxed whitespace-pre-wrap bg-night rounded p-3 overflow-x-auto max-h-48 overflow-y-auto">
+                                  {formatParticipantRecap(recap)}
+                                </pre>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                      <button disabled className="text-[12.5px] font-bold text-night bg-gold rounded px-4 py-2 opacity-40 cursor-not-allowed">
-                        Tout copier
-                      </button>
-                    </div>
-                    <div className="px-5 py-6 text-[12.5px] text-muted italic">
-                      Le récap par participant arrive avec le chantier Résultats (BRIEF-06).
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </>
               )}
 
@@ -647,21 +826,34 @@ export default function AdminEncheresPage() {
                     ))}
                   </div>
 
+                  {/* Finding N6 : le bouton est grisé avec raison au survol tant que
+                      tous les participants n'ont pas 13 joueurs valides.
+                      Il reste actif si la complétion d'office peut combler (proposals dispo). */}
                   <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/[0.07] flex-wrap gap-3">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span className="text-xs text-amber-400">Clore la phase verrouille tous les effectifs définitivement. Action irréversible.</span>
                     </div>
-                    <button
-                      onClick={() =>
-                        handleAction("close-phase", {}, "Clore la phase et constituer les effectifs ? Action irréversible.")
-                      }
-                      disabled={incomplete.length > 0 || actionPending}
-                      className="text-[13.5px] font-bold text-night bg-gold rounded-lg px-5 py-3 hover:bg-gold/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                      Clore la phase et constituer les effectifs
-                    </button>
+                    <div className="relative group">
+                      <button
+                        onClick={() =>
+                          handleAction("close-phase", {}, "Clore la phase et constituer les effectifs ? Action irréversible.")
+                        }
+                        disabled={!canClosePhase || incomplete.length > 0 || actionPending}
+                        className="text-[13.5px] font-bold text-night bg-gold rounded-lg px-5 py-3 hover:bg-gold/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        Clore la phase et constituer les effectifs
+                      </button>
+                      {/* Tooltip raison au survol quand désactivé (N6) */}
+                      {closePhaseTooltip && (
+                        <div className="absolute bottom-full right-0 mb-2 w-64 hidden group-hover:block z-10">
+                          <div className="bg-night border border-white/20 rounded-lg px-3 py-2 text-[11.5px] text-amber-400 leading-relaxed shadow-xl">
+                            {closePhaseTooltip}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

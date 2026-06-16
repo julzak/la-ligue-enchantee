@@ -110,9 +110,9 @@ export async function GET(request: Request) {
   // Bids du tour courant (tous statuts) pour le tableau admin
   const bids = await prisma.$queryRawUnsafe<{
     user_id: number; player_id: number; amount: number; status: string;
-    fname: string; lname: string; club_name: string;
+    fname: string; lname: string; club_name: string; position: string;
   }[]>(
-    `SELECT b.user_id, b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name
+    `SELECT b.user_id, b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position
      FROM AUCTION_BID b
      JOIN PLAYER p ON b.player_id = p.ID_PLAYER
      JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
@@ -257,6 +257,21 @@ export async function GET(request: Request) {
     };
   });
 
+  // M1 : Toutes les acquisitions de tous les tours (pour récap cumulé par participant).
+  // Seules les mises status='won' comptent ; on joint joueur+club pour position et nom de club.
+  const allWonBidsRows = await prisma.$queryRawUnsafe<{
+    user_id: number; player_id: number; amount: number; round: number;
+    fname: string; lname: string; club_name: string; position: string;
+  }[]>(
+    `SELECT b.user_id, b.player_id, b.amount, b.round, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position
+     FROM AUCTION_BID b
+     JOIN PLAYER p ON b.player_id = p.ID_PLAYER
+     JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
+     WHERE b.auction_id = ? AND b.status = 'won'
+     ORDER BY b.round, b.amount DESC`,
+    auction.id
+  );
+
   return NextResponse.json({
     seasonLabel,
     auction: {
@@ -274,8 +289,19 @@ export async function GET(request: Request) {
       playerId: Number(b.player_id),
       playerName: `${b.fname} ${b.lname}`.trim(),
       clubName: b.club_name,
+      position: b.position,
       amount: Number(b.amount),
       status: b.status,
+    })),
+    // M1 : Acquisitions de tous les tours dépouillés (récap cumulé)
+    allWonBids: allWonBidsRows.map((b) => ({
+      userId: Number(b.user_id),
+      playerId: Number(b.player_id),
+      playerName: `${b.fname} ${b.lname}`.trim(),
+      clubName: b.club_name,
+      position: b.position,
+      amount: Number(b.amount),
+      round: Number(b.round),
     })),
     participants: participantData,
     results,
