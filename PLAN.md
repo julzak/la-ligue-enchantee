@@ -41,6 +41,7 @@ Parallélisme possible : 01, 02 et 03 sont indépendants. 04 et 05 peuvent avanc
 - BRIEF-06-resultats — mergé (PR #11, 2026-06-16)
 - BRIEF-07-recette-simulee — en review (verdict **GO**, 2026-06-16 ; 4 participants fictifs, 2 tours + fin de phase joués en HTTP, 5 cas limites couverts, 52 lignes TEAM écrites, 0 bloquant. Rapport : audits/2026-06-16-recette-encheres/rapport-recette.md. NB : 1er passage invalidé par un défaut de fixture — postes en codes courts au lieu du format prod — corrigé dans scripts/seed-recette-encheres.ts ; run1 conservé comme preuve. Findings mineurs non bloquants : playerId dupliqué accepté en double dans une mise → backlog)
 - BRIEF-08-runbook-kickoff — à faire (inclure : ordre saison → clubs → joueurs → seed gardiens → enchères ; procédure de réparation close-phase ; DDL ADMIN_USER/SCORING_CONFIG à régulariser dans sql/)
+- BRIEF-11-saisie-manuelle — en review (saisie admin d'une mise au nom d'un participant retardataire, contourne le butoir mais réutilise À L'IDENTIQUE la validation participant via `src/lib/auction-validation.ts`. Migration additive `sql/BRIEF-11-admin-bid-audit.sql` : colonne `AUCTION_BID.admin_entered_by` à appliquer AVANT merge. Tests `src/lib/auction-validation.test.ts`, 0 accès DB)
 
 ## Blocages
 
