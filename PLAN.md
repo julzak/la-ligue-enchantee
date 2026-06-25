@@ -14,6 +14,7 @@ Voir `VISION.md` (le pourquoi), `docs/regles-encheres.md` (source de vérité de
 | BRIEF-06-resultats | Page résultats par tour (participant) + récap copiable (admin, pour l'email manuel) | 05 |
 | BRIEF-07-recette-simulee | Simulation 3-5 participants fictifs, 2 tours complets, divergences loguées (échéance : 30 juin) | 02, 04, 05, 06 |
 | BRIEF-08-runbook-kickoff | La phase enchères intégrée au guide kick-off admin | 07 |
+| BRIEF-12-gestion-saisons | Renommer / réinitialiser / supprimer une saison SETUP, avec garde-fous stricts (status check côté serveur, transactions atomiques) | rien |
 
 Parallélisme possible : 01, 02 et 03 sont indépendants. 04 et 05 peuvent avancer en parallèle après leurs dépendances.
 
@@ -41,6 +42,7 @@ Parallélisme possible : 01, 02 et 03 sont indépendants. 04 et 05 peuvent avanc
 - BRIEF-06-resultats — mergé (PR #11, 2026-06-16)
 - BRIEF-07-recette-simulee — en review (verdict **GO**, 2026-06-16 ; 4 participants fictifs, 2 tours + fin de phase joués en HTTP, 5 cas limites couverts, 52 lignes TEAM écrites, 0 bloquant. Rapport : audits/2026-06-16-recette-encheres/rapport-recette.md. NB : 1er passage invalidé par un défaut de fixture — postes en codes courts au lieu du format prod — corrigé dans scripts/seed-recette-encheres.ts ; run1 conservé comme preuve. Findings mineurs non bloquants : playerId dupliqué accepté en double dans une mise → backlog)
 - BRIEF-08-runbook-kickoff — à faire (inclure : ordre saison → clubs → joueurs → seed gardiens → enchères ; procédure de réparation close-phase ; DDL ADMIN_USER/SCORING_CONFIG à régulariser dans sql/)
+- BRIEF-12-gestion-saisons — en review (PR chantier/12-gestion-saisons ; renommer/réinitialiser/supprimer livrés ; 13 tests guard ; cascade FK-sûre en transaction ; boutons SETUP-only)
 
 ## Blocages
 
