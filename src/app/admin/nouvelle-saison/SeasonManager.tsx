@@ -50,6 +50,9 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
   const [err, setErr] = useState("");
   const [closeResult, setCloseResult] = useState<CloseResult | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[] | null>(null);
+  // État d'édition inline du label (renommage)
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   async function load() {
     setLoading(true);
@@ -158,6 +161,106 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
     }
   }
 
+  // --- Renommage ---
+  function startRename(season: Season) {
+    setRenamingId(season.id);
+    setRenameValue(season.label);
+    setErr("");
+    setMsg("");
+  }
+
+  function cancelRename() {
+    setRenamingId(null);
+    setRenameValue("");
+  }
+
+  async function confirmRename(season: Season) {
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === season.label) {
+      cancelRename();
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/seasons", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: season.id, label: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setMsg(`Saison renommée en "${trimmed}"`);
+      cancelRename();
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // --- Réinitialisation ---
+  async function resetSeason(season: Season) {
+    const confirmation = window.prompt(
+      `RÉINITIALISER la saison "${season.label}" ?\n\nCette action supprime tous ses clubs, joueurs, ligues et participants, mais conserve la coquille (id et label).\n\nPour confirmer, saisissez le label exact : ${season.label}`
+    );
+    if (confirmation === null) return; // annulé
+    if (confirmation.trim() !== season.label) {
+      setErr(`Annulé : le label saisi ("${confirmation.trim()}") ne correspond pas.`);
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/seasons/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: season.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setMsg(`Saison "${season.label}" réinitialisée (clubs, joueurs, ligues et participants supprimés).`);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // --- Suppression ---
+  async function deleteSeason(season: Season) {
+    const confirmation = window.prompt(
+      `SUPPRIMER DÉFINITIVEMENT la saison "${season.label}" ?\n\nCette action efface la saison ET toutes ses données de préparation (clubs, joueurs, ligues, participants). Irréversible.\n\nPour confirmer, saisissez le label exact : ${season.label}`
+    );
+    if (confirmation === null) return; // annulé
+    if (confirmation.trim() !== season.label) {
+      setErr(`Annulé : le label saisi ("${confirmation.trim()}") ne correspond pas.`);
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/seasons", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: season.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setMsg(`Saison "${season.label}" supprimée définitivement.`);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) return <p className="text-sm text-muted">Chargement des saisons...</p>;
   // On masque les saisons "archive" : clôturées et sans aucune ligue rattachée
   // (= palmarès historique importé via CSV, 2017-2025, le site n'existait pas).
@@ -215,11 +318,45 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
       <div className="space-y-2">
         {managedSeasons.map((s) => {
           const next = NEXT_STATUS[s.status];
+          const isSetup = s.status === "SETUP" && !s.isCurrent;
+          const isRenaming = renamingId === s.id;
           return (
-            <div key={s.id} className="rounded-lg border border-border bg-surface p-3">
+            <div key={s.id} className="rounded-lg border border-border bg-surface p-3 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{s.label}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {isRenaming ? (
+                    // Inline rename input
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") confirmRename(s);
+                          if (e.key === "Escape") cancelRename();
+                        }}
+                        className="rounded border border-gold/40 bg-surface-2 px-2 py-1 text-sm text-foreground focus:outline-none focus:border-gold w-36"
+                        autoFocus
+                        disabled={busy}
+                      />
+                      <button
+                        className="rounded bg-gold/20 px-2 py-1 text-xs text-gold hover:bg-gold/30 disabled:opacity-40"
+                        onClick={() => confirmRename(s)}
+                        disabled={busy}
+                      >
+                        OK
+                      </button>
+                      <button
+                        className="rounded bg-surface-2 px-2 py-1 text-xs text-muted hover:bg-surface disabled:opacity-40"
+                        onClick={cancelRename}
+                        disabled={busy}
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="font-medium text-foreground">{s.label}</span>
+                  )}
                   <span className="rounded bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted">
                     {s.status}
                   </span>
@@ -230,7 +367,7 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {/* Porte de sortie : reprendre la préparation d'une saison en SETUP
                       depuis le stepper de la page, sans rechargement. */}
                   {s.status === "SETUP" && onResumeSetup && (
@@ -288,6 +425,37 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
                   })()}
                 </div>
               </div>
+
+              {/* Actions destructives : SETUP uniquement (jamais ACTIVE/WINTER/CLOSED/isCurrent) */}
+              {isSetup && !isRenaming && (
+                <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                  <span className="text-[10px] text-muted uppercase tracking-wider mr-1">Préparation :</span>
+                  <button
+                    className={btnGhost}
+                    onClick={() => startRename(s)}
+                    disabled={busy}
+                    title="Changer le label de cette saison en préparation"
+                  >
+                    Renommer
+                  </button>
+                  <button
+                    className="rounded border border-orange-500/40 bg-orange-500/10 px-3 py-1.5 text-xs text-orange-400 hover:bg-orange-500/20 disabled:opacity-40"
+                    onClick={() => resetSeason(s)}
+                    disabled={busy}
+                    title="Vide les clubs, joueurs, ligues et participants — conserve la coquille Season"
+                  >
+                    Réinitialiser
+                  </button>
+                  <button
+                    className="rounded border border-rouge/50 bg-rouge/15 px-3 py-1.5 text-xs text-rouge hover:bg-rouge/25 disabled:opacity-40 font-medium"
+                    onClick={() => deleteSeason(s)}
+                    disabled={busy}
+                    title="Supprime définitivement cette saison et toutes ses données de préparation"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
