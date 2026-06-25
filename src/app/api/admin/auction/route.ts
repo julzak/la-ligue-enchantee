@@ -5,6 +5,7 @@ import { isDeadlinePassed } from "@/lib/auction-deadline";
 import { getCurrentSeason, getSeasonFilters } from "@/lib/season";
 import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 import { canCompleteWith, type EnginePlayer } from "@/lib/auction-engine";
+import { validateSummerBids, type SummerBid } from "@/lib/auction-validation";
 import {
   planResolution,
   computeRosterStatuses,
@@ -314,12 +315,16 @@ export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
-  const { action, leagueId, deadline, userId, playerIds } = await request.json() as {
-    action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline";
+  const { action, leagueId, deadline, userId, playerIds, bids, adminUserId } = await request.json() as {
+    action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline" | "enter-bid-for-user";
     leagueId: number;
     deadline?: string | null; // ISO 8601 ou null pour effacer
-    userId?: number; // complete-roster
+    userId?: number; // complete-roster | enter-bid-for-user (participant cible)
     playerIds?: number[]; // complete-roster
+    bids?: SummerBid[]; // enter-bid-for-user
+    adminUserId?: number; // enter-bid-for-user : indicatif. La source de vérité
+                          // de l'audit est la session admin (auth.session), pas
+                          // ce champ client (non falsifiable côté serveur).
   };
 
   if (action === "open") {
@@ -699,6 +704,68 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       message: `Phase close : ${teamRows.length} joueurs écrits dans les effectifs (${statuses.length} participants × 13)`,
+    });
+  }
+
+  if (action === "enter-bid-for-user") {
+    // BRIEF-11 : saisie manuelle d'une mise AU NOM d'un participant (retardataire).
+    // Réutilise EXACTEMENT la validation de la soumission participant
+    // (validateSummerBids) : budget/quotas/gardien/joueurs déjà attribués sont
+    // évalués à l'identique. SEULE différence avec /api/auction : aucune garde
+    // deadline (le but est de contourner l'heure butoir pour rattraper un retard).
+    if (!userId) {
+      return NextResponse.json({ error: "userId (participant cible) requis" }, { status: 400 });
+    }
+    if (!bids || !Array.isArray(bids) || bids.length === 0) {
+      return NextResponse.json({ error: "Au moins une mise (bids) est requise" }, { status: 400 });
+    }
+
+    const auction = await getSummerAuction(leagueId);
+    if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+    // Tour modifiable tant qu'il n'est pas dépouillé : 'open' ou 'closed'
+    // (après 'tallied'/'resolved', les statuts de mises sont figés).
+    if (auction.status !== "open" && auction.status !== "closed") {
+      return NextResponse.json(
+        { error: `La saisie manuelle n'est possible que sur un tour ouvert ou clôturé (statut actuel : '${auction.status}').` },
+        { status: 400 }
+      );
+    }
+
+    // Le participant cible doit appartenir à la ligue
+    const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+      "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+      leagueId, userId
+    );
+    if (Number(memberRows[0]?.cnt ?? 0) === 0) {
+      return NextResponse.json({ error: `L'utilisateur #${userId} ne fait pas partie de cette ligue` }, { status: 400 });
+    }
+
+    // Validation PARTAGÉE (mêmes règles, mêmes erreurs que /api/auction).
+    const validationError = await validateSummerBids(prisma, auction.id, userId, bids);
+    if (validationError) {
+      return NextResponse.json({ error: validationError.error }, { status: validationError.status });
+    }
+
+    // Remplace les mises 'pending' du participant pour ce tour (même sémantique
+    // que la soumission participant), avec traçabilité admin_entered_by.
+    await prisma.$executeRawUnsafe(
+      "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status = 'pending'",
+      auction.id, auction.currentRound, userId
+    );
+    // Audit : on enregistre l'admin de la SESSION (source fiable). Le champ
+    // client adminUserId n'est qu'un repli indicatif s'il manque (jamais le cas
+    // en pratique puisque requireAdmin() impose une session valide).
+    const adminEnteredBy = auth.session.user.userId ?? adminUserId ?? null;
+    for (const bid of bids) {
+      await prisma.$executeRawUnsafe(
+        "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, admin_entered_by) VALUES (?, ?, ?, ?, ?, 'pending', ?)",
+        auction.id, auction.currentRound, userId, bid.playerId, bid.amount, adminEnteredBy
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      message: `${bids.length} mise(s) saisie(s) au nom du participant #${userId}`,
     });
   }
 

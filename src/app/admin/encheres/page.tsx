@@ -6,8 +6,9 @@
 // BRIEF-06 : récap copiable par participant + "Tout copier" + griser "Clore la phase" (N6).
 
 import { useState, useEffect, useCallback } from "react";
-import { Gavel, Loader2, Clock, AlertTriangle, Check, Copy, ClipboardCheck } from "lucide-react";
+import { Gavel, Loader2, Clock, AlertTriangle, Check, Copy, ClipboardCheck, Search, X, Send, UserPlus } from "lucide-react";
 import { formatParticipantRecap, formatAllRecaps, type ParticipantRoundRecap } from "@/lib/auction-recap";
+import { validateSubmission, type Line, type EnginePlayer } from "@/lib/auction-engine";
 
 interface AuctionData {
   id: number;
@@ -91,6 +92,286 @@ function initials(name: string): string {
 }
 
 const LINE_LABEL: Record<string, string> = { GK: "G", DEF: "DEF", MID: "MIL", ATT: "ATT" };
+
+// Même mapping position → ligne que la page participant (positionToLine), pour
+// que le compteur de quotas affiché à l'admin soit identique à celui du joueur.
+function positionToLine(pos: string): Line {
+  const p = pos.toLowerCase();
+  if (p.includes("ardien") || p === "gk" || p === "g") return "GK";
+  if (p === "def" || p.includes("défenseur") || p.includes("defenseur")) return "DEF";
+  if (p === "mid" || p === "mil" || p.includes("milieu")) return "MID";
+  return "ATT";
+}
+
+interface FreePlayer {
+  id: number;
+  name: string;
+  position: string;
+  clubName: string;
+}
+
+interface ManualBidDraft {
+  playerId: number;
+  playerName: string;
+  clubName: string;
+  position: string;
+  amount: number;
+}
+
+// ── BRIEF-11 : saisie d'une mise AU NOM d'un participant ────────────────────
+// Mêmes patterns que la page participant (recherche /api/admin/jokers/free,
+// budget 130 - acquis, avertissements de quotas via validateSubmission). La
+// validation serveur partagée (validateSummerBids) re-juge tout : ce bloc n'est
+// qu'une aide à la saisie. Apparaît uniquement quand un tour est ouvert/clôturé.
+function ManualBidEntry({
+  leagueId,
+  participants,
+  allWonBidsByUser,
+  onSubmitted,
+}: {
+  leagueId: number;
+  participants: Participant[];
+  allWonBidsByUser: Map<number, WonBid[]>;
+  onSubmitted: (message: string) => void;
+}) {
+  const [targetUserId, setTargetUserId] = useState<number>(0);
+  const [draftBids, setDraftBids] = useState<ManualBidDraft[]>([]);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<FreePlayer[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const target = participants.find((p) => p.userId === targetUserId) ?? null;
+  // Acquis du participant cible (toutes rounds) → pré-remplis pour les quotas.
+  const ownedWon = targetUserId ? allWonBidsByUser.get(targetUserId) ?? [] : [];
+  const ownedIds = new Set(ownedWon.map((w) => w.playerId));
+
+  // Budget restant : le budget participant (130 - acquis) vient de l'API admin.
+  const budget = target?.budget ?? 0;
+  const totalDraft = draftBids.reduce((s, b) => s + b.amount, 0);
+  const budgetAfter = budget - totalDraft;
+  const over = budgetAfter < 0;
+
+  // Recherche de joueurs libres (même endpoint que le participant).
+  useEffect(() => {
+    if (!leagueId || search.length < 2) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/admin/jokers/free?leagueId=${leagueId}&search=${encodeURIComponent(search)}`);
+        const d = await res.json();
+        const draftIds = new Set(draftBids.map((b) => b.playerId));
+        setSearchResults((d.players ?? []).filter((p: FreePlayer) => !draftIds.has(p.id) && !ownedIds.has(p.id)));
+      } catch {}
+      setSearchLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+    // ownedIds dépend de targetUserId ; on inclut targetUserId pour rafraîchir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagueId, search, draftBids, targetUserId]);
+
+  // Réinitialise la composition quand on change de participant cible.
+  useEffect(() => { setDraftBids([]); setSearch(""); setSearchResults([]); }, [targetUserId]);
+
+  function addBid(p: FreePlayer) {
+    if (draftBids.some((b) => b.playerId === p.id)) return;
+    setDraftBids((prev) => [...prev, { playerId: p.id, playerName: p.name, clubName: p.clubName, position: p.position, amount: 1 }]);
+    setSearch("");
+    setSearchResults([]);
+  }
+  function setAmount(playerId: number, amount: number) {
+    setDraftBids((prev) => prev.map((b) => b.playerId === playerId ? { ...b, amount: Math.max(1, amount) } : b));
+  }
+  function removeBid(playerId: number) {
+    setDraftBids((prev) => prev.filter((b) => b.playerId !== playerId));
+  }
+
+  // Avertissements de quotas — EXACTEMENT ceux que le participant verrait
+  // (validateSubmission du moteur, acquis + mises, budget participant).
+  const ownedEngine: EnginePlayer[] = ownedWon.map((w) => ({
+    id: w.playerId,
+    lastName: w.playerName.split(" ").pop() ?? w.playerName,
+    line: positionToLine(w.position),
+  }));
+  const bidsEngine = draftBids.map((b) => ({
+    player: {
+      id: b.playerId,
+      lastName: b.playerName.split(" ").pop() ?? b.playerName,
+      line: positionToLine(b.position),
+    } as EnginePlayer,
+    amount: b.amount,
+  }));
+  const warnings = targetUserId ? validateSubmission(ownedEngine, bidsEngine, budget) : [];
+
+  // Erreur bloquante : > 1 gardien (acquis compris) — même règle que le serveur.
+  const gkCount =
+    ownedWon.filter((w) => positionToLine(w.position) === "GK").length +
+    draftBids.filter((b) => positionToLine(b.position) === "GK").length;
+  const blockingError = gkCount > 1
+    ? `La composition contient ${gkCount} gardiens (acquis compris). Maximum : 1. La saisie sera refusée par le serveur.`
+    : null;
+
+  const totalFilled = ownedWon.length + draftBids.length;
+
+  async function submit() {
+    if (!target || draftBids.length === 0) return;
+    const confirmMsg = `Vous allez saisir ${draftBids.length} mise(s) au nom de ${target.userName}, en contournant l'heure butoir. Confirmer ?`;
+    if (!confirm(confirmMsg)) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/auction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "enter-bid-for-user",
+          leagueId,
+          userId: targetUserId,
+          bids: draftBids.map((b) => ({ playerId: b.playerId, amount: b.amount })),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setDraftBids([]);
+        setSearch("");
+        onSubmitted(data.message ?? "Mise saisie");
+      } else {
+        onSubmitted(data.error ?? "Erreur lors de la saisie");
+      }
+    } catch {
+      onSubmitted("Erreur réseau lors de la saisie");
+    }
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="bg-surface border border-white/[0.07] rounded-lg overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-4 border-b border-white/[0.07]">
+        <UserPlus className="w-4 h-4 text-gold" />
+        <span className="text-[15px] font-bold text-paper">Saisir une mise pour un participant</span>
+        <span className="text-[11px] text-muted ml-auto">Contourne l&apos;heure butoir · validation identique à la soumission joueur</span>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Sélecteur participant */}
+        <div>
+          <label className="block text-[10.5px] font-bold tracking-[.8px] text-muted uppercase mb-1.5">Participant</label>
+          <select
+            value={targetUserId}
+            onChange={(e) => setTargetUserId(Number(e.target.value))}
+            className="w-full bg-surface-2 border border-white/[0.07] rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
+          >
+            <option value={0}>Choisir un participant…</option>
+            {participants.map((p) => (
+              <option key={p.userId} value={p.userId}>
+                {p.userName}{p.hasSubmitted ? " (a déjà soumis)" : " — sans soumission"}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {targetUserId > 0 && target && (
+          <>
+            {/* Budget */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10.5px] font-bold tracking-[.8px] text-muted uppercase">Budget restant</span>
+              <span className={`text-2xl font-extrabold tabular-nums ${over ? "text-rouge" : "text-gold"}`}>
+                {over ? `−${Math.abs(budgetAfter)}` : budgetAfter}
+              </span>
+              <span className="text-[12px] text-muted">/ {budget} pts · {totalFilled} / {auctionPlayersPerUser(target)} joueurs</span>
+            </div>
+
+            {/* Recherche */}
+            <div className="relative">
+              <div className="flex items-center gap-2 px-3 py-2 bg-night border border-white/[0.07] rounded-lg">
+                <Search className="w-3.5 h-3.5 text-muted flex-none" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un joueur libre (nom ou club)…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="flex-1 bg-transparent text-[13px] text-paper placeholder:text-muted outline-none"
+                />
+                {searchLoading && <Loader2 className="w-3.5 h-3.5 text-muted animate-spin" />}
+              </div>
+              {searchResults.length > 0 && (
+                <div className="absolute z-10 left-0 right-0 mt-1 bg-surface border border-white/[0.10] rounded-lg max-h-56 overflow-y-auto shadow-xl">
+                  {searchResults.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => addBid(p)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-[13px] text-paper-dim hover:bg-white/[0.03] border-b border-white/[0.04] last:border-b-0"
+                    >
+                      <span className="flex-1 truncate">{p.name}</span>
+                      <span className="text-[10px] font-bold px-1 py-px rounded bg-white/[0.05] border border-white/10 text-muted">{LINE_LABEL[positionToLine(p.position)]}</span>
+                      <span className="text-[10.5px] text-muted">{p.clubName}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Mises en cours */}
+            {draftBids.length > 0 && (
+              <div className="bg-night border border-gold/20 rounded-lg overflow-hidden">
+                {draftBids.map((b) => (
+                  <div key={b.playerId} className="flex items-center gap-3 px-3 py-2.5 border-b border-white/[0.04] last:border-b-0">
+                    <span className="text-[10px] font-bold px-1 py-px rounded bg-white/[0.05] border border-white/10 text-muted">{LINE_LABEL[positionToLine(b.position)]}</span>
+                    <span className="flex-1 text-[13px] text-paper-dim truncate">{b.playerName}</span>
+                    <span className="text-[10.5px] text-muted">{b.clubName.split(" ")[0]}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={b.amount}
+                      onChange={(e) => setAmount(b.playerId, parseInt(e.target.value) || 1)}
+                      className="w-16 text-center text-[14px] font-bold text-gold tabular-nums bg-surface-2 border border-white/[0.07] rounded px-1 py-1 focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className="text-[10px] text-muted">pts</span>
+                    <button onClick={() => removeBid(b.playerId)} className="text-muted hover:text-rouge" aria-label="Retirer">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Erreur bloquante (gardiens) */}
+            {blockingError && (
+              <div className="flex gap-2 px-3 py-2.5 bg-rouge/[0.10] border border-rouge/40 rounded-lg text-[11.5px] text-rouge">
+                <span>🚫</span><span>{blockingError}</span>
+              </div>
+            )}
+
+            {/* Avertissements de quotas (non bloquants, identiques au participant) */}
+            {warnings.length > 0 && totalFilled > 0 && (
+              <div className="bg-amber-500/[0.08] border border-amber-500/35 rounded-lg overflow-hidden">
+                <div className="px-3 py-2 text-[11px] font-bold text-amber-400">Avertissements de composition (mêmes règles que le participant)</div>
+                {warnings.map((w, i) => (
+                  <div key={i} className="px-3 py-1.5 border-t border-amber-500/15 text-[11.5px] text-paper-dim">• {w}</div>
+                ))}
+              </div>
+            )}
+
+            {/* Bouton de saisie avec confirmation explicite */}
+            <button
+              onClick={submit}
+              disabled={submitting || draftBids.length === 0 || !!blockingError}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded text-[13px] font-bold bg-gold text-night hover:bg-gold/80 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Enregistrer la mise pour {target.userName}
+            </button>
+            <p className="text-[10.5px] text-muted italic text-center">Remplace toute mise en attente de ce participant pour le tour courant. La validation serveur est identique à une soumission joueur (budget, quotas, gardien, joueurs déjà attribués).</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// playersPerUser du participant cible (effectif cible, 13 par défaut).
+function auctionPlayersPerUser(p: Participant): number {
+  return p.playersWon + p.playersNeeded;
+}
 
 export default function AdminEncheresPage() {
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -635,6 +916,16 @@ export default function AdminEncheresPage() {
                   </div>
                   <div className="text-xs text-muted italic">Lancez le dépouillement depuis le panneau de gauche. Le calcul des attributions est irréversible.</div>
                 </div>
+              )}
+
+              {/* BRIEF-11 : saisie manuelle pour un participant (tour ouvert ou clôturé) */}
+              {(mode === "open" || mode === "closed") && auction && (
+                <ManualBidEntry
+                  leagueId={selectedLeague}
+                  participants={participants}
+                  allWonBidsByUser={allAcquisitionsByUser}
+                  onSubmitted={(msg) => { setMessage(msg); fetchAuction(); }}
+                />
               )}
 
               {/* DÉPOUILLÉ : résultats + zone récap (logique BRIEF-06) */}
