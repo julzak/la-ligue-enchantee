@@ -35,21 +35,27 @@ export async function POST(req: Request) {
     );
   }
 
-  // Cascade FK-sûre dans une transaction :
-  // Même ordre que pour la suppression, SANS supprimer la ligne Season elle-même.
+  // Cascade enfants-avant-parents scopée à la saison.
   //
+  // IMPORTANT — MyISAM (CLUB, LEAGUE, PLAYER, LEAGUE_USER) ne supporte PAS les
+  // transactions atomiques : $transaction regroupe les appels mais NE ROLLBACK PAS
+  // en cas d'erreur partielle. L'opération est donc conçue pour être IDEMPOTENTE :
+  // chaque étape supprime "ce qui reste pour cette saison", de sorte qu'un éventuel
+  // échec partiel se rattrape en relançant la requête.
+  //
+  // Tables ciblées (toutes vérifiées dans prisma/schema.prisma ET dump prod ligueenc_v3.sql) :
   // 1. AUCTION_REMOVAL (dépend de AUCTION)
   // 2. AUCTION_BID     (dépend de AUCTION)
   // 3. AUCTION_BUDGET  (dépend de AUCTION)
   // 4. AUCTION         (dépend de LEAGUE)
   // 5. LEAGUE_USER     (dépend de LEAGUE — participants)
-  // 6. LEAGUE_SCORE    (dépend de LEAGUE)
-  // 7. LEAGUE_SCORE_DAY (dépend de LEAGUE)
-  // 8. LAST_SCORE      (dépend de LEAGUE)
-  // 9. LEAGUE          (dépend de SEASON)
-  // 10. PLAYER         (dépend de SEASON)
-  // 11. CLUB           (dépend de SEASON)
+  // 6. LEAGUE          (dépend de SEASON)
+  // 7. PLAYER          (dépend de SEASON)
+  // 8. CLUB            (dépend de SEASON)
   // La coquille Season est CONSERVÉE.
+  //
+  // NB : LEAGUE_SCORE, LEAGUE_SCORE_DAY, LAST_SCORE n'existent PAS dans le schéma
+  // ni dans les dumps prod — supprimées de la cascade (tables fantômes → HTTP 500).
   await prisma.$transaction(async (tx) => {
     const leagues = await tx.league.findMany({
       where: { seasonId },
@@ -86,25 +92,13 @@ export async function POST(req: Request) {
       await tx.$executeRawUnsafe(
         `DELETE FROM LEAGUE_USER WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
       );
-      // 6. LEAGUE_SCORE
-      await tx.$executeRawUnsafe(
-        `DELETE FROM LEAGUE_SCORE WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
-      );
-      // 7. LEAGUE_SCORE_DAY
-      await tx.$executeRawUnsafe(
-        `DELETE FROM LEAGUE_SCORE_DAY WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
-      );
-      // 8. LAST_SCORE
-      await tx.$executeRawUnsafe(
-        `DELETE FROM LAST_SCORE WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
-      );
     }
 
-    // 9. LEAGUE
+    // 6. LEAGUE
     await tx.league.deleteMany({ where: { seasonId } });
-    // 10. PLAYER
+    // 7. PLAYER
     await tx.player.deleteMany({ where: { seasonId } });
-    // 11. CLUB
+    // 8. CLUB
     await tx.club.deleteMany({ where: { seasonId } });
     // La coquille Season est conservée (pas de tx.season.delete).
   });

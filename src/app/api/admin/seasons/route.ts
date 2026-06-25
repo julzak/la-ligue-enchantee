@@ -121,24 +121,29 @@ export async function DELETE(req: Request) {
     );
   }
 
-  // Cascade FK-sûre dans une transaction :
-  // L'ordre respecte les dépendances : les enfants avant les parents.
+  // Cascade enfants-avant-parents scopée à la saison.
   //
+  // IMPORTANT — MyISAM (CLUB, LEAGUE, PLAYER, LEAGUE_USER) ne supporte PAS les
+  // transactions atomiques : $transaction regroupe les appels mais NE ROLLBACK PAS
+  // en cas d'erreur partielle. L'opération est donc conçue pour être IDEMPOTENTE :
+  // chaque étape supprime "ce qui reste pour cette saison", de sorte qu'un éventuel
+  // échec partiel se rattrape en relançant la requête.
+  //
+  // Tables ciblées (toutes vérifiées dans prisma/schema.prisma ET dump prod ligueenc_v3.sql) :
   // 1. AUCTION_REMOVAL (dépend de AUCTION)
   // 2. AUCTION_BID     (dépend de AUCTION)
   // 3. AUCTION_BUDGET  (dépend de AUCTION)
   // 4. AUCTION         (dépend de LEAGUE)
   // 5. LEAGUE_USER     (dépend de LEAGUE — participants)
-  // 6. LEAGUE_SCORE    (dépend de LEAGUE — scores agrégés)
-  // 7. LEAGUE_SCORE_DAY (dépend de LEAGUE)
-  // 8. LAST_SCORE      (dépend de LEAGUE)
-  // 9. LEAGUE          (dépend de SEASON)
-  // 10. PLAYER         (dépend de SEASON)
-  // 11. CLUB           (dépend de SEASON)
-  // 12. SEASON         (racine)
+  // 6. LEAGUE          (dépend de SEASON)
+  // 7. PLAYER          (dépend de SEASON)
+  // 8. CLUB            (dépend de SEASON)
+  // 9. SEASON          (racine)
   //
-  // Les ligues, clubs, joueurs sont scoppés à la saison via ID_SEASON.
-  // On ne touche JAMAIS palmares, season_movement, ni une autre saison.
+  // On ne touche JAMAIS PALMARES, SEASON_MOVEMENT, ni une autre saison.
+  //
+  // NB : LEAGUE_SCORE, LEAGUE_SCORE_DAY, LAST_SCORE n'existent PAS dans le schéma
+  // ni dans les dumps prod — supprimées de la cascade (tables fantômes → HTTP 500).
   await prisma.$transaction(async (tx) => {
     // Récupère les IDs des ligues de cette saison (pour supprimer leurs enfants).
     const leagues = await tx.league.findMany({
@@ -177,27 +182,15 @@ export async function DELETE(req: Request) {
       await tx.$executeRawUnsafe(
         `DELETE FROM LEAGUE_USER WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
       );
-      // 6. LEAGUE_SCORE (scores agrégés par ligue — a priori vides en SETUP)
-      await tx.$executeRawUnsafe(
-        `DELETE FROM LEAGUE_SCORE WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
-      );
-      // 7. LEAGUE_SCORE_DAY
-      await tx.$executeRawUnsafe(
-        `DELETE FROM LEAGUE_SCORE_DAY WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
-      );
-      // 8. LAST_SCORE
-      await tx.$executeRawUnsafe(
-        `DELETE FROM LAST_SCORE WHERE ID_LEAGUE IN (${leagueIds.join(",")})`
-      );
     }
 
-    // 9. LEAGUE
+    // 6. LEAGUE
     await tx.league.deleteMany({ where: { seasonId } });
-    // 10. PLAYER
+    // 7. PLAYER
     await tx.player.deleteMany({ where: { seasonId } });
-    // 11. CLUB
+    // 8. CLUB
     await tx.club.deleteMany({ where: { seasonId } });
-    // 12. SEASON (la saison elle-même)
+    // 9. SEASON (la saison elle-même)
     await tx.season.delete({ where: { id: seasonId } });
   });
 
