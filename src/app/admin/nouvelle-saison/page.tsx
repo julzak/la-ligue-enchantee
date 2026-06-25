@@ -68,8 +68,11 @@ export default function NouvelleSaisonPage() {
         const resumable = findResumableSeason(data.seasons ?? []);
         if (!resumable) return;
 
-        setSeason({ id: resumable.id, label: resumable.label, status: resumable.status });
         const targetStep = resolveStepFromStatus(resumable.status);
+        // resolveStepFromStatus renvoie null pour tout statut non reprenable : ne pas hydrater.
+        if (targetStep === null) return;
+
+        setSeason({ id: resumable.id, label: resumable.label, status: resumable.status });
         setStep(targetStep);
 
         // Si la saison est en SETUP, on tente de pré-peupler les clubs déjà importés
