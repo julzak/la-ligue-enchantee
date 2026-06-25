@@ -9,6 +9,12 @@ interface Season {
   isCurrent: boolean;
   _count?: { clubs: number; players: number; leagues: number };
 }
+interface SeasonManagerProps {
+  /** Incrémenter ce compteur force un re-fetch de la liste des saisons. */
+  refreshKey?: number;
+  /** Appelé quand l'admin clique "Reprendre cette saison" sur une saison en SETUP. */
+  onResumeSetup?: (season: { id: number; label: string; status: string }) => void;
+}
 interface CloseResult {
   seasonLabel: string;
   podiumCount: number;
@@ -36,7 +42,7 @@ const NEXT_STATUS: Record<string, { to: string; label: string } | null> = {
 const btnGhost =
   "rounded border border-border bg-surface px-3 py-1.5 text-xs text-foreground hover:bg-surface-2 disabled:opacity-40";
 
-export default function SeasonManager() {
+export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonManagerProps = {}) {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -57,9 +63,10 @@ export default function SeasonManager() {
     setLoading(false);
   }
 
+  // Re-fetch à chaque fois que le parent signale une nouvelle saison créée.
   useEffect(() => {
     load();
-  }, []);
+  }, [refreshKey]);
 
   async function changeStatus(season: Season, to: string) {
     setBusy(true);
@@ -224,6 +231,17 @@ export default function SeasonManager() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Porte de sortie : reprendre la préparation d'une saison en SETUP
+                      depuis le stepper de la page, sans rechargement. */}
+                  {s.status === "SETUP" && onResumeSetup && (
+                    <button
+                      className={btnGhost}
+                      onClick={() => onResumeSetup({ id: s.id, label: s.label, status: s.status })}
+                      disabled={busy}
+                    >
+                      Reprendre cette saison
+                    </button>
+                  )}
                   {/* Retour arrière : une saison en enchères peut revenir en préparation
                       pour retoucher clubs/joueurs/ligues (bloqués hors SETUP). */}
                   {s.status === "AUCTION" && (
