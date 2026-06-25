@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SeasonManager from "./SeasonManager";
 import EffectifsTools from "./EffectifsTools";
+import { findResumableSeason, resolveStepFromStatus } from "@/lib/season-resume";
 
 const POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"] as const;
 type Position = (typeof POSITIONS)[number];
@@ -53,6 +54,62 @@ export default function NouvelleSaisonPage() {
   const [step, setStep] = useState(1);
   const [season, setSeason] = useState<Season | null>(null);
   const [error, setError] = useState("");
+  // Compteur incrémenté après chaque création de saison pour forcer le re-fetch de SeasonManager.
+  const [seasonManagerKey, setSeasonManagerKey] = useState(0);
+
+  // Reprise au montage : si une saison est déjà en cours (non CLOSED), on saute directement
+  // à l'étape correspondante plutôt que de bloquer l'admin sur l'étape 1.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/seasons");
+        if (!res.ok) return;
+        const data = await res.json();
+        const resumable = findResumableSeason(data.seasons ?? []);
+        if (!resumable) return;
+
+        const targetStep = resolveStepFromStatus(resumable.status);
+        // resolveStepFromStatus renvoie null pour tout statut non reprenable : ne pas hydrater.
+        if (targetStep === null) return;
+
+        setSeason({ id: resumable.id, label: resumable.label, status: resumable.status });
+        setStep(targetStep);
+
+        // Si la saison est en SETUP, on tente de pré-peupler les clubs déjà importés
+        // (comme le fait EffectifsTools) pour que l'écran d'import soit directement utilisable.
+        if (resumable.status === "SETUP") {
+          const clubRes = await fetch(
+            `/api/admin/seasons/clubs-list?seasonId=${resumable.id}`
+          );
+          if (clubRes.ok) {
+            const clubData = await clubRes.json();
+            const imported: ApiClub[] = (clubData.clubs ?? []).map(
+              (c: { id: number; name: string }) => ({
+                externalId: String(c.id),
+                name: c.name,
+                badgeUrl: null,
+              })
+            );
+            if (imported.length > 0) {
+              setClubs(
+                imported.map((c) => ({
+                  ...c,
+                  selected: true,
+                  squadLoaded: false,
+                  squadLoading: false,
+                  players: [],
+                }))
+              );
+              setClubsSource("db");
+            }
+          }
+        }
+      } catch {
+        /* silencieux : la reprise est best-effort */
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Étape 1
   const [label, setLabel] = useState("");
@@ -94,6 +151,8 @@ export default function NouvelleSaisonPage() {
       if (!res.ok) throw new Error(data.error || "Erreur");
       setSeason(data.season);
       setStep(2);
+      // Signal au SeasonManager de se rafraîchir sans rechargement de page.
+      setSeasonManagerKey((k) => k + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
     } finally {
@@ -377,7 +436,13 @@ export default function NouvelleSaisonPage() {
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-5">
-        <SeasonManager />
+        <SeasonManager
+          refreshKey={seasonManagerKey}
+          onResumeSetup={(s) => {
+            setSeason({ id: s.id, label: s.label, status: s.status });
+            setStep(2);
+          }}
+        />
       </div>
 
       <EffectifsTools />
@@ -392,6 +457,7 @@ export default function NouvelleSaisonPage() {
           { n: 2, label: "Clubs & joueurs" },
           { n: 3, label: "Ligues" },
           { n: 4, label: "Participants" },
+          { n: 5, label: "Enchères ouvertes" },
         ].map((s, i) => (
           <div key={s.n} className="flex items-center gap-2">
             <span
@@ -402,7 +468,7 @@ export default function NouvelleSaisonPage() {
               {s.n}
             </span>
             <span className={step >= s.n ? "text-foreground" : "text-muted"}>{s.label}</span>
-            {i < 3 && <span className="mx-1 text-muted">→</span>}
+            {i < 4 && <span className="mx-1 text-muted">→</span>}
           </div>
         ))}
       </div>
@@ -619,6 +685,24 @@ export default function NouvelleSaisonPage() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ÉTAPE 5 : ENCHÈRES DÉJÀ OUVERTES (reprise depuis statut AUCTION) */}
+      {step === 5 && season && (
+        <div className="rounded-lg border border-border bg-surface p-5 space-y-3">
+          <p className="text-sm text-foreground">
+            La saison <span className="font-semibold text-gold">{season.label}</span> est en
+            cours d&apos;enchères. La préparation (clubs, ligues, participants) a déjà été
+            complétée. Utilise les boutons de « Saisons existantes » ci-dessus pour gérer les
+            transitions de statut.
+          </p>
+          <button
+            className="rounded border border-border bg-surface px-3 py-1.5 text-sm text-foreground hover:bg-surface-2"
+            onClick={() => setStep(2)}
+          >
+            Revenir à l&apos;étape 2 (clubs &amp; joueurs)
+          </button>
         </div>
       )}
 

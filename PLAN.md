@@ -42,7 +42,8 @@ Parallélisme possible : 01, 02 et 03 sont indépendants. 04 et 05 peuvent avanc
 - BRIEF-06-resultats — mergé (PR #11, 2026-06-16)
 - BRIEF-07-recette-simulee — en review (verdict **GO**, 2026-06-16 ; 4 participants fictifs, 2 tours + fin de phase joués en HTTP, 5 cas limites couverts, 52 lignes TEAM écrites, 0 bloquant. Rapport : audits/2026-06-16-recette-encheres/rapport-recette.md. NB : 1er passage invalidé par un défaut de fixture — postes en codes courts au lieu du format prod — corrigé dans scripts/seed-recette-encheres.ts ; run1 conservé comme preuve. Findings mineurs non bloquants : playerId dupliqué accepté en double dans une mise → backlog)
 - BRIEF-08-runbook-kickoff — à faire (inclure : ordre saison → clubs → joueurs → seed gardiens → enchères ; procédure de réparation close-phase ; DDL ADMIN_USER/SCORING_CONFIG à régulariser dans sql/)
-- BRIEF-12-gestion-saisons — en review (PR chantier/12-gestion-saisons ; renommer/réinitialiser/supprimer livrés ; 13 tests guard ; cascade FK-sûre en transaction ; boutons SETUP-only)
+- BRIEF-11-saisie-manuelle — mergé (PR #19, 2026-06 ; saisie admin d'une mise au nom d'un retardataire, contourne le butoir mais réutilise À L'IDENTIQUE la validation participant via `src/lib/auction-validation.ts`. Migration `AUCTION_BID.admin_entered_by` appliquée en prod ; vérif recette : contournement deadline OK, remplacement, rejet identique d'une mise invalide, blocage post-dépouillement)
+- BRIEF-12-gestion-saisons — mergé (renommer/réinitialiser/supprimer une saison, SETUP-only côté serveur ; cascade vérifiée table par table contre le schéma réel après correction de 3 tables fantômes (LEAGUE_SCORE/LEAGUE_SCORE_DAY/LAST_SCORE inexistantes, plantage 500) ; non-atomique sur MyISAM donc opération idempotente/réexécutable ; vérif recette : isolation stricte des autres saisons + garde 403 prouvés)
 
 ## Blocages
 

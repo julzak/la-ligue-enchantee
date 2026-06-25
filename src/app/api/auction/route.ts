@@ -3,11 +3,9 @@ import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
-import { getSeasonFilters } from "@/lib/season";
-import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
-import { checkGoalkeeperLimit } from "@/lib/auction-goalkeeper-limit";
 import { findDuplicatePlayerIds } from "@/lib/auction-duplicate-bids";
+import { validateSummerBids } from "@/lib/auction-validation";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -235,117 +233,47 @@ export async function POST(request: Request) {
     );
   }
 
-  // For winter: validate each bid has a player_out_id
   if (isWinter) {
+    // For winter: validate each bid has a player_out_id
     for (const bid of bids) {
       if (!bid.playerOutId) {
         return NextResponse.json({ error: "Chaque enchere doit designer un joueur sortant (1 IN = 1 OUT)" }, { status: 400 });
       }
     }
-  }
 
-  // B0 : garde serveur — chaque joueur misé ne doit pas déjà être attribué
-  // (status='won') à un autre participant lors de la même enchère.
-  // La recherche côté client exclut déjà ces joueurs, mais le serveur rejoue le
-  // contrôle (le client n'est jamais la seule barrière — BRIEF-04).
-  if (bids.length > 0) {
-    const [bidPh, bidVs] = inParams(bids.map((b) => b.playerId));
-    const alreadyWon = await prisma.$queryRawUnsafe<{ player_id: number; user_id: number }[]>(
-      `SELECT player_id, user_id FROM AUCTION_BID
-       WHERE auction_id = ? AND status = 'won' AND player_id IN (${bidPh})`,
-      a.id, ...bidVs
-    );
-    // Utilise la logique pure (testable sans DB) pour détecter les conflits
-    const conflicts = findAlreadyWonByOther(bids, userId, alreadyWon);
-    if (conflicts.length > 0) {
-      return NextResponse.json(
-        { error: `Le joueur #${conflicts[0]} a déjà été attribué à un autre participant.` },
-        { status: 400 }
+    // B0 / B0b : joueur déjà attribué (à un autre ou à soi-même). Le mercato
+    // d'hiver ne passe PAS par validateSummerBids (pas de garde B1/B2-GK : la
+    // composition d'hiver suit la règle 1-IN/1-OUT). On rejoue ici les seules
+    // gardes pertinentes via les fonctions pures partagées.
+    if (bids.length > 0) {
+      const [bidPh, bidVs] = inParams(bids.map((b) => b.playerId));
+      const alreadyWon = await prisma.$queryRawUnsafe<{ player_id: number; user_id: number }[]>(
+        `SELECT player_id, user_id FROM AUCTION_BID
+         WHERE auction_id = ? AND status = 'won' AND player_id IN (${bidPh})`,
+        a.id, ...bidVs
       );
-    }
-    // B0b : garde "propres won" — règle 3.1 : les acquis sont reportés
-    // automatiquement sans nouvelle mise (évite double won + double budget).
-    const selfConflicts = findAlreadyWonBySelf(bids, userId, alreadyWon);
-    if (selfConflicts.length > 0) {
-      return NextResponse.json(
-        { error: `Vous avez déjà acquis ce joueur, il est reporté automatiquement (règle 3.1 — aucune nouvelle mise nécessaire).` },
-        { status: 400 }
-      );
-    }
-  }
-
-  // B1 : garde serveur — chaque playerId doit exister dans le perimetre de la
-  // saison courante ET ne pas etre un gardien nomme (position Gardien sans
-  // prefixe gardiens_). Les pseudo-gardiens « Gardiens [Club] » sont autorisés.
-  if (bids.length > 0) {
-    const bidPlayerIds = bids.map((b) => b.playerId);
-    const [ph, vs] = inParams(bidPlayerIds);
-    const seasonFilters = await getSeasonFilters();
-    // On charge seulement les colonnes utiles a la validation.
-    const foundPlayers = await prisma.$queryRawUnsafe<{
-      id: number; position: string; link: string | null;
-    }[]>(
-      `SELECT p.ID_PLAYER as id, p.POSITION as position, p.LINK as link
-       FROM PLAYER p
-       WHERE p.ID_PLAYER IN (${ph})`,
-      ...vs
-    );
-    // Filtrage selon le perimetre saison (seasonId NULL = legacy : pas de scope).
-    let scopedPlayerIds: Set<number>;
-    if ("seasonId" in seasonFilters.player) {
-      // La saison courante scope les joueurs : on exclut ceux hors saison.
-      const seasonId = (seasonFilters.player as { seasonId: number }).seasonId;
-      const scopedRows = await prisma.$queryRawUnsafe<{ id: number }[]>(
-        `SELECT p.ID_PLAYER as id FROM PLAYER p
-         WHERE p.ID_PLAYER IN (${ph}) AND p.ID_SEASON = ?`,
-        ...vs, seasonId
-      );
-      scopedPlayerIds = new Set(scopedRows.map((r) => Number(r.id)));
-    } else {
-      scopedPlayerIds = new Set(foundPlayers.map((r) => Number(r.id)));
-    }
-
-    for (const bid of bids) {
-      if (!scopedPlayerIds.has(bid.playerId)) {
+      const conflicts = findAlreadyWonByOther(bids, userId, alreadyWon);
+      if (conflicts.length > 0) {
         return NextResponse.json(
-          { error: `Joueur #${bid.playerId} inexistant ou hors perimetre de la saison courante.` },
+          { error: `Le joueur #${conflicts[0]} a déjà été attribué à un autre participant.` },
           { status: 400 }
         );
       }
-      const player = foundPlayers.find((p) => Number(p.id) === bid.playerId);
-      if (player && isNamedGoalkeeper({ position: player.position, link: player.link })) {
+      const selfConflicts = findAlreadyWonBySelf(bids, userId, alreadyWon);
+      if (selfConflicts.length > 0) {
         return NextResponse.json(
-          { error: `Joueur #${bid.playerId} est un gardien nomme : misez sur le pseudo-joueur « Gardiens [Club] » correspondant.` },
+          { error: `Vous avez déjà acquis ce joueur, il est reporté automatiquement (règle 3.1 — aucune nouvelle mise nécessaire).` },
           { status: 400 }
         );
       }
     }
-  }
-
-  // B2-GK : garde serveur — une mise ne peut pas contenir plus d'UN gardien
-  // (acquis compris). Seul cas de rejet pour motif de composition.
-  // Décision Julien 2026-06-11 (docs/regles-encheres.md §7).
-  if (!isWinter && bids.length > 0) {
-    // Positions des joueurs déjà acquis (won) par ce participant
-    const [bidPh2, bidVs2] = inParams(bids.map((b) => b.playerId));
-    const wonPositionRows = await prisma.$queryRawUnsafe<{ position: string }[]>(
-      `SELECT p.POSITION as position
-       FROM AUCTION_BID ab JOIN PLAYER p ON ab.player_id = p.ID_PLAYER
-       WHERE ab.auction_id = ? AND ab.user_id = ? AND ab.status = 'won'`,
-      a.id, userId
-    );
-    const draftPositionRows = await prisma.$queryRawUnsafe<{ position: string }[]>(
-      `SELECT p.POSITION as position FROM PLAYER p WHERE p.ID_PLAYER IN (${bidPh2})`,
-      ...bidVs2
-    );
-    const { rejected, totalGoalkeepers } = checkGoalkeeperLimit(wonPositionRows, draftPositionRows);
-    if (rejected) {
-      return NextResponse.json(
-        {
-          error: `Soumission refusée : votre mise contient ${totalGoalkeepers} gardiens (acquis compris). Maximum autorisé : 1 (règle 2026-06-11 — seul cas de rejet pour motif de composition).`,
-        },
-        { status: 400 }
-      );
+  } else {
+    // Enchères d'été : composition validée par la fonction PARTAGÉE
+    // (B0/B0b/B1/B2-GK). Exactement les mêmes règles que la saisie admin
+    // (src/lib/auction-validation.ts) — aucune duplication.
+    const error = await validateSummerBids(prisma, a.id, userId, bids);
+    if (error) {
+      return NextResponse.json({ error: error.error }, { status: error.status });
     }
   }
 
