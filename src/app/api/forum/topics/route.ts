@@ -47,14 +47,14 @@ export async function GET(request: Request) {
     (u.NAME ?? "").replace(/<[^>]*>/g, "").trim(),
   ]));
 
-  // Get first post content for preview
+  // Get latest post content for preview (matches topic page which shows most recent first)
   const topicIds = topics.map(t => Number(t.id));
-  const firstPosts = topicIds.length > 0
+  const latestPosts = topicIds.length > 0
     ? await (async () => { const [ph, vs] = inParams(topicIds); return prisma.$queryRawUnsafe<{ topic_id: number; content: string }[]>(
         `SELECT topic_id, content FROM FORUM_POST WHERE topic_id IN (${ph})
-         AND id IN (SELECT MIN(id) FROM FORUM_POST WHERE topic_id IN (${ph}) GROUP BY topic_id)`, ...vs, ...vs); })()
+         AND id IN (SELECT MAX(id) FROM FORUM_POST WHERE topic_id IN (${ph}) GROUP BY topic_id)`, ...vs, ...vs); })()
     : [];
-  const previewMap = new Map(firstPosts.map(p => [Number(p.topic_id), p.content.substring(0, 150)]));
+  const previewMap = new Map(latestPosts.map(p => [Number(p.topic_id), p.content.substring(0, 150)]));
 
   return NextResponse.json({
     topics: topics.map(t => ({

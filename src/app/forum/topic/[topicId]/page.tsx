@@ -25,6 +25,7 @@ interface Post {
 interface TopicInfo {
   id: number;
   title: string;
+  authorId: number;
   authorName: string;
   postCount: number;
   pinned: boolean;
@@ -219,8 +220,8 @@ export default function TopicPage() {
       </div>
 
       {/* Posts */}
-      {posts.map((post, i) => {
-        const isOP = i === 0;
+      {posts.map((post) => {
+        const isOP = post.authorId === topic.authorId;
         return (
           <div
             key={post.id}
