@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma, inParams } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 
@@ -148,214 +149,218 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
-  const { action, leagueId } = await request.json() as {
-    action: "create" | "open" | "close-round" | "resolve-round" | "resolve-tiebreak" | "close-auction";
-    leagueId: number;
-  };
+  try {
+    const { action, leagueId } = await request.json() as {
+      action: "create" | "open" | "close-round" | "resolve-round" | "resolve-tiebreak" | "close-auction";
+      leagueId: number;
+    };
 
-  if (action === "create") {
-    // Create winter auction with per-user budgets
+    if (action === "create") {
+      // Create winter auction with per-user budgets
 
-    // Check no existing active winter auction
-    const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      "SELECT id FROM AUCTION WHERE league_id = ? AND type = 'winter' AND status != 'resolved' LIMIT 1",
-      leagueId
-    );
-    if (existing.length > 0) {
-      return NextResponse.json({ error: "Un mercato d'hiver est deja en cours" }, { status: 400 });
-    }
-
-    // Get standings for budget calculation
-    const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
-    const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
-      `SELECT ID_USER as userId, SUM(PTS_TOT) as total
-       FROM STATS_USER WHERE ID_LEAGUE = ? AND DAY <= ?
-       GROUP BY ID_USER ORDER BY total DESC`,
-      leagueId, currentDay
-    );
-
-    // Create the auction (players_per_user=0 for winter — no fixed quota)
-    await prisma.$executeRawUnsafe(
-      "INSERT INTO AUCTION (league_id, status, current_round, budget_per_user, players_per_user, type) VALUES (?, 'open', 1, 0, 0, 'winter')",
-      leagueId
-    );
-
-    // Get the created auction ID
-    const [newAuction] = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      "SELECT id FROM AUCTION WHERE league_id = ? AND type = 'winter' ORDER BY id DESC LIMIT 1",
-      leagueId
-    );
-    const auctionId = Number(newAuction.id);
-
-    // Create AUCTION_BUDGET entries for each user
-    for (let i = 0; i < allStats.length; i++) {
-      const rank = i + 1;
-      const budget = 10 + (rank - 1) * 2;
-      await prisma.$executeRawUnsafe(
-        "INSERT INTO AUCTION_BUDGET (auction_id, user_id, budget) VALUES (?, ?, ?)",
-        auctionId, Number(allStats[i].userId), budget
+      // Check no existing active winter auction
+      const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
+        "SELECT id FROM AUCTION WHERE league_id = ? AND type = 'winter' AND status != 'resolved' LIMIT 1",
+        leagueId
       );
-    }
-
-    return NextResponse.json({ ok: true, message: "Mercato d'hiver ouvert (tour 1)" });
-  }
-
-  if (action === "open") {
-    // Open next round of existing winter auction
-    const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      "SELECT id FROM AUCTION WHERE league_id = ? AND type = 'winter' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
-      leagueId
-    );
-    if (existing.length === 0) {
-      return NextResponse.json({ error: "Pas de mercato d'hiver actif" }, { status: 400 });
-    }
-    await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'open', current_round = current_round + 1 WHERE id = ?",
-      existing[0].id
-    );
-    return NextResponse.json({ ok: true, message: "Tour suivant ouvert" });
-  }
-
-  if (action === "close-round") {
-    await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'closed' WHERE league_id = ? AND type = 'winter' AND status = 'open'",
-      leagueId
-    );
-    return NextResponse.json({ ok: true, message: "Tour ferme aux encheres" });
-  }
-
-  if (action === "resolve-round") {
-    const auction = await prisma.$queryRawUnsafe<{ id: number; current_round: number }[]>(
-      "SELECT id, current_round FROM AUCTION WHERE league_id = ? AND type = 'winter' ORDER BY id DESC LIMIT 1",
-      leagueId
-    );
-    if (auction.length === 0) return NextResponse.json({ error: "Pas de mercato" }, { status: 400 });
-
-    const aId = Number(auction[0].id);
-    const round = Number(auction[0].current_round);
-
-    const bids = await prisma.$queryRawUnsafe<{
-      id: number; user_id: number; player_id: number; amount: number;
-    }[]>(
-      "SELECT id, user_id, player_id, amount FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'pending' ORDER BY player_id, amount DESC",
-      aId, round
-    );
-
-    const byPlayer = new Map<number, typeof bids>();
-    bids.forEach((b) => {
-      const arr = byPlayer.get(Number(b.player_id)) ?? [];
-      arr.push(b);
-      byPlayer.set(Number(b.player_id), arr);
-    });
-
-    let wonCount = 0, lostCount = 0, tiedCount = 0;
-
-    for (const [, playerBids] of Array.from(byPlayer.entries())) {
-      const sorted = playerBids.sort((a, b) => Number(b.amount) - Number(a.amount));
-      const highest = Number(sorted[0].amount);
-      const topBids = sorted.filter((b) => Number(b.amount) === highest);
-
-      if (topBids.length === 1) {
-        await prisma.$executeRawUnsafe(
-          "UPDATE AUCTION_BID SET status = 'won' WHERE id = ?", Number(topBids[0].id)
-        );
-        wonCount++;
-        for (const b of sorted.slice(1)) {
-          await prisma.$executeRawUnsafe(
-            "UPDATE AUCTION_BID SET status = 'lost' WHERE id = ?", Number(b.id)
-          );
-          lostCount++;
-        }
-      } else {
-        for (const b of topBids) {
-          await prisma.$executeRawUnsafe(
-            "UPDATE AUCTION_BID SET status = 'tie' WHERE id = ?", Number(b.id)
-          );
-          tiedCount++;
-        }
-        for (const b of sorted.slice(topBids.length)) {
-          await prisma.$executeRawUnsafe(
-            "UPDATE AUCTION_BID SET status = 'lost' WHERE id = ?", Number(b.id)
-          );
-          lostCount++;
-        }
+      if (existing.length > 0) {
+        return NextResponse.json({ error: "Un mercato d'hiver est deja en cours" }, { status: 400 });
       }
-    }
 
-    // Transition auction status to 'resolved' so buttons can proceed to next round
-    await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'resolved' WHERE id = ?",
-      aId
-    );
+      // Get standings for budget calculation
+      const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
+      const allStats = await prisma.$queryRawUnsafe<{ userId: number; total: number }[]>(
+        `SELECT ID_USER as userId, SUM(PTS_TOT) as total
+         FROM STATS_USER WHERE ID_LEAGUE = ? AND DAY <= ?
+         GROUP BY ID_USER ORDER BY total DESC`,
+        leagueId, currentDay
+      );
 
-    return NextResponse.json({
-      ok: true,
-      message: `Tour ${round} resolu : ${wonCount} joueurs attribues, ${tiedCount} egalites, ${lostCount} encheres perdues`,
-    });
-  }
+      // Create the auction (players_per_user=0 for winter — no fixed quota)
+      await prisma.$executeRawUnsafe(
+        "INSERT INTO AUCTION (league_id, status, current_round, budget_per_user, players_per_user, type) VALUES (?, 'open', 1, 0, 0, 'winter')",
+        leagueId
+      );
 
-  if (action === "resolve-tiebreak") {
-    const auction = await prisma.$queryRawUnsafe<{ id: number; current_round: number }[]>(
-      "SELECT id, current_round FROM AUCTION WHERE league_id = ? AND type = 'winter' ORDER BY id DESC LIMIT 1",
-      leagueId
-    );
-    if (auction.length === 0) return NextResponse.json({ error: "Pas de mercato" }, { status: 400 });
+      // Get the created auction ID
+      const [newAuction] = await prisma.$queryRawUnsafe<{ id: number }[]>(
+        "SELECT id FROM AUCTION WHERE league_id = ? AND type = 'winter' ORDER BY id DESC LIMIT 1",
+        leagueId
+      );
+      const auctionId = Number(newAuction.id);
 
-    const aId = Number(auction[0].id);
-    const round = Number(auction[0].current_round);
-
-    const ties = await prisma.$queryRawUnsafe<{
-      id: number; user_id: number; player_id: number; amount: number;
-    }[]>(
-      "SELECT id, user_id, player_id, amount FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'tie'",
-      aId, round
-    );
-
-    const tiesByPlayer = new Map<number, typeof ties>();
-    ties.forEach((b) => {
-      const arr = tiesByPlayer.get(Number(b.player_id)) ?? [];
-      arr.push(b);
-      tiesByPlayer.set(Number(b.player_id), arr);
-    });
-
-    let resolved = 0;
-    for (const [, playerTies] of Array.from(tiesByPlayer.entries())) {
-      const winnerIdx = Math.floor(Math.random() * playerTies.length);
-      for (let i = 0; i < playerTies.length; i++) {
-        const status = i === winnerIdx ? "won" : "lost";
+      // Create AUCTION_BUDGET entries for each user
+      for (let i = 0; i < allStats.length; i++) {
+        const rank = i + 1;
+        const budget = 10 + (rank - 1) * 2;
         await prisma.$executeRawUnsafe(
-          "UPDATE AUCTION_BID SET status = ? WHERE id = ?",
-          status, Number(playerTies[i].id)
+          "INSERT INTO AUCTION_BUDGET (auction_id, user_id, budget) VALUES (?, ?, ?)",
+          auctionId, Number(allStats[i].userId), budget
         );
       }
-      resolved++;
+
+      return NextResponse.json({ ok: true, message: "Mercato d'hiver ouvert (tour 1)" });
     }
 
-    // Check if there are still pending/tie bids remaining; if not, mark as resolved
-    const remaining = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-      "SELECT COUNT(*) as cnt FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status IN ('pending', 'tie')",
-      aId, round
-    );
-    if (Number(remaining[0]?.cnt ?? 0) === 0) {
+    if (action === "open") {
+      // Open next round of existing winter auction
+      const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
+        "SELECT id FROM AUCTION WHERE league_id = ? AND type = 'winter' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
+        leagueId
+      );
+      if (existing.length === 0) {
+        return NextResponse.json({ error: "Pas de mercato d'hiver actif" }, { status: 400 });
+      }
+      await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET status = 'open', current_round = current_round + 1 WHERE id = ?",
+        existing[0].id
+      );
+      return NextResponse.json({ ok: true, message: "Tour suivant ouvert" });
+    }
+
+    if (action === "close-round") {
+      await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET status = 'closed' WHERE league_id = ? AND type = 'winter' AND status = 'open'",
+        leagueId
+      );
+      return NextResponse.json({ ok: true, message: "Tour ferme aux encheres" });
+    }
+
+    if (action === "resolve-round") {
+      const auction = await prisma.$queryRawUnsafe<{ id: number; current_round: number }[]>(
+        "SELECT id, current_round FROM AUCTION WHERE league_id = ? AND type = 'winter' ORDER BY id DESC LIMIT 1",
+        leagueId
+      );
+      if (auction.length === 0) return NextResponse.json({ error: "Pas de mercato" }, { status: 400 });
+
+      const aId = Number(auction[0].id);
+      const round = Number(auction[0].current_round);
+
+      const bids = await prisma.$queryRawUnsafe<{
+        id: number; user_id: number; player_id: number; amount: number;
+      }[]>(
+        "SELECT id, user_id, player_id, amount FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'pending' ORDER BY player_id, amount DESC",
+        aId, round
+      );
+
+      const byPlayer = new Map<number, typeof bids>();
+      bids.forEach((b) => {
+        const arr = byPlayer.get(Number(b.player_id)) ?? [];
+        arr.push(b);
+        byPlayer.set(Number(b.player_id), arr);
+      });
+
+      let wonCount = 0, lostCount = 0, tiedCount = 0;
+
+      for (const [, playerBids] of Array.from(byPlayer.entries())) {
+        const sorted = playerBids.sort((a, b) => Number(b.amount) - Number(a.amount));
+        const highest = Number(sorted[0].amount);
+        const topBids = sorted.filter((b) => Number(b.amount) === highest);
+
+        if (topBids.length === 1) {
+          await prisma.$executeRawUnsafe(
+            "UPDATE AUCTION_BID SET status = 'won' WHERE id = ?", Number(topBids[0].id)
+          );
+          wonCount++;
+          for (const b of sorted.slice(1)) {
+            await prisma.$executeRawUnsafe(
+              "UPDATE AUCTION_BID SET status = 'lost' WHERE id = ?", Number(b.id)
+            );
+            lostCount++;
+          }
+        } else {
+          for (const b of topBids) {
+            await prisma.$executeRawUnsafe(
+              "UPDATE AUCTION_BID SET status = 'tie' WHERE id = ?", Number(b.id)
+            );
+            tiedCount++;
+          }
+          for (const b of sorted.slice(topBids.length)) {
+            await prisma.$executeRawUnsafe(
+              "UPDATE AUCTION_BID SET status = 'lost' WHERE id = ?", Number(b.id)
+            );
+            lostCount++;
+          }
+        }
+      }
+
+      // Transition auction status to 'resolved' so buttons can proceed to next round
       await prisma.$executeRawUnsafe(
         "UPDATE AUCTION SET status = 'resolved' WHERE id = ?",
         aId
       );
+
+      return NextResponse.json({
+        ok: true,
+        message: `Tour ${round} resolu : ${wonCount} joueurs attribues, ${tiedCount} egalites, ${lostCount} encheres perdues`,
+      });
     }
 
-    return NextResponse.json({
-      ok: true,
-      message: `${resolved} egalite(s) resolue(s) par tirage au sort`,
-    });
-  }
+    if (action === "resolve-tiebreak") {
+      const auction = await prisma.$queryRawUnsafe<{ id: number; current_round: number }[]>(
+        "SELECT id, current_round FROM AUCTION WHERE league_id = ? AND type = 'winter' ORDER BY id DESC LIMIT 1",
+        leagueId
+      );
+      if (auction.length === 0) return NextResponse.json({ error: "Pas de mercato" }, { status: 400 });
 
-  if (action === "close-auction") {
-    await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'resolved' WHERE league_id = ? AND type = 'winter' AND status != 'resolved'",
-      leagueId
-    );
-    return NextResponse.json({ ok: true, message: "Mercato d'hiver termine" });
-  }
+      const aId = Number(auction[0].id);
+      const round = Number(auction[0].current_round);
 
-  return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
+      const ties = await prisma.$queryRawUnsafe<{
+        id: number; user_id: number; player_id: number; amount: number;
+      }[]>(
+        "SELECT id, user_id, player_id, amount FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'tie'",
+        aId, round
+      );
+
+      const tiesByPlayer = new Map<number, typeof ties>();
+      ties.forEach((b) => {
+        const arr = tiesByPlayer.get(Number(b.player_id)) ?? [];
+        arr.push(b);
+        tiesByPlayer.set(Number(b.player_id), arr);
+      });
+
+      let resolved = 0;
+      for (const [, playerTies] of Array.from(tiesByPlayer.entries())) {
+        const winnerIdx = Math.floor(Math.random() * playerTies.length);
+        for (let i = 0; i < playerTies.length; i++) {
+          const status = i === winnerIdx ? "won" : "lost";
+          await prisma.$executeRawUnsafe(
+            "UPDATE AUCTION_BID SET status = ? WHERE id = ?",
+            status, Number(playerTies[i].id)
+          );
+        }
+        resolved++;
+      }
+
+      // Check if there are still pending/tie bids remaining; if not, mark as resolved
+      const remaining = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+        "SELECT COUNT(*) as cnt FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status IN ('pending', 'tie')",
+        aId, round
+      );
+      if (Number(remaining[0]?.cnt ?? 0) === 0) {
+        await prisma.$executeRawUnsafe(
+          "UPDATE AUCTION SET status = 'resolved' WHERE id = ?",
+          aId
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: `${resolved} egalite(s) resolue(s) par tirage au sort`,
+      });
+    }
+
+    if (action === "close-auction") {
+      await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET status = 'resolved' WHERE league_id = ? AND type = 'winter' AND status != 'resolved'",
+        leagueId
+      );
+      return NextResponse.json({ ok: true, message: "Mercato d'hiver termine" });
+    }
+
+    return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
+  } catch (e) {
+    return jsonError500("[mercato-hiver]", e, "Échec de l'opération mercato d'hiver");
+  }
 }

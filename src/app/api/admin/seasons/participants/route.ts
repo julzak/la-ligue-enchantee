@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 
@@ -80,73 +81,77 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
-  const { seasonId, assignments } = (await req.json()) as {
-    seasonId?: number;
-    assignments?: { leagueId: number; userIds: number[] }[];
-  };
-  if (!seasonId) return NextResponse.json({ error: "seasonId requis" }, { status: 400 });
-  if (!Array.isArray(assignments) || assignments.length === 0) {
-    return NextResponse.json({ error: "Aucune affectation" }, { status: 400 });
-  }
+  try {
+    const { seasonId, assignments } = (await req.json()) as {
+      seasonId?: number;
+      assignments?: { leagueId: number; userIds: number[] }[];
+    };
+    if (!seasonId) return NextResponse.json({ error: "seasonId requis" }, { status: 400 });
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+      return NextResponse.json({ error: "Aucune affectation" }, { status: 400 });
+    }
 
-  // Garde-fou : modifiable uniquement avant le lancement. Une fois la saison
-  // ACTIVE, les inscriptions ne se réécrivent plus en masse (STATS_USER et
-  // les classements référencent ces ligues).
-  const season = await prisma.season.findUnique({ where: { id: Number(seasonId) } });
-  if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
-  if (season.status !== "SETUP" && season.status !== "AUCTION") {
-    return NextResponse.json(
-      { error: "Participants modifiables uniquement avant le lancement (SETUP ou AUCTION)" },
-      { status: 409 }
-    );
-  }
-
-  // Garde-fou : on ne touche QUE les ligues appartenant à cette saison
-  // (jamais les ligues legacy ou d'une autre saison).
-  const seasonLeagues = await prisma.league.findMany({
-    where: { seasonId: Number(seasonId) },
-    select: { id: true },
-  });
-  const allowedIds = new Set(seasonLeagues.map((l) => l.id));
-  for (const a of assignments) {
-    if (!allowedIds.has(a.leagueId)) {
+    // Garde-fou : modifiable uniquement avant le lancement. Une fois la saison
+    // ACTIVE, les inscriptions ne se réécrivent plus en masse (STATS_USER et
+    // les classements référencent ces ligues).
+    const season = await prisma.season.findUnique({ where: { id: Number(seasonId) } });
+    if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
+    if (season.status !== "SETUP" && season.status !== "AUCTION") {
       return NextResponse.json(
-        { error: `Ligue ${a.leagueId} hors de la saison ${seasonId}` },
-        { status: 400 }
+        { error: "Participants modifiables uniquement avant le lancement (SETUP ou AUCTION)" },
+        { status: 409 }
       );
     }
-    if (!Array.isArray(a.userIds)) {
-      return NextResponse.json({ error: "userIds invalide" }, { status: 400 });
-    }
-  }
 
-  // Un même user ne peut pas être dans deux ligues de la même saison.
-  const seen = new Map<number, number>();
-  for (const a of assignments) {
-    for (const uid of a.userIds) {
-      if (seen.has(uid) && seen.get(uid) !== a.leagueId) {
+    // Garde-fou : on ne touche QUE les ligues appartenant à cette saison
+    // (jamais les ligues legacy ou d'une autre saison).
+    const seasonLeagues = await prisma.league.findMany({
+      where: { seasonId: Number(seasonId) },
+      select: { id: true },
+    });
+    const allowedIds = new Set(seasonLeagues.map((l) => l.id));
+    for (const a of assignments) {
+      if (!allowedIds.has(a.leagueId)) {
         return NextResponse.json(
-          { error: `Le participant ${uid} est affecté à deux ligues` },
+          { error: `Ligue ${a.leagueId} hors de la saison ${seasonId}` },
           { status: 400 }
         );
       }
-      seen.set(uid, a.leagueId);
-    }
-  }
-
-  let total = 0;
-  await prisma.$transaction(async (tx) => {
-    for (const a of assignments) {
-      await tx.leagueUser.deleteMany({ where: { leagueId: a.leagueId } });
-      const unique = Array.from(new Set(a.userIds.map(Number)));
-      if (unique.length > 0) {
-        await tx.leagueUser.createMany({
-          data: unique.map((userId) => ({ leagueId: a.leagueId, userId })),
-        });
-        total += unique.length;
+      if (!Array.isArray(a.userIds)) {
+        return NextResponse.json({ error: "userIds invalide" }, { status: 400 });
       }
     }
-  });
 
-  return NextResponse.json({ ok: true, participantCount: total });
+    // Un même user ne peut pas être dans deux ligues de la même saison.
+    const seen = new Map<number, number>();
+    for (const a of assignments) {
+      for (const uid of a.userIds) {
+        if (seen.has(uid) && seen.get(uid) !== a.leagueId) {
+          return NextResponse.json(
+            { error: `Le participant ${uid} est affecté à deux ligues` },
+            { status: 400 }
+          );
+        }
+        seen.set(uid, a.leagueId);
+      }
+    }
+
+    let total = 0;
+    await prisma.$transaction(async (tx) => {
+      for (const a of assignments) {
+        await tx.leagueUser.deleteMany({ where: { leagueId: a.leagueId } });
+        const unique = Array.from(new Set(a.userIds.map(Number)));
+        if (unique.length > 0) {
+          await tx.leagueUser.createMany({
+            data: unique.map((userId) => ({ leagueId: a.leagueId, userId })),
+          });
+          total += unique.length;
+        }
+      }
+    });
+
+    return NextResponse.json({ ok: true, participantCount: total });
+  } catch (e) {
+    return jsonError500("[seasons/participants]", e, "Échec de l'enregistrement des participants");
+  }
 }

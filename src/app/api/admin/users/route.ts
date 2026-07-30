@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { requireAdmin, invalidateAdminCache } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -35,65 +36,77 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { userId } = await request.json() as { userId: number };
-  if (!userId) {
-    return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    const { userId } = await request.json() as { userId: number };
+    if (!userId) {
+      return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    }
+
+    await prisma.$executeRawUnsafe(
+      "INSERT IGNORE INTO ADMIN_USER (user_id) VALUES (?)",
+      userId
+    );
+    invalidateAdminCache();
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[users]", e, "Échec de l'ajout de l'administrateur");
   }
-
-  await prisma.$executeRawUnsafe(
-    "INSERT IGNORE INTO ADMIN_USER (user_id) VALUES (?)",
-    userId
-  );
-  invalidateAdminCache();
-
-  return NextResponse.json({ ok: true });
 }
 
 // PATCH: reset user password to "ligue"
 export async function PATCH(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { userId } = await request.json() as { userId: number };
-  if (!userId) {
-    return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    const { userId } = await request.json() as { userId: number };
+    if (!userId) {
+      return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    }
+
+    const hashed = await bcrypt.hash("ligue", 10);
+    const result = await prisma.$executeRawUnsafe(
+      "UPDATE USER SET PASSWORD = ? WHERE ID_USER = ?",
+      hashed, userId
+    );
+
+    if (result === 0) {
+      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[users]", e, "Échec de la réinitialisation du mot de passe");
   }
-
-  const hashed = await bcrypt.hash("ligue", 10);
-  const result = await prisma.$executeRawUnsafe(
-    "UPDATE USER SET PASSWORD = ? WHERE ID_USER = ?",
-    hashed, userId
-  );
-
-  if (result === 0) {
-    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
-  }
-
-  return NextResponse.json({ ok: true });
 }
 
 // DELETE: remove an admin
 export async function DELETE(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { userId } = await request.json() as { userId: number };
-  if (!userId) {
-    return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    const { userId } = await request.json() as { userId: number };
+    if (!userId) {
+      return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    }
+
+    // Prevent removing yourself
+    const myId = (auth.session.user as { userId?: number }).userId;
+    if (myId === userId) {
+      return NextResponse.json({ error: "Impossible de se retirer soi-même" }, { status: 400 });
+    }
+
+    await prisma.$executeRawUnsafe(
+      "DELETE FROM ADMIN_USER WHERE user_id = ?",
+      userId
+    );
+    invalidateAdminCache();
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[users]", e, "Échec du retrait de l'administrateur");
   }
-
-  // Prevent removing yourself
-  const myId = (auth.session.user as { userId?: number }).userId;
-  if (myId === userId) {
-    return NextResponse.json({ error: "Impossible de se retirer soi-même" }, { status: 400 });
-  }
-
-  await prisma.$executeRawUnsafe(
-    "DELETE FROM ADMIN_USER WHERE user_id = ?",
-    userId
-  );
-  invalidateAdminCache();
-
-  return NextResponse.json({ ok: true });
 }

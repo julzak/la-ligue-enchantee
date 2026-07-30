@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 
@@ -56,74 +57,82 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { fname, lname, position, clubId } = (await request.json()) as {
-    fname: string;
-    lname: string;
-    position: string;
-    clubId?: number;
-  };
+    const { fname, lname, position, clubId } = (await request.json()) as {
+      fname: string;
+      lname: string;
+      position: string;
+      clubId?: number;
+    };
 
-  if (!fname?.trim() || !lname?.trim()) {
-    return NextResponse.json({ error: "Prenom et nom requis" }, { status: 400 });
+    if (!fname?.trim() || !lname?.trim()) {
+      return NextResponse.json({ error: "Prenom et nom requis" }, { status: 400 });
+    }
+    if (!VALID_POSITIONS.includes(position)) {
+      return NextResponse.json({ error: "Position invalide" }, { status: 400 });
+    }
+
+    const targetClubId = clubId ?? LEGION_ETRANGERE_ID;
+
+    await prisma.$executeRawUnsafe(
+      "INSERT INTO PLAYER (ID_CLUB, FNAME, LNAME, POSITION) VALUES (?, ?, ?, ?)",
+      targetClubId,
+      fname.trim(),
+      lname.trim(),
+      position
+    );
+
+    const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>(
+      "SELECT LAST_INSERT_ID() as id"
+    );
+
+    return NextResponse.json({
+      ok: true,
+      player: { id: Number(row.id), fname: fname.trim(), lname: lname.trim(), position, clubId: targetClubId },
+    });
+  } catch (e) {
+    return jsonError500("[players]", e, "Échec de la création du joueur");
   }
-  if (!VALID_POSITIONS.includes(position)) {
-    return NextResponse.json({ error: "Position invalide" }, { status: 400 });
-  }
-
-  const targetClubId = clubId ?? LEGION_ETRANGERE_ID;
-
-  await prisma.$executeRawUnsafe(
-    "INSERT INTO PLAYER (ID_CLUB, FNAME, LNAME, POSITION) VALUES (?, ?, ?, ?)",
-    targetClubId,
-    fname.trim(),
-    lname.trim(),
-    position
-  );
-
-  const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>(
-    "SELECT LAST_INSERT_ID() as id"
-  );
-
-  return NextResponse.json({
-    ok: true,
-    player: { id: Number(row.id), fname: fname.trim(), lname: lname.trim(), position, clubId: targetClubId },
-  });
 }
 
 // PUT: edit player fname/lname/position
 export async function PUT(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { id, fname, lname, position } = (await request.json()) as {
-    id: number;
-    fname: string;
-    lname: string;
-    position: string;
-  };
+    const { id, fname, lname, position } = (await request.json()) as {
+      id: number;
+      fname: string;
+      lname: string;
+      position: string;
+    };
 
-  if (!id) {
-    return NextResponse.json({ error: "ID joueur requis" }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: "ID joueur requis" }, { status: 400 });
+    }
+    if (!fname?.trim() || !lname?.trim()) {
+      return NextResponse.json({ error: "Prenom et nom requis" }, { status: 400 });
+    }
+    if (!VALID_POSITIONS.includes(position)) {
+      return NextResponse.json({ error: "Position invalide" }, { status: 400 });
+    }
+
+    const result = await prisma.$executeRawUnsafe(
+      "UPDATE PLAYER SET FNAME = ?, LNAME = ?, POSITION = ? WHERE ID_PLAYER = ?",
+      fname.trim(),
+      lname.trim(),
+      position,
+      id
+    );
+
+    if (result === 0) {
+      return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, player: { id, fname: fname.trim(), lname: lname.trim(), position } });
+  } catch (e) {
+    return jsonError500("[players]", e, "Échec de la modification du joueur");
   }
-  if (!fname?.trim() || !lname?.trim()) {
-    return NextResponse.json({ error: "Prenom et nom requis" }, { status: 400 });
-  }
-  if (!VALID_POSITIONS.includes(position)) {
-    return NextResponse.json({ error: "Position invalide" }, { status: 400 });
-  }
-
-  const result = await prisma.$executeRawUnsafe(
-    "UPDATE PLAYER SET FNAME = ?, LNAME = ?, POSITION = ? WHERE ID_PLAYER = ?",
-    fname.trim(),
-    lname.trim(),
-    position,
-    id
-  );
-
-  if (result === 0) {
-    return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
-  }
-
-  return NextResponse.json({ ok: true, player: { id, fname: fname.trim(), lname: lname.trim(), position } });
 }

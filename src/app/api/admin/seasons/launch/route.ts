@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { seasonKeyFromLabel } from "@/lib/season-key";
@@ -131,77 +132,81 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
-  const { seasonId } = (await req.json()) as { seasonId?: number };
-  if (!seasonId) return NextResponse.json({ error: "seasonId requis" }, { status: 400 });
+  try {
+    const { seasonId } = (await req.json()) as { seasonId?: number };
+    if (!seasonId) return NextResponse.json({ error: "seasonId requis" }, { status: 400 });
 
-  const { season, items, seasonKey } = await buildChecklist(Number(seasonId));
-  if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
+    const { season, items, seasonKey } = await buildChecklist(Number(seasonId));
+    if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
 
-  const blockers = items.filter((i) => i.blocking && !i.ok);
-  if (blockers.length > 0) {
-    return NextResponse.json(
-      { error: "La saison n'est pas prête au lancement", items },
-      { status: 409 }
-    );
-  }
-
-  await prisma.$transaction(async (tx) => {
-    // Configs SQL de la saison : clonées depuis la saison la plus récente si absentes.
-    // seasonKey est non-null ici (item "label" bloquant).
-    const scoringExists = await tx.$queryRawUnsafe<{ n: bigint }[]>(
-      "SELECT COUNT(*) AS n FROM SCORING_CONFIG WHERE season = ?", seasonKey);
-    if (Number(scoringExists[0]?.n ?? 0) === 0) {
-      const cloned = await tx.$executeRawUnsafe(
-        `INSERT INTO SCORING_CONFIG (season, goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att,
-           csc_malus, penalty_saved_bonus, red_card_note_zero, min_note,
-           deadline_hour, early_match_hour, early_match_offset_hours)
-         SELECT ?, goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att,
-           csc_malus, penalty_saved_bonus, red_card_note_zero, min_note,
-           deadline_hour, early_match_hour, early_match_offset_hours
-         FROM SCORING_CONFIG ORDER BY id DESC LIMIT 1`,
-        seasonKey
+    const blockers = items.filter((i) => i.blocking && !i.ok);
+    if (blockers.length > 0) {
+      return NextResponse.json(
+        { error: "La saison n'est pas prête au lancement", items },
+        { status: 409 }
       );
-      if (cloned === 0) {
-        // Aucune config existante : valeurs par défaut de la table.
-        await tx.$executeRawUnsafe("INSERT INTO SCORING_CONFIG (season) VALUES (?)", seasonKey);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Configs SQL de la saison : clonées depuis la saison la plus récente si absentes.
+      // seasonKey est non-null ici (item "label" bloquant).
+      const scoringExists = await tx.$queryRawUnsafe<{ n: bigint }[]>(
+        "SELECT COUNT(*) AS n FROM SCORING_CONFIG WHERE season = ?", seasonKey);
+      if (Number(scoringExists[0]?.n ?? 0) === 0) {
+        const cloned = await tx.$executeRawUnsafe(
+          `INSERT INTO SCORING_CONFIG (season, goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att,
+             csc_malus, penalty_saved_bonus, red_card_note_zero, min_note,
+             deadline_hour, early_match_hour, early_match_offset_hours)
+           SELECT ?, goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att,
+             csc_malus, penalty_saved_bonus, red_card_note_zero, min_note,
+             deadline_hour, early_match_hour, early_match_offset_hours
+           FROM SCORING_CONFIG ORDER BY id DESC LIMIT 1`,
+          seasonKey
+        );
+        if (cloned === 0) {
+          // Aucune config existante : valeurs par défaut de la table.
+          await tx.$executeRawUnsafe("INSERT INTO SCORING_CONFIG (season) VALUES (?)", seasonKey);
+        }
       }
-    }
 
-    const jokersExist = await tx.$queryRawUnsafe<{ n: bigint }[]>(
-      "SELECT COUNT(*) AS n FROM JOKER_CONFIG WHERE season = ?", seasonKey);
-    if (Number(jokersExist[0]?.n ?? 0) === 0) {
-      // Deadlines remises à NULL : les dates de l'an passé seraient fausses.
+      const jokersExist = await tx.$queryRawUnsafe<{ n: bigint }[]>(
+        "SELECT COUNT(*) AS n FROM JOKER_CONFIG WHERE season = ?", seasonKey);
+      if (Number(jokersExist[0]?.n ?? 0) === 0) {
+        // Deadlines remises à NULL : les dates de l'an passé seraient fausses.
+        await tx.$executeRawUnsafe(
+          `INSERT INTO JOKER_CONFIG (season, type, max_count, deadline, is_active)
+           SELECT ?, type, max_count, NULL, is_active
+           FROM JOKER_CONFIG
+           WHERE season = (SELECT season FROM (SELECT season FROM JOKER_CONFIG ORDER BY id DESC LIMIT 1) latest)`,
+          seasonKey
+        );
+      }
+
+      // Compta des cotisations : une ligne de suivi par participant (30€ par
+      // défaut, non payé), pour la page Admin → Paiements. Le paiement lui-même
+      // se fait hors plateforme (PayPal), on ne tient que le pointage.
       await tx.$executeRawUnsafe(
-        `INSERT INTO JOKER_CONFIG (season, type, max_count, deadline, is_active)
-         SELECT ?, type, max_count, NULL, is_active
-         FROM JOKER_CONFIG
-         WHERE season = (SELECT season FROM (SELECT season FROM JOKER_CONFIG ORDER BY id DESC LIMIT 1) latest)`,
-        seasonKey
+        `INSERT IGNORE INTO PAYMENT (user_id, season)
+         SELECT lu.ID_USER, ? FROM LEAGUE_USER lu
+         JOIN LEAGUE l ON l.ID_LEAGUE = lu.ID_LEAGUE
+         WHERE l.ID_SEASON = ?`,
+        seasonKey, season.id
       );
-    }
 
-    // Compta des cotisations : une ligne de suivi par participant (30€ par
-    // défaut, non payé), pour la page Admin → Paiements. Le paiement lui-même
-    // se fait hors plateforme (PayPal), on ne tient que le pointage.
-    await tx.$executeRawUnsafe(
-      `INSERT IGNORE INTO PAYMENT (user_id, season)
-       SELECT lu.ID_USER, ? FROM LEAGUE_USER lu
-       JOIN LEAGUE l ON l.ID_LEAGUE = lu.ID_LEAGUE
-       WHERE l.ID_SEASON = ?`,
-      seasonKey, season.id
-    );
-
-    // Une seule saison courante.
-    await tx.season.updateMany({ where: { isCurrent: true }, data: { isCurrent: false } });
-    await tx.season.update({
-      where: { id: season.id },
-      data: { status: "ACTIVE", isCurrent: true, startedAt: new Date() },
+      // Une seule saison courante.
+      await tx.season.updateMany({ where: { isCurrent: true }, data: { isCurrent: false } });
+      await tx.season.update({
+        where: { id: season.id },
+        data: { status: "ACTIVE", isCurrent: true, startedAt: new Date() },
+      });
     });
-  });
 
-  return NextResponse.json({
-    ok: true,
-    message: `Saison ${season.label} lancée : le site bascule sur ses ligues, clubs et joueurs.`,
-    items,
-  });
+    return NextResponse.json({
+      ok: true,
+      message: `Saison ${season.label} lancée : le site bascule sur ses ligues, clubs et joueurs.`,
+      items,
+    });
+  } catch (e) {
+    return jsonError500("[seasons/launch]", e, "Échec du lancement de la saison");
+  }
 }

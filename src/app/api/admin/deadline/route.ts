@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
@@ -119,13 +120,17 @@ export async function GET(request: Request) {
 
 // POST: set deadline for a matchday
 export async function POST(request: Request) {
-  const { day, lockAt } = await request.json() as { day: number; lockAt: string };
+  try {
+    const { day, lockAt } = await request.json() as { day: number; lockAt: string };
 
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO MATCHDAY_CONFIG (day, lock_at, status) VALUES (?, ?, 'upcoming')
-     ON DUPLICATE KEY UPDATE lock_at = VALUES(lock_at)`,
-    day, new Date(lockAt)
-  );
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO MATCHDAY_CONFIG (day, lock_at, status) VALUES (?, ?, 'upcoming')
+       ON DUPLICATE KEY UPDATE lock_at = VALUES(lock_at)`,
+      day, new Date(lockAt)
+    );
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[deadline]", e, "Échec de l'enregistrement de la deadline");
+  }
 }
