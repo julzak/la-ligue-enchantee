@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
 
@@ -75,6 +76,8 @@ function calcDeadline(matches: { date: string; time: string }[], config: Deadlin
 }
 
 // GET: get deadline for a matchday (or current)
+// Volontairement sans auth : consommé par le layout public /ligue/[slug]
+// (classement, stats accessibles sans session). Lecture seule, donnée non sensible.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dayParam = Number(searchParams.get("day") ?? 0);
@@ -119,6 +122,9 @@ export async function GET(request: Request) {
 
 // POST: set deadline for a matchday
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
   const { day, lockAt } = await request.json() as { day: number; lockAt: string };
 
   await prisma.$executeRawUnsafe(

@@ -2,12 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getLeagues } from "@/lib/db";
-// import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET() {
-  // Auth temporarily disabled for dev — TODO: re-enable
-  // const auth = await requireAdmin();
-  // if (auth.error) return auth.error;
+  // Volontairement sans requireAdmin : consommé par le layout public
+  // /ligue/[slug] (détection de l'enchère en cours) en plus des pages admin.
+  // Lecture seule, liste des ligues = donnée non sensible.
   const leagues = await getLeagues();
   return NextResponse.json({ leagues });
 }

@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CLUB_GK_KEY_PREFIX } from "@/lib/club-goalkeeper";
 import { getSeasonFilters } from "@/lib/season";
-// import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(request: Request) {
-  // Auth disabled — used by both admin (jokers) and participants (enchères)
-  // const auth = await requireAdmin();
-  // if (auth.error) return auth.error;
+  // Volontairement sans requireAdmin (commit 477ae33) : consommé par les pages
+  // participant /ligue/[slug]/encheres et /ligue/[slug]/jokers en plus des pages
+  // admin. Lecture seule, joueurs libres = donnée non sensible.
   const { searchParams } = new URL(request.url);
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
   const search = searchParams.get("search") ?? "";
