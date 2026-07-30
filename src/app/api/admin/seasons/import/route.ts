@@ -59,38 +59,47 @@ export async function POST(req: Request) {
   let clubCount = 0;
   let playerCount = 0;
 
-  await prisma.$transaction(async (tx) => {
-    // Idempotent : re-importer REMPLACE l'import précédent de la saison
-    // (sans danger : l'import n'est autorisé qu'en SETUP, avant que TEAM/SCORE
-    // ne référencent ces joueurs).
-    await tx.player.deleteMany({ where: { seasonId: Number(seasonId) } });
-    await tx.club.deleteMany({ where: { seasonId: Number(seasonId) } });
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Idempotent : re-importer REMPLACE l'import précédent de la saison
+      // (sans danger : l'import n'est autorisé qu'en SETUP, avant que TEAM/SCORE
+      // ne référencent ces joueurs).
+      await tx.player.deleteMany({ where: { seasonId: Number(seasonId) } });
+      await tx.club.deleteMany({ where: { seasonId: Number(seasonId) } });
 
-    for (const club of clubs) {
-      const created = await tx.club.create({
-        data: {
-          name: club.name.trim(),
-          idClubEq: (club.externalId || "").slice(0, 10),
-          seasonId: Number(seasonId),
-        },
-      });
-      clubCount++;
-
-      const players = (club.players || []).filter((p) => p.fname?.trim() || p.lname?.trim());
-      if (players.length > 0) {
-        await tx.player.createMany({
-          data: players.map((p) => ({
-            fname: p.fname.trim(),
-            lname: p.lname.trim(),
-            position: p.position,
-            clubId: created.id,
+      for (const club of clubs) {
+        const created = await tx.club.create({
+          data: {
+            name: club.name.trim(),
+            idClubEq: (club.externalId || "").slice(0, 10),
             seasonId: Number(seasonId),
-          })),
+          },
         });
-        playerCount += players.length;
+        clubCount++;
+
+        const players = (club.players || []).filter((p) => p.fname?.trim() || p.lname?.trim());
+        if (players.length > 0) {
+          await tx.player.createMany({
+            data: players.map((p) => ({
+              fname: p.fname.trim(),
+              lname: p.lname.trim(),
+              position: p.position,
+              clubId: created.id,
+              seasonId: Number(seasonId),
+            })),
+          });
+          playerCount += players.length;
+        }
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.error("[seasons/import]", e);
+    const detail = e instanceof Error ? e.message.split("\n").slice(-3).join(" ").trim() : "";
+    return NextResponse.json(
+      { error: `Échec de l'import en base : ${detail || "erreur inconnue"}` },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ ok: true, clubCount, playerCount });
 }
