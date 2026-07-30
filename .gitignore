@@ -30,6 +30,11 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env.tmp
+.env.bak-*
+
+# Claude Code local (settings.local.json, worktrees, scratch)
+.claude/
 
 # vercel
 .vercel
@@ -39,6 +44,8 @@ yarn-error.log*
 next-env.d.ts
 .env
 ligueenc_*.sql
+# vieux dumps massifs (ligueencdev_*, ligueencphpbb3_* : pas couverts par ligueenc_*)
+sql/legacy/
 
 # Photos joueurs telechargees a l'import (jamais committees)
 /public/players/
