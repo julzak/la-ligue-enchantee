@@ -288,6 +288,17 @@ export default function NouvelleSaisonPage() {
     try {
       const res = await fetch(`/api/admin/seasons/leagues?seasonId=${seasonId}`);
       const data = await res.json();
+      if (res.ok && Array.isArray(data.leagues) && data.leagues.length > 0) {
+        // Retour arrière ou reprise : les ligues existent déjà, recharger depuis la base.
+        setLeagues(
+          data.leagues.map((l: { name: string; divisionLabel: string | null; tier: number | null }, idx: number) => ({
+            name: l.name,
+            divisionLabel: l.divisionLabel ?? "",
+            tier: l.tier ?? idx + 1,
+          }))
+        );
+        setLeaguesSaved(true);
+      }
       if (res.ok && Array.isArray(data.prefill) && data.prefill.length > 0) {
         setPrefillLabel(data.prevSeasonLabel);
       }
@@ -622,6 +633,13 @@ export default function NouvelleSaisonPage() {
               <span className="font-semibold text-gold">{season.label}</span>. Les labels et le
               niveau hiérarchique (tier 1 = division la plus haute) sont libres.
             </p>
+            {leaguesSaved && (
+              <p className="text-xs text-amber-400">
+                Les ligues de cette saison existent déjà. Cliquer sur « Créer les ligues »
+                les remplace et efface les inscriptions des participants (à refaire à
+                l&apos;étape 4).
+              </p>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <button className={btnGhost} onClick={applyDefaultLeagues}>
                 Pré-remplir 3 ligues (Ligue 1/2/3)
@@ -684,6 +702,9 @@ export default function NouvelleSaisonPage() {
           )}
 
           <div className="flex items-center gap-3">
+            <button className={btnGhost} onClick={() => setStep(2)}>
+              ← Étape 2 (clubs &amp; joueurs)
+            </button>
             <button
               className={btn}
               onClick={saveLeagues}
@@ -712,12 +733,20 @@ export default function NouvelleSaisonPage() {
             complétée. Utilise les boutons de « Saisons existantes » ci-dessus pour gérer les
             transitions de statut.
           </p>
-          <button
-            className="rounded border border-border bg-surface px-3 py-1.5 text-sm text-foreground hover:bg-surface-2"
-            onClick={() => setStep(2)}
-          >
-            Revenir à l&apos;étape 2 (clubs &amp; joueurs)
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="rounded border border-border bg-surface px-3 py-1.5 text-sm text-foreground hover:bg-surface-2"
+              onClick={() => goToParticipants()}
+            >
+              ← Étape 4 (participants)
+            </button>
+            <button
+              className="rounded border border-border bg-surface px-3 py-1.5 text-sm text-foreground hover:bg-surface-2"
+              onClick={() => setStep(2)}
+            >
+              ← Étape 2 (clubs &amp; joueurs)
+            </button>
+          </div>
         </div>
       )}
 
@@ -809,6 +838,9 @@ export default function NouvelleSaisonPage() {
           })}
 
           <div className="flex items-center gap-3">
+            <button className={btnGhost} onClick={() => goToLeagues()}>
+              ← Étape 3 (ligues)
+            </button>
             <button
               className={btn}
               onClick={saveParticipants}
