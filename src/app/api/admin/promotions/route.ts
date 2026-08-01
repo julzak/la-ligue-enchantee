@@ -13,8 +13,14 @@ export async function GET() {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
+  // Les divisions des saisons clôturées sont exclues : seules les ligues de la
+  // saison en préparation ou en cours sont candidates aux mouvements.
   const leagues = await prisma.$queryRawUnsafe<LeagueRow[]>(
-    "SELECT ID_LEAGUE as id, NAME as name FROM LEAGUE ORDER BY NAME"
+    `SELECT l.ID_LEAGUE as id, l.NAME as name
+     FROM LEAGUE l
+     LEFT JOIN SEASON s ON l.ID_SEASON = s.ID_SEASON
+     WHERE s.ID_SEASON IS NULL OR s.STATUS != 'CLOSED'
+     ORDER BY l.NAME`
   );
 
   const participants = await prisma.$queryRawUnsafe<ParticipantRow[]>(
