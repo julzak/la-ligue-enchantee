@@ -74,6 +74,31 @@ describe("resolveStepFromStatus", () => {
     expect(resolveStepFromStatus("SETUP")).toBe(2);
   });
 
+  it("SETUP + 0 club → étape 2", () => {
+    expect(resolveStepFromStatus("SETUP", { clubs: 0, leagues: 0 })).toBe(2);
+  });
+
+  it("SETUP + clubs importés mais 0 ligue → étape 3", () => {
+    expect(resolveStepFromStatus("SETUP", { clubs: 18, leagues: 0 })).toBe(3);
+  });
+
+  it("SETUP + clubs et ligues → étape 4 (participants)", () => {
+    expect(resolveStepFromStatus("SETUP", { clubs: 18, leagues: 3 })).toBe(4);
+  });
+
+  it("[REGRESSION] SETUP + clubs/ligues existants ne retombe plus à l'étape 2", () => {
+    // Bug signalé par Pierre le 2026-07-31 : après reconnexion en pleine étape 4,
+    // le wizard revenait à l'étape 2 alors que clubs et ligues étaient en base.
+    // Sanity-check : l'ancien mapping (statut seul) renvoie bien 2, preuve que
+    // ce test détecterait un retour au comportement bugué.
+    expect(resolveStepFromStatus("SETUP")).toBe(2);
+    expect(resolveStepFromStatus("SETUP", { clubs: 18, leagues: 3 })).not.toBe(2);
+  });
+
+  it("AUCTION + compteurs fournis → étape 5 (les compteurs sont ignorés)", () => {
+    expect(resolveStepFromStatus("AUCTION", { clubs: 18, leagues: 3 })).toBe(5);
+  });
+
   it("AUCTION → étape 5", () => {
     expect(resolveStepFromStatus("AUCTION")).toBe(5);
   });
