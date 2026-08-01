@@ -45,6 +45,7 @@ const btnGhost =
 export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonManagerProps = {}) {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -58,10 +59,14 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
     setLoading(true);
     try {
       const res = await fetch("/api/admin/seasons");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setSeasons(data.seasons ?? []);
+      setLoadError(false);
     } catch {
-      /* ignore */
+      // Ne PAS rendre le faux état vide "Aucune saison" sur un échec réseau :
+      // un admin pourrait recréer une saison qui existe déjà.
+      setLoadError(true);
     }
     setLoading(false);
   }
@@ -262,6 +267,19 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
   }
 
   if (loading) return <p className="text-sm text-muted">Chargement des saisons...</p>;
+
+  if (loadError)
+    return (
+      <div className="rounded border border-rouge/40 bg-rouge/10 px-3 py-2 text-sm text-rouge flex items-center gap-3">
+        <span>
+          Impossible de charger les saisons. Ne crée rien tant que la liste ne s&apos;affiche
+          pas : la saison existe peut-être déjà.
+        </span>
+        <button className="underline shrink-0" onClick={load}>
+          Réessayer
+        </button>
+      </div>
+    );
   // On masque les saisons "archive" : clôturées et sans aucune ligue rattachée
   // (= palmarès historique importé via CSV, 2017-2025, le site n'existait pas).
   // Leurs boutons ne servent à rien. Une saison gérable a au moins une ligue,
