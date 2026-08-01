@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey, getSeasonScope } from "@/lib/season";
@@ -55,13 +56,17 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { userId, paid, notes } = await request.json() as { userId: number; paid: boolean; notes?: string };
+    const { userId, paid, notes } = await request.json() as { userId: number; paid: boolean; notes?: string };
 
-  await prisma.$executeRawUnsafe(
-    "UPDATE PAYMENT SET paid = ?, paid_at = ?, notes = COALESCE(?, notes) WHERE user_id = ? AND season = ?",
-    paid ? 1 : 0, paid ? new Date() : null, notes ?? null, userId, await getCurrentSeasonKey()
-  );
+    await prisma.$executeRawUnsafe(
+      "UPDATE PAYMENT SET paid = ?, paid_at = ?, notes = COALESCE(?, notes) WHERE user_id = ? AND season = ?",
+      paid ? 1 : 0, paid ? new Date() : null, notes ?? null, userId, await getCurrentSeasonKey()
+    );
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[paiements]", e, "Échec de l'enregistrement du paiement");
+  }
 }

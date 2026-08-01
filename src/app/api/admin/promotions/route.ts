@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -41,62 +42,70 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { userId, fromLeagueId, toLeagueId } = await request.json() as {
-    userId: number;
-    fromLeagueId: number;
-    toLeagueId: number;
-  };
+    const { userId, fromLeagueId, toLeagueId } = await request.json() as {
+      userId: number;
+      fromLeagueId: number;
+      toLeagueId: number;
+    };
 
-  if (!userId || !fromLeagueId || !toLeagueId) {
-    return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
+    if (!userId || !fromLeagueId || !toLeagueId) {
+      return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
+    }
+
+    if (fromLeagueId === toLeagueId) {
+      return NextResponse.json({ error: "Même ligue" }, { status: 400 });
+    }
+
+    // Remove from old league
+    await prisma.$executeRawUnsafe(
+      "DELETE FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+      fromLeagueId, userId
+    );
+
+    // Add to new league
+    await prisma.$executeRawUnsafe(
+      "INSERT IGNORE INTO LEAGUE_USER (ID_LEAGUE, ID_USER) VALUES (?, ?)",
+      toLeagueId, userId
+    );
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[promotions]", e, "Échec du changement de ligue");
   }
-
-  if (fromLeagueId === toLeagueId) {
-    return NextResponse.json({ error: "Même ligue" }, { status: 400 });
-  }
-
-  // Remove from old league
-  await prisma.$executeRawUnsafe(
-    "DELETE FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
-    fromLeagueId, userId
-  );
-
-  // Add to new league
-  await prisma.$executeRawUnsafe(
-    "INSERT IGNORE INTO LEAGUE_USER (ID_LEAGUE, ID_USER) VALUES (?, ?)",
-    toLeagueId, userId
-  );
-
-  return NextResponse.json({ ok: true });
 }
 
 // PATCH: rename a participant (preserves trophy HTML tags)
 export async function PATCH(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { userId, newName } = await request.json() as { userId: number; newName: string };
-  if (!userId || !newName?.trim()) {
-    return NextResponse.json({ error: "userId et newName requis" }, { status: 400 });
+    const { userId, newName } = await request.json() as { userId: number; newName: string };
+    if (!userId || !newName?.trim()) {
+      return NextResponse.json({ error: "userId et newName requis" }, { status: 400 });
+    }
+
+    // Get current NAME (may contain trophy HTML tags like <img src="...">)
+    const [user] = await prisma.$queryRawUnsafe<{ NAME: string }[]>(
+      "SELECT NAME FROM USER WHERE ID_USER = ?", userId
+    );
+    if (!user) {
+      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+    }
+
+    // Extract trophy tags, replace the text part with newName
+    const trophyTags = user.NAME.match(/<img[^>]*>/g) ?? [];
+    const updatedName = newName.trim() + (trophyTags.length > 0 ? " " + trophyTags.join("") : "");
+
+    await prisma.$executeRawUnsafe(
+      "UPDATE USER SET NAME = ? WHERE ID_USER = ?",
+      updatedName, userId
+    );
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[promotions]", e, "Échec du renommage du participant");
   }
-
-  // Get current NAME (may contain trophy HTML tags like <img src="...">)
-  const [user] = await prisma.$queryRawUnsafe<{ NAME: string }[]>(
-    "SELECT NAME FROM USER WHERE ID_USER = ?", userId
-  );
-  if (!user) {
-    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
-  }
-
-  // Extract trophy tags, replace the text part with newName
-  const trophyTags = user.NAME.match(/<img[^>]*>/g) ?? [];
-  const updatedName = newName.trim() + (trophyTags.length > 0 ? " " + trophyTags.join("") : "");
-
-  await prisma.$executeRawUnsafe(
-    "UPDATE USER SET NAME = ? WHERE ID_USER = ?",
-    updatedName, userId
-  );
-
-  return NextResponse.json({ ok: true });
 }

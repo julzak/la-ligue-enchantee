@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 
@@ -55,65 +56,69 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
-  const { seasonId, leagues } = (await req.json()) as {
-    seasonId?: number;
-    leagues?: LeagueInput[];
-  };
+  try {
+    const { seasonId, leagues } = (await req.json()) as {
+      seasonId?: number;
+      leagues?: LeagueInput[];
+    };
 
-  if (!seasonId) return NextResponse.json({ error: "seasonId requis" }, { status: 400 });
-  if (!Array.isArray(leagues) || leagues.length === 0) {
-    return NextResponse.json({ error: "Aucune ligue à créer" }, { status: 400 });
-  }
+    if (!seasonId) return NextResponse.json({ error: "seasonId requis" }, { status: 400 });
+    if (!Array.isArray(leagues) || leagues.length === 0) {
+      return NextResponse.json({ error: "Aucune ligue à créer" }, { status: 400 });
+    }
 
-  for (const l of leagues) {
-    if (!l.name?.trim() || !l.divisionLabel?.trim() || typeof l.tier !== "number") {
+    for (const l of leagues) {
+      if (!l.name?.trim() || !l.divisionLabel?.trim() || typeof l.tier !== "number") {
+        return NextResponse.json(
+          { error: "Chaque ligue requiert nom, divisionLabel et tier" },
+          { status: 400 }
+        );
+      }
+    }
+
+    const season = await prisma.season.findUnique({ where: { id: Number(seasonId) } });
+    if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
+    if (season.status !== "SETUP") {
       return NextResponse.json(
-        { error: "Chaque ligue requiert nom, divisionLabel et tier" },
-        { status: 400 }
+        { error: "Ligues modifiables uniquement en statut SETUP" },
+        { status: 409 }
       );
     }
-  }
 
-  const season = await prisma.season.findUnique({ where: { id: Number(seasonId) } });
-  if (!season) return NextResponse.json({ error: "Saison introuvable" }, { status: 404 });
-  if (season.status !== "SETUP") {
-    return NextResponse.json(
-      { error: "Ligues modifiables uniquement en statut SETUP" },
-      { status: 409 }
-    );
-  }
-
-  await prisma.$transaction(async (tx) => {
-    // Idempotent : re-sauver REMPLACE les ligues de la saison, y compris les
-    // inscriptions de participants qui y étaient rattachées (à refaire à
-    // l'étape 4 si on repasse par ici).
-    const existing = await tx.league.findMany({
-      where: { seasonId: Number(seasonId) },
-      select: { id: true },
+    await prisma.$transaction(async (tx) => {
+      // Idempotent : re-sauver REMPLACE les ligues de la saison, y compris les
+      // inscriptions de participants qui y étaient rattachées (à refaire à
+      // l'étape 4 si on repasse par ici).
+      const existing = await tx.league.findMany({
+        where: { seasonId: Number(seasonId) },
+        select: { id: true },
+      });
+      if (existing.length > 0) {
+        await tx.leagueUser.deleteMany({
+          where: { leagueId: { in: existing.map((l) => l.id) } },
+        });
+        await tx.league.deleteMany({ where: { seasonId: Number(seasonId) } });
+      }
+      for (const l of leagues) {
+        await tx.league.create({
+          data: {
+            name: l.name.trim(),
+            divisionLabel: l.divisionLabel.trim(),
+            tier: l.tier,
+            seasonId: Number(seasonId),
+          },
+        });
+      }
     });
-    if (existing.length > 0) {
-      await tx.leagueUser.deleteMany({
-        where: { leagueId: { in: existing.map((l) => l.id) } },
-      });
-      await tx.league.deleteMany({ where: { seasonId: Number(seasonId) } });
-    }
-    for (const l of leagues) {
-      await tx.league.create({
-        data: {
-          name: l.name.trim(),
-          divisionLabel: l.divisionLabel.trim(),
-          tier: l.tier,
-          seasonId: Number(seasonId),
-        },
-      });
-    }
-  });
 
-  const created = await prisma.league.findMany({
-    where: { seasonId: Number(seasonId) },
-    orderBy: [{ tier: "asc" }, { id: "asc" }],
-    select: { id: true, name: true, divisionLabel: true, tier: true },
-  });
+    const created = await prisma.league.findMany({
+      where: { seasonId: Number(seasonId) },
+      orderBy: [{ tier: "asc" }, { id: "asc" }],
+      select: { id: true, name: true, divisionLabel: true, tier: true },
+    });
 
-  return NextResponse.json({ ok: true, leagues: created });
+    return NextResponse.json({ ok: true, leagues: created });
+  } catch (e) {
+    return jsonError500("[seasons/leagues]", e, "Échec de l'enregistrement des ligues");
+  }
 }

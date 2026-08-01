@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -39,36 +40,40 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const body = (await request.json()) as {
-    id: number;
-    is_postponed?: 0 | 1;
-    admin_override_date?: string | null; // YYYY-MM-DD or null to clear
-  };
+    const body = (await request.json()) as {
+      id: number;
+      is_postponed?: 0 | 1;
+      admin_override_date?: string | null; // YYYY-MM-DD or null to clear
+    };
 
-  if (!body.id) {
-    return NextResponse.json({ error: "id required" }, { status: 400 });
+    if (!body.id) {
+      return NextResponse.json({ error: "id required" }, { status: 400 });
+    }
+
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    if (body.is_postponed !== undefined) {
+      sets.push("is_postponed = ?");
+      values.push(body.is_postponed);
+    }
+    if (body.admin_override_date !== undefined) {
+      sets.push("admin_override_date = ?");
+      values.push(body.admin_override_date); // null clears, "YYYY-MM-DD" sets
+    }
+    if (sets.length === 0) {
+      return NextResponse.json({ error: "nothing to update" }, { status: 400 });
+    }
+    values.push(body.id);
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE MATCH_SCHEDULE SET ${sets.join(", ")} WHERE id = ?`,
+      ...values
+    );
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("[match-schedule]", e, "Échec de la mise à jour du match");
   }
-
-  const sets: string[] = [];
-  const values: unknown[] = [];
-  if (body.is_postponed !== undefined) {
-    sets.push("is_postponed = ?");
-    values.push(body.is_postponed);
-  }
-  if (body.admin_override_date !== undefined) {
-    sets.push("admin_override_date = ?");
-    values.push(body.admin_override_date); // null clears, "YYYY-MM-DD" sets
-  }
-  if (sets.length === 0) {
-    return NextResponse.json({ error: "nothing to update" }, { status: 400 });
-  }
-  values.push(body.id);
-
-  await prisma.$executeRawUnsafe(
-    `UPDATE MATCH_SCHEDULE SET ${sets.join(", ")} WHERE id = ?`,
-    ...values
-  );
-
-  return NextResponse.json({ ok: true });
 }

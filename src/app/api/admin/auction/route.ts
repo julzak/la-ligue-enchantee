@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { jsonError500 } from "@/lib/api-error";
 import { prisma, inParams } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { isDeadlinePassed } from "@/lib/auction-deadline";
@@ -314,460 +315,464 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  try {
 
-  const { action, leagueId, deadline, userId, playerIds, bids, adminUserId } = await request.json() as {
-    action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline" | "enter-bid-for-user";
-    leagueId: number;
-    deadline?: string | null; // ISO 8601 ou null pour effacer
-    userId?: number; // complete-roster | enter-bid-for-user (participant cible)
-    playerIds?: number[]; // complete-roster
-    bids?: SummerBid[]; // enter-bid-for-user
-    adminUserId?: number; // enter-bid-for-user : indicatif. La source de vérité
-                          // de l'audit est la session admin (auth.session), pas
-                          // ce champ client (non falsifiable côté serveur).
-  };
+    const { action, leagueId, deadline, userId, playerIds, bids, adminUserId } = await request.json() as {
+      action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline" | "enter-bid-for-user";
+      leagueId: number;
+      deadline?: string | null; // ISO 8601 ou null pour effacer
+      userId?: number; // complete-roster | enter-bid-for-user (participant cible)
+      playerIds?: number[]; // complete-roster
+      bids?: SummerBid[]; // enter-bid-for-user
+      adminUserId?: number; // enter-bid-for-user : indicatif. La source de vérité
+                            // de l'audit est la session admin (auth.session), pas
+                            // ce champ client (non falsifiable côté serveur).
+    };
 
-  if (action === "open") {
-    // Valider la deadline si fournie
-    const deadlineDate = deadline ? new Date(deadline) : null;
-    if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
-      return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
-    }
-    // Garde-fou : refuser une deadline déjà passée (toutes les mises seraient rejetées immédiatement)
-    if (isDeadlinePassed(deadlineDate, new Date())) {
-      return NextResponse.json({ error: "La date butoir est déjà passée — choisissez une date dans le futur." }, { status: 400 });
-    }
-
-    // M2 : Garde d'état — on ne peut ouvrir un nouveau tour que si :
-    //   (a) aucune enchère active n'existe, OU
-    //   (b) l'enchère existante est au statut 'tallied' (dernier tour dépouillé).
-    // Un open rejoué sur une enchère 'open' ou 'closed' → 409.
-    const activeAuction = await prisma.$queryRawUnsafe<{ id: number; status: string }[]>(
-      "SELECT id, status FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
-      leagueId
-    );
-
-    if (activeAuction.length > 0) {
-      const currentStatus = activeAuction[0].status;
-      if (currentStatus === "open" || currentStatus === "closed") {
-        return NextResponse.json(
-          { error: `Impossible d'ouvrir un nouveau tour : l'enchère est en statut '${currentStatus}'. Clôturez et dépouiller le tour en cours d'abord.` },
-          { status: 409 }
-        );
+    if (action === "open") {
+      // Valider la deadline si fournie
+      const deadlineDate = deadline ? new Date(deadline) : null;
+      if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
+        return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
       }
-      // statut 'tallied' : on peut ouvrir le tour suivant
+      // Garde-fou : refuser une deadline déjà passée (toutes les mises seraient rejetées immédiatement)
+      if (isDeadlinePassed(deadlineDate, new Date())) {
+        return NextResponse.json({ error: "La date butoir est déjà passée — choisissez une date dans le futur." }, { status: 400 });
+      }
+
+      // M2 : Garde d'état — on ne peut ouvrir un nouveau tour que si :
+      //   (a) aucune enchère active n'existe, OU
+      //   (b) l'enchère existante est au statut 'tallied' (dernier tour dépouillé).
+      // Un open rejoué sur une enchère 'open' ou 'closed' → 409.
+      const activeAuction = await prisma.$queryRawUnsafe<{ id: number; status: string }[]>(
+        "SELECT id, status FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status != 'resolved' ORDER BY id DESC LIMIT 1",
+        leagueId
+      );
+
+      if (activeAuction.length > 0) {
+        const currentStatus = activeAuction[0].status;
+        if (currentStatus === "open" || currentStatus === "closed") {
+          return NextResponse.json(
+            { error: `Impossible d'ouvrir un nouveau tour : l'enchère est en statut '${currentStatus}'. Clôturez et dépouiller le tour en cours d'abord.` },
+            { status: 409 }
+          );
+        }
+        // statut 'tallied' : on peut ouvrir le tour suivant
+        if (deadlineDate !== null) {
+          await prisma.$executeRawUnsafe(
+            "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = ? WHERE id = ?",
+            deadlineDate, activeAuction[0].id
+          );
+        } else {
+          await prisma.$executeRawUnsafe(
+            "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = NULL WHERE id = ?",
+            activeAuction[0].id
+          );
+        }
+        return NextResponse.json({ ok: true, message: "Tour suivant ouvert" });
+      }
+
+      // Create new auction
       if (deadlineDate !== null) {
         await prisma.$executeRawUnsafe(
-          "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = ? WHERE id = ?",
-          deadlineDate, activeAuction[0].id
+          "INSERT INTO AUCTION (league_id, status, current_round, round_deadline) VALUES (?, 'open', 1, ?)",
+          leagueId, deadlineDate
         );
       } else {
         await prisma.$executeRawUnsafe(
-          "UPDATE AUCTION SET status = 'open', current_round = current_round + 1, round_deadline = NULL WHERE id = ?",
-          activeAuction[0].id
+          "INSERT INTO AUCTION (league_id, status, current_round) VALUES (?, 'open', 1)",
+          leagueId
         );
       }
-      return NextResponse.json({ ok: true, message: "Tour suivant ouvert" });
+      return NextResponse.json({ ok: true, message: "Enchère ouverte (tour 1)" });
     }
 
-    // Create new auction
-    if (deadlineDate !== null) {
-      await prisma.$executeRawUnsafe(
-        "INSERT INTO AUCTION (league_id, status, current_round, round_deadline) VALUES (?, 'open', 1, ?)",
-        leagueId, deadlineDate
-      );
-    } else {
-      await prisma.$executeRawUnsafe(
-        "INSERT INTO AUCTION (league_id, status, current_round) VALUES (?, 'open', 1)",
+    if (action === "set-deadline") {
+      // Modifier la deadline d'un tour ouvert
+      const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
+        "SELECT id FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status = 'open' ORDER BY id DESC LIMIT 1",
         leagueId
       );
-    }
-    return NextResponse.json({ ok: true, message: "Enchère ouverte (tour 1)" });
-  }
-
-  if (action === "set-deadline") {
-    // Modifier la deadline d'un tour ouvert
-    const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      "SELECT id FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status = 'open' ORDER BY id DESC LIMIT 1",
-      leagueId
-    );
-    if (existing.length === 0) {
-      return NextResponse.json({ error: "Pas de tour ouvert pour cette ligue" }, { status: 400 });
-    }
-    if (deadline === undefined) {
-      return NextResponse.json({ error: "Champ deadline manquant" }, { status: 400 });
-    }
-    const deadlineDate = deadline ? new Date(deadline) : null;
-    if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
-      return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
-    }
-    // Garde-fou : refuser une deadline déjà passée (toutes les mises seraient rejetées immédiatement)
-    if (isDeadlinePassed(deadlineDate, new Date())) {
-      return NextResponse.json({ error: "La date butoir est déjà passée — choisissez une date dans le futur." }, { status: 400 });
-    }
-    if (deadlineDate !== null) {
-      await prisma.$executeRawUnsafe(
-        "UPDATE AUCTION SET round_deadline = ? WHERE id = ?",
-        deadlineDate, existing[0].id
-      );
-    } else {
-      await prisma.$executeRawUnsafe(
-        "UPDATE AUCTION SET round_deadline = NULL WHERE id = ?",
-        existing[0].id
-      );
-    }
-    return NextResponse.json({ ok: true, message: deadline ? "Heure butoir enregistrée" : "Heure butoir effacée" });
-  }
-
-  if (action === "close-round") {
-    // Close bidding for current round
-    const updated = await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'closed' WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status = 'open'",
-      leagueId
-    );
-    if (updated === 0) {
-      return NextResponse.json({ error: "Pas de tour ouvert pour cette ligue" }, { status: 400 });
-    }
-    return NextResponse.json({ ok: true, message: "Tour clôturé aux enchères" });
-  }
-
-  if (action === "resolve-round") {
-    // Dépouillement : AUCUN calcul de règle ici, tout vient du moteur
-    // (src/lib/auction-engine.ts) via la couche pure auction-resolution.ts.
-    const auction = await getSummerAuction(leagueId);
-    if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
-    if (auction.status !== "closed") {
-      return NextResponse.json({ error: "Le tour doit être clôturé avant le dépouillement" }, { status: 400 });
-    }
-
-    const pendingRows = await prisma.$queryRawUnsafe<{
-      id: number; user_id: number; player_id: number; amount: number;
-    }[]>(
-      "SELECT id, user_id, player_id, amount FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'pending'",
-      auction.id, auction.currentRound
-    );
-    const pendingBids = pendingRows.map((b) => ({
-      id: Number(b.id),
-      userId: Number(b.user_id),
-      playerId: Number(b.player_id),
-      amount: Number(b.amount),
-    }));
-
-    const wonBids = await loadWonBids(auction.id);
-    const participantIds = await loadParticipantIds(leagueId);
-    const players = await loadPlayers([
-      ...pendingBids.map((b) => b.playerId),
-      ...wonBids.map((w) => w.playerId),
-    ]);
-
-    let plan: ReturnType<typeof planResolution>;
-    try {
-      plan = planResolution({
-        budgetPerUser: auction.budgetPerUser,
-        participantIds,
-        players,
-        wonBids,
-        pendingBids,
-      });
-    } catch (e) {
-      return NextResponse.json(
-        { error: `Dépouillement refusé : ${e instanceof Error ? e.message : "état incohérent"}` },
-        { status: 409 }
-      );
-    }
-
-    // M1 : Anti-double-dépouillement.
-    // L'UPDATE conditionnel (WHERE status='closed') est placé EN PREMIER dans la
-    // transaction pour prendre le verrou immédiatement. Si affectedRows = 0,
-    // le tour a déjà été dépouillé par un appel concurrent → 409 sans écriture.
-    // Prisma.$transaction est séquentiel (pas de SAVEPOINT InnoDB) donc l'UPDATE
-    // est exécuté avant les INSERT AUCTION_BID / AUCTION_REMOVAL.
-    const lockResult = await prisma.$executeRawUnsafe(
-      "UPDATE AUCTION SET status = 'tallied' WHERE id = ? AND status = 'closed'",
-      auction.id
-    );
-    if (lockResult === 0) {
-      return NextResponse.json(
-        { error: "Ce tour a déjà été dépouillé (statut ≠ 'closed')" },
-        { status: 409 }
-      );
-    }
-
-    // Écritures des statuts de mises et des retraits motivés (verrou déjà posé ci-dessus).
-    await prisma.$transaction([
-      ...plan.updates.map((u) =>
-        prisma.$executeRawUnsafe("UPDATE AUCTION_BID SET status = ? WHERE id = ?", u.status, u.bidId)
-      ),
-      ...plan.removals.map((r) =>
-        prisma.$executeRawUnsafe(
-          "INSERT INTO AUCTION_REMOVAL (auction_id, round, user_id, player_id, amount, reason) VALUES (?, ?, ?, ?, ?, ?)",
-          auction.id, auction.currentRound, r.userId, r.playerId, r.amount, r.reason
-        )
-      ),
-    ]);
-
-    const won = plan.updates.filter((u) => u.status === "won").length;
-    const lost = plan.updates.filter((u) => u.status === "lost").length;
-    const tied = plan.outcome.ties.length;
-    const removed = plan.removals.length;
-    return NextResponse.json({
-      ok: true,
-      message: `Tour ${auction.currentRound} dépouillé : ${won} joueurs attribués, ${tied} égalité(s) remise(s) en jeu, ${lost} mises perdues, ${removed} retrait(s) de pénalité`,
-    });
-  }
-
-  if (action === "complete-roster") {
-    // Complétion d'office à 1 pt (règle 4) pour UN participant incomplet.
-    if (!userId || !playerIds || playerIds.length === 0) {
-      return NextResponse.json({ error: "userId et playerIds requis" }, { status: 400 });
-    }
-    const auction = await getSummerAuction(leagueId);
-    if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
-    if (auction.status !== "tallied") {
-      return NextResponse.json({ error: "La complétion d'office se fait après dépouillement, avant la clôture de phase" }, { status: 400 });
-    }
-
-    // m3 : Dédoublonnage des playerIds fournis
-    const uniquePlayerIds = Array.from(new Set(playerIds));
-
-    // m5 : Vérifier que userId appartient bien à la ligue
-    const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-      "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
-      leagueId, userId
-    );
-    if (Number(memberRows[0]?.cnt ?? 0) === 0) {
-      return NextResponse.json({ error: `L'utilisateur #${userId} ne fait pas partie de cette ligue` }, { status: 400 });
-    }
-
-    const wonBids = await loadWonBids(auction.id);
-    const takenIds = new Set(wonBids.map((w) => w.playerId));
-    for (const pid of uniquePlayerIds) {
-      if (takenIds.has(pid)) {
-        return NextResponse.json({ error: `Joueur #${pid} déjà attribué dans cette enchère` }, { status: 400 });
+      if (existing.length === 0) {
+        return NextResponse.json({ error: "Pas de tour ouvert pour cette ligue" }, { status: 400 });
       }
+      if (deadline === undefined) {
+        return NextResponse.json({ error: "Champ deadline manquant" }, { status: 400 });
+      }
+      const deadlineDate = deadline ? new Date(deadline) : null;
+      if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
+        return NextResponse.json({ error: "Date butoir invalide" }, { status: 400 });
+      }
+      // Garde-fou : refuser une deadline déjà passée (toutes les mises seraient rejetées immédiatement)
+      if (isDeadlinePassed(deadlineDate, new Date())) {
+        return NextResponse.json({ error: "La date butoir est déjà passée — choisissez une date dans le futur." }, { status: 400 });
+      }
+      if (deadlineDate !== null) {
+        await prisma.$executeRawUnsafe(
+          "UPDATE AUCTION SET round_deadline = ? WHERE id = ?",
+          deadlineDate, existing[0].id
+        );
+      } else {
+        await prisma.$executeRawUnsafe(
+          "UPDATE AUCTION SET round_deadline = NULL WHERE id = ?",
+          existing[0].id
+        );
+      }
+      return NextResponse.json({ ok: true, message: deadline ? "Heure butoir enregistrée" : "Heure butoir effacée" });
     }
 
-    const players = await loadPlayers([
-      ...wonBids.filter((w) => w.userId === userId).map((w) => w.playerId),
-      ...uniquePlayerIds,
-    ]);
-
-    // Gardiens nommés interdits (règle 2.1 : gardien = pseudo-joueur par club)
-    // m5 : Scope les joueurs candidats à la saison courante
-    const seasonFilters = await getSeasonFilters();
-    const seasonClause = "seasonId" in seasonFilters.player
-      ? `AND p.ID_SEASON = ${Number((seasonFilters.player as { seasonId: number }).seasonId)}`
-      : "";
-    const [ph, vs] = inParams(uniquePlayerIds);
-    const candidateRows = await prisma.$queryRawUnsafe<{ id: number; position: string; link: string | null }[]>(
-      `SELECT ID_PLAYER as id, POSITION as position, LINK as link FROM PLAYER p WHERE ID_PLAYER IN (${ph}) ${seasonClause}`,
-      ...vs
-    );
-    if (candidateRows.length !== uniquePlayerIds.length) {
-      return NextResponse.json({ error: "Joueur inexistant ou n'appartenant pas à la saison courante" }, { status: 400 });
+    if (action === "close-round") {
+      // Close bidding for current round
+      const updated = await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET status = 'closed' WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' AND status = 'open'",
+        leagueId
+      );
+      if (updated === 0) {
+        return NextResponse.json({ error: "Pas de tour ouvert pour cette ligue" }, { status: 400 });
+      }
+      return NextResponse.json({ ok: true, message: "Tour clôturé aux enchères" });
     }
-    for (const c of candidateRows) {
-      if (isNamedGoalkeeper({ position: c.position, link: c.link })) {
+
+    if (action === "resolve-round") {
+      // Dépouillement : AUCUN calcul de règle ici, tout vient du moteur
+      // (src/lib/auction-engine.ts) via la couche pure auction-resolution.ts.
+      const auction = await getSummerAuction(leagueId);
+      if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+      if (auction.status !== "closed") {
+        return NextResponse.json({ error: "Le tour doit être clôturé avant le dépouillement" }, { status: 400 });
+      }
+
+      const pendingRows = await prisma.$queryRawUnsafe<{
+        id: number; user_id: number; player_id: number; amount: number;
+      }[]>(
+        "SELECT id, user_id, player_id, amount FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'pending'",
+        auction.id, auction.currentRound
+      );
+      const pendingBids = pendingRows.map((b) => ({
+        id: Number(b.id),
+        userId: Number(b.user_id),
+        playerId: Number(b.player_id),
+        amount: Number(b.amount),
+      }));
+
+      const wonBids = await loadWonBids(auction.id);
+      const participantIds = await loadParticipantIds(leagueId);
+      const players = await loadPlayers([
+        ...pendingBids.map((b) => b.playerId),
+        ...wonBids.map((w) => w.playerId),
+      ]);
+
+      let plan: ReturnType<typeof planResolution>;
+      try {
+        plan = planResolution({
+          budgetPerUser: auction.budgetPerUser,
+          participantIds,
+          players,
+          wonBids,
+          pendingBids,
+        });
+      } catch (e) {
         return NextResponse.json(
-          { error: `Joueur #${c.id} est un gardien nommé : utilisez le pseudo-joueur « Gardiens [Club] »` },
+          { error: `Dépouillement refusé : ${e instanceof Error ? e.message : "état incohérent"}` },
+          { status: 409 }
+        );
+      }
+
+      // M1 : Anti-double-dépouillement.
+      // L'UPDATE conditionnel (WHERE status='closed') est placé EN PREMIER dans la
+      // transaction pour prendre le verrou immédiatement. Si affectedRows = 0,
+      // le tour a déjà été dépouillé par un appel concurrent → 409 sans écriture.
+      // Prisma.$transaction est séquentiel (pas de SAVEPOINT InnoDB) donc l'UPDATE
+      // est exécuté avant les INSERT AUCTION_BID / AUCTION_REMOVAL.
+      const lockResult = await prisma.$executeRawUnsafe(
+        "UPDATE AUCTION SET status = 'tallied' WHERE id = ? AND status = 'closed'",
+        auction.id
+      );
+      if (lockResult === 0) {
+        return NextResponse.json(
+          { error: "Ce tour a déjà été dépouillé (statut ≠ 'closed')" },
+          { status: 409 }
+        );
+      }
+
+      // Écritures des statuts de mises et des retraits motivés (verrou déjà posé ci-dessus).
+      await prisma.$transaction([
+        ...plan.updates.map((u) =>
+          prisma.$executeRawUnsafe("UPDATE AUCTION_BID SET status = ? WHERE id = ?", u.status, u.bidId)
+        ),
+        ...plan.removals.map((r) =>
+          prisma.$executeRawUnsafe(
+            "INSERT INTO AUCTION_REMOVAL (auction_id, round, user_id, player_id, amount, reason) VALUES (?, ?, ?, ?, ?, ?)",
+            auction.id, auction.currentRound, r.userId, r.playerId, r.amount, r.reason
+          )
+        ),
+      ]);
+
+      const won = plan.updates.filter((u) => u.status === "won").length;
+      const lost = plan.updates.filter((u) => u.status === "lost").length;
+      const tied = plan.outcome.ties.length;
+      const removed = plan.removals.length;
+      return NextResponse.json({
+        ok: true,
+        message: `Tour ${auction.currentRound} dépouillé : ${won} joueurs attribués, ${tied} égalité(s) remise(s) en jeu, ${lost} mises perdues, ${removed} retrait(s) de pénalité`,
+      });
+    }
+
+    if (action === "complete-roster") {
+      // Complétion d'office à 1 pt (règle 4) pour UN participant incomplet.
+      if (!userId || !playerIds || playerIds.length === 0) {
+        return NextResponse.json({ error: "userId et playerIds requis" }, { status: 400 });
+      }
+      const auction = await getSummerAuction(leagueId);
+      if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+      if (auction.status !== "tallied") {
+        return NextResponse.json({ error: "La complétion d'office se fait après dépouillement, avant la clôture de phase" }, { status: 400 });
+      }
+
+      // m3 : Dédoublonnage des playerIds fournis
+      const uniquePlayerIds = Array.from(new Set(playerIds));
+
+      // m5 : Vérifier que userId appartient bien à la ligue
+      const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+        "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+        leagueId, userId
+      );
+      if (Number(memberRows[0]?.cnt ?? 0) === 0) {
+        return NextResponse.json({ error: `L'utilisateur #${userId} ne fait pas partie de cette ligue` }, { status: 400 });
+      }
+
+      const wonBids = await loadWonBids(auction.id);
+      const takenIds = new Set(wonBids.map((w) => w.playerId));
+      for (const pid of uniquePlayerIds) {
+        if (takenIds.has(pid)) {
+          return NextResponse.json({ error: `Joueur #${pid} déjà attribué dans cette enchère` }, { status: 400 });
+        }
+      }
+
+      const players = await loadPlayers([
+        ...wonBids.filter((w) => w.userId === userId).map((w) => w.playerId),
+        ...uniquePlayerIds,
+      ]);
+
+      // Gardiens nommés interdits (règle 2.1 : gardien = pseudo-joueur par club)
+      // m5 : Scope les joueurs candidats à la saison courante
+      const seasonFilters = await getSeasonFilters();
+      const seasonClause = "seasonId" in seasonFilters.player
+        ? `AND p.ID_SEASON = ${Number((seasonFilters.player as { seasonId: number }).seasonId)}`
+        : "";
+      const [ph, vs] = inParams(uniquePlayerIds);
+      const candidateRows = await prisma.$queryRawUnsafe<{ id: number; position: string; link: string | null }[]>(
+        `SELECT ID_PLAYER as id, POSITION as position, LINK as link FROM PLAYER p WHERE ID_PLAYER IN (${ph}) ${seasonClause}`,
+        ...vs
+      );
+      if (candidateRows.length !== uniquePlayerIds.length) {
+        return NextResponse.json({ error: "Joueur inexistant ou n'appartenant pas à la saison courante" }, { status: 400 });
+      }
+      for (const c of candidateRows) {
+        if (isNamedGoalkeeper({ position: c.position, link: c.link })) {
+          return NextResponse.json(
+            { error: `Joueur #${c.id} est un gardien nommé : utilisez le pseudo-joueur « Gardiens [Club] »` },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Validation des quotas par le moteur, ajout par ajout
+      const roster: EnginePlayer[] = wonBids
+        .filter((w) => w.userId === userId)
+        .map((w) => {
+          const p = players.get(w.playerId);
+          return { id: w.playerId, lastName: p?.lastName ?? "", line: lineFromPosition(p?.position ?? "") };
+        });
+      for (const pid of uniquePlayerIds) {
+        const p = players.get(pid);
+        const candidate: EnginePlayer = { id: pid, lastName: p?.lastName ?? "", line: lineFromPosition(p?.position ?? "") };
+        const check = canCompleteWith(roster, candidate);
+        if (!check.ok) {
+          return NextResponse.json(
+            { error: `Ajout refusé pour ${p?.displayName ?? `#${pid}`} : ${check.reason}` },
+            { status: 400 }
+          );
+        }
+        roster.push(candidate);
+      }
+
+      // m5 : Vérification que l'effectif final respecte la taille players_per_user
+      // (remplace le 13 codé en dur là où c'est trivial : ici la taille attendue est
+      // disponible via auction.playersPerUser)
+      if (roster.length > auction.playersPerUser) {
+        return NextResponse.json(
+          { error: `La complétion dépasse le plafond de ${auction.playersPerUser} joueurs par participant` },
           { status: 400 }
         );
       }
+
+      // Acquisitions d'office à 1 pt, persistées comme mises gagnées du tour courant
+      await prisma.$transaction(
+        uniquePlayerIds.map((pid) =>
+          prisma.$executeRawUnsafe(
+            "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, 1, 'won')",
+            auction.id, auction.currentRound, userId, pid
+          )
+        )
+      );
+      return NextResponse.json({
+        ok: true,
+        message: `${uniquePlayerIds.length} joueur(s) ajouté(s) d'office à 1 pt`,
+      });
     }
 
-    // Validation des quotas par le moteur, ajout par ajout
-    const roster: EnginePlayer[] = wonBids
-      .filter((w) => w.userId === userId)
-      .map((w) => {
-        const p = players.get(w.playerId);
-        return { id: w.playerId, lastName: p?.lastName ?? "", line: lineFromPosition(p?.position ?? "") };
-      });
-    for (const pid of uniquePlayerIds) {
-      const p = players.get(pid);
-      const candidate: EnginePlayer = { id: pid, lastName: p?.lastName ?? "", line: lineFromPosition(p?.position ?? "") };
-      const check = canCompleteWith(roster, candidate);
-      if (!check.ok) {
+    if (action === "close-phase") {
+      // Clore la phase (règle 4) : tous les effectifs doivent être valides
+      // (13 joueurs, quotas règle 2.1 — validation par le moteur), puis les
+      // effectifs sont écrits dans TEAM pour la saison (pont vers le scoring,
+      // même chemin d'écriture que les jokers).
+      const auction = await getSummerAuction(leagueId);
+      if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+      if (auction.status !== "tallied") {
+        return NextResponse.json({ error: "La phase se clôt après le dépouillement du dernier tour" }, { status: 400 });
+      }
+
+      const wonBids = await loadWonBids(auction.id);
+      const participantIds = await loadParticipantIds(leagueId);
+      const players = await loadPlayers(wonBids.map((w) => w.playerId));
+      const statuses = computeRosterStatuses({ participantIds, players, wonBids });
+
+      const invalid = statuses.filter((s) => s.errors.length > 0);
+      if (invalid.length > 0) {
         return NextResponse.json(
-          { error: `Ajout refusé pour ${p?.displayName ?? `#${pid}`} : ${check.reason}` },
+          {
+            error: `${invalid.length} effectif(s) invalide(s) — complétez d'office avant de clore la phase`,
+            incomplete: invalid.map((s) => ({ userId: s.userId, errors: s.errors })),
+          },
           { status: 400 }
         );
       }
-      roster.push(candidate);
-    }
 
-    // m5 : Vérification que l'effectif final respecte la taille players_per_user
-    // (remplace le 13 codé en dur là où c'est trivial : ici la taille attendue est
-    // disponible via auction.playersPerUser)
-    if (roster.length > auction.playersPerUser) {
-      return NextResponse.json(
-        { error: `La complétion dépasse le plafond de ${auction.playersPerUser} joueurs par participant` },
-        { status: 400 }
-      );
-    }
-
-    // Acquisitions d'office à 1 pt, persistées comme mises gagnées du tour courant
-    await prisma.$transaction(
-      uniquePlayerIds.map((pid) =>
-        prisma.$executeRawUnsafe(
-          "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, 1, 'won')",
-          auction.id, auction.currentRound, userId, pid
-        )
-      )
-    );
-    return NextResponse.json({
-      ok: true,
-      message: `${uniquePlayerIds.length} joueur(s) ajouté(s) d'office à 1 pt`,
-    });
-  }
-
-  if (action === "close-phase") {
-    // Clore la phase (règle 4) : tous les effectifs doivent être valides
-    // (13 joueurs, quotas règle 2.1 — validation par le moteur), puis les
-    // effectifs sont écrits dans TEAM pour la saison (pont vers le scoring,
-    // même chemin d'écriture que les jokers).
-    const auction = await getSummerAuction(leagueId);
-    if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
-    if (auction.status !== "tallied") {
-      return NextResponse.json({ error: "La phase se clôt après le dépouillement du dernier tour" }, { status: 400 });
-    }
-
-    const wonBids = await loadWonBids(auction.id);
-    const participantIds = await loadParticipantIds(leagueId);
-    const players = await loadPlayers(wonBids.map((w) => w.playerId));
-    const statuses = computeRosterStatuses({ participantIds, players, wonBids });
-
-    const invalid = statuses.filter((s) => s.errors.length > 0);
-    if (invalid.length > 0) {
-      return NextResponse.json(
-        {
-          error: `${invalid.length} effectif(s) invalide(s) — complétez d'office avant de clore la phase`,
-          incomplete: invalid.map((s) => ({ userId: s.userId, errors: s.errors })),
-        },
-        { status: 400 }
-      );
-    }
-
-    // B2 : Logique de reprise pour close-phase avec TEAM en MyISAM.
-    // MyISAM ne supporte pas les rollbacks transactionnels : un échec à mi-INSERT
-    // laisse des lignes partielles dans TEAM. Dans ce cas la garde "TEAM non vide"
-    // renverrait 409 pour toujours, bloquant la reprise.
-    //
-    // Note : ici auction.status est forcément 'tallied' (vérification ci-dessus).
-    // Le 409 "phase déjà close" (statut 'resolved') est attrapé avant par
-    // getSummerAuction qui filtre status != 'resolved', combiné à la garde
-    // status !== 'tallied'. On ne peut donc jamais arriver ici avec 'resolved'.
-    //
-    // Sémantique :
-    //   - TEAM non vide ET statut 'tallied' → état partiel d'une tentative échouée
-    //                                          → PURGE des lignes scoped à la ligue
-    //                                          → ré-insertion propre
-    //   - TEAM vide                          → premier appel normal
-    const teamCountRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-      "SELECT COUNT(*) as cnt FROM TEAM WHERE ID_LEAGUE = ? AND DAY_FIRST = 1",
-      leagueId
-    );
-    const existingTeamRows = Number(teamCountRows[0]?.cnt ?? 0);
-
-    if (existingTeamRows > 0) {
-      // Statut 'tallied' avec lignes TEAM existantes : état partiel issu d'une
-      // tentative précédente qui a échoué en cours d'INSERT (MyISAM, pas de rollback).
-      // On purge les lignes scoped à cette ligue pour repartir proprement.
-      await prisma.$executeRawUnsafe(
-        "DELETE FROM TEAM WHERE ID_LEAGUE = ? AND DAY_FIRST = 1",
+      // B2 : Logique de reprise pour close-phase avec TEAM en MyISAM.
+      // MyISAM ne supporte pas les rollbacks transactionnels : un échec à mi-INSERT
+      // laisse des lignes partielles dans TEAM. Dans ce cas la garde "TEAM non vide"
+      // renverrait 409 pour toujours, bloquant la reprise.
+      //
+      // Note : ici auction.status est forcément 'tallied' (vérification ci-dessus).
+      // Le 409 "phase déjà close" (statut 'resolved') est attrapé avant par
+      // getSummerAuction qui filtre status != 'resolved', combiné à la garde
+      // status !== 'tallied'. On ne peut donc jamais arriver ici avec 'resolved'.
+      //
+      // Sémantique :
+      //   - TEAM non vide ET statut 'tallied' → état partiel d'une tentative échouée
+      //                                          → PURGE des lignes scoped à la ligue
+      //                                          → ré-insertion propre
+      //   - TEAM vide                          → premier appel normal
+      const teamCountRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+        "SELECT COUNT(*) as cnt FROM TEAM WHERE ID_LEAGUE = ? AND DAY_FIRST = 1",
         leagueId
       );
+      const existingTeamRows = Number(teamCountRows[0]?.cnt ?? 0);
+
+      if (existingTeamRows > 0) {
+        // Statut 'tallied' avec lignes TEAM existantes : état partiel issu d'une
+        // tentative précédente qui a échoué en cours d'INSERT (MyISAM, pas de rollback).
+        // On purge les lignes scoped à cette ligue pour repartir proprement.
+        await prisma.$executeRawUnsafe(
+          "DELETE FROM TEAM WHERE ID_LEAGUE = ? AND DAY_FIRST = 1",
+          leagueId
+        );
+      }
+
+      let teamRows;
+      try {
+        teamRows = planTeamRows(
+          leagueId,
+          statuses.map((s) => ({ userId: s.userId, roster: s.roster }))
+        );
+      } catch (e) {
+        return NextResponse.json(
+          { error: e instanceof Error ? e.message : "Effectif invalide" },
+          { status: 400 }
+        );
+      }
+
+      await prisma.$transaction([
+        ...teamRows.map((t) =>
+          prisma.$executeRawUnsafe(
+            "INSERT INTO TEAM (ID_LEAGUE, ID_USER, ID_PLAYER, DAY_FIRST, DAY_LAST, IS_SUBS) VALUES (?, ?, ?, ?, ?, ?)",
+            t.leagueId, t.userId, t.playerId, t.dayFirst, t.dayLast, t.isSubs
+          )
+        ),
+        prisma.$executeRawUnsafe("UPDATE AUCTION SET status = 'resolved' WHERE id = ?", auction.id),
+      ]);
+
+      return NextResponse.json({
+        ok: true,
+        message: `Phase close : ${teamRows.length} joueurs écrits dans les effectifs (${statuses.length} participants × 13)`,
+      });
     }
 
-    let teamRows;
-    try {
-      teamRows = planTeamRows(
-        leagueId,
-        statuses.map((s) => ({ userId: s.userId, roster: s.roster }))
+    if (action === "enter-bid-for-user") {
+      // BRIEF-11 : saisie manuelle d'une mise AU NOM d'un participant (retardataire).
+      // Réutilise EXACTEMENT la validation de la soumission participant
+      // (validateSummerBids) : budget/quotas/gardien/joueurs déjà attribués sont
+      // évalués à l'identique. SEULE différence avec /api/auction : aucune garde
+      // deadline (le but est de contourner l'heure butoir pour rattraper un retard).
+      if (!userId) {
+        return NextResponse.json({ error: "userId (participant cible) requis" }, { status: 400 });
+      }
+      if (!bids || !Array.isArray(bids) || bids.length === 0) {
+        return NextResponse.json({ error: "Au moins une mise (bids) est requise" }, { status: 400 });
+      }
+
+      const auction = await getSummerAuction(leagueId);
+      if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+      // Tour modifiable tant qu'il n'est pas dépouillé : 'open' ou 'closed'
+      // (après 'tallied'/'resolved', les statuts de mises sont figés).
+      if (auction.status !== "open" && auction.status !== "closed") {
+        return NextResponse.json(
+          { error: `La saisie manuelle n'est possible que sur un tour ouvert ou clôturé (statut actuel : '${auction.status}').` },
+          { status: 400 }
+        );
+      }
+
+      // Le participant cible doit appartenir à la ligue
+      const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+        "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+        leagueId, userId
       );
-    } catch (e) {
-      return NextResponse.json(
-        { error: e instanceof Error ? e.message : "Effectif invalide" },
-        { status: 400 }
-      );
-    }
+      if (Number(memberRows[0]?.cnt ?? 0) === 0) {
+        return NextResponse.json({ error: `L'utilisateur #${userId} ne fait pas partie de cette ligue` }, { status: 400 });
+      }
 
-    await prisma.$transaction([
-      ...teamRows.map((t) =>
-        prisma.$executeRawUnsafe(
-          "INSERT INTO TEAM (ID_LEAGUE, ID_USER, ID_PLAYER, DAY_FIRST, DAY_LAST, IS_SUBS) VALUES (?, ?, ?, ?, ?, ?)",
-          t.leagueId, t.userId, t.playerId, t.dayFirst, t.dayLast, t.isSubs
-        )
-      ),
-      prisma.$executeRawUnsafe("UPDATE AUCTION SET status = 'resolved' WHERE id = ?", auction.id),
-    ]);
+      // Validation PARTAGÉE (mêmes règles, mêmes erreurs que /api/auction).
+      const validationError = await validateSummerBids(prisma, auction.id, userId, bids);
+      if (validationError) {
+        return NextResponse.json({ error: validationError.error }, { status: validationError.status });
+      }
 
-    return NextResponse.json({
-      ok: true,
-      message: `Phase close : ${teamRows.length} joueurs écrits dans les effectifs (${statuses.length} participants × 13)`,
-    });
-  }
-
-  if (action === "enter-bid-for-user") {
-    // BRIEF-11 : saisie manuelle d'une mise AU NOM d'un participant (retardataire).
-    // Réutilise EXACTEMENT la validation de la soumission participant
-    // (validateSummerBids) : budget/quotas/gardien/joueurs déjà attribués sont
-    // évalués à l'identique. SEULE différence avec /api/auction : aucune garde
-    // deadline (le but est de contourner l'heure butoir pour rattraper un retard).
-    if (!userId) {
-      return NextResponse.json({ error: "userId (participant cible) requis" }, { status: 400 });
-    }
-    if (!bids || !Array.isArray(bids) || bids.length === 0) {
-      return NextResponse.json({ error: "Au moins une mise (bids) est requise" }, { status: 400 });
-    }
-
-    const auction = await getSummerAuction(leagueId);
-    if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
-    // Tour modifiable tant qu'il n'est pas dépouillé : 'open' ou 'closed'
-    // (après 'tallied'/'resolved', les statuts de mises sont figés).
-    if (auction.status !== "open" && auction.status !== "closed") {
-      return NextResponse.json(
-        { error: `La saisie manuelle n'est possible que sur un tour ouvert ou clôturé (statut actuel : '${auction.status}').` },
-        { status: 400 }
-      );
-    }
-
-    // Le participant cible doit appartenir à la ligue
-    const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-      "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
-      leagueId, userId
-    );
-    if (Number(memberRows[0]?.cnt ?? 0) === 0) {
-      return NextResponse.json({ error: `L'utilisateur #${userId} ne fait pas partie de cette ligue` }, { status: 400 });
-    }
-
-    // Validation PARTAGÉE (mêmes règles, mêmes erreurs que /api/auction).
-    const validationError = await validateSummerBids(prisma, auction.id, userId, bids);
-    if (validationError) {
-      return NextResponse.json({ error: validationError.error }, { status: validationError.status });
-    }
-
-    // Remplace les mises 'pending' du participant pour ce tour (même sémantique
-    // que la soumission participant), avec traçabilité admin_entered_by.
-    await prisma.$executeRawUnsafe(
-      "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status = 'pending'",
-      auction.id, auction.currentRound, userId
-    );
-    // Audit : on enregistre l'admin de la SESSION (source fiable). Le champ
-    // client adminUserId n'est qu'un repli indicatif s'il manque (jamais le cas
-    // en pratique puisque requireAdmin() impose une session valide).
-    const adminEnteredBy = auth.session.user.userId ?? adminUserId ?? null;
-    for (const bid of bids) {
+      // Remplace les mises 'pending' du participant pour ce tour (même sémantique
+      // que la soumission participant), avec traçabilité admin_entered_by.
       await prisma.$executeRawUnsafe(
-        "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, admin_entered_by) VALUES (?, ?, ?, ?, ?, 'pending', ?)",
-        auction.id, auction.currentRound, userId, bid.playerId, bid.amount, adminEnteredBy
+        "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status = 'pending'",
+        auction.id, auction.currentRound, userId
       );
+      // Audit : on enregistre l'admin de la SESSION (source fiable). Le champ
+      // client adminUserId n'est qu'un repli indicatif s'il manque (jamais le cas
+      // en pratique puisque requireAdmin() impose une session valide).
+      const adminEnteredBy = auth.session.user.userId ?? adminUserId ?? null;
+      for (const bid of bids) {
+        await prisma.$executeRawUnsafe(
+          "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, admin_entered_by) VALUES (?, ?, ?, ?, ?, 'pending', ?)",
+          auction.id, auction.currentRound, userId, bid.playerId, bid.amount, adminEnteredBy
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: `${bids.length} mise(s) saisie(s) au nom du participant #${userId}`,
+      });
     }
 
-    return NextResponse.json({
-      ok: true,
-      message: `${bids.length} mise(s) saisie(s) au nom du participant #${userId}`,
-    });
+    return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
+  } catch (e) {
+    return jsonError500("[auction]", e, "Échec de l'opération enchères");
   }
-
-  return NextResponse.json({ error: "Action inconnue" }, { status: 400 });
 }
