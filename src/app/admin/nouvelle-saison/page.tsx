@@ -68,12 +68,23 @@ export default function NouvelleSaisonPage() {
         const resumable = findResumableSeason(data.seasons ?? []);
         if (!resumable) return;
 
-        const targetStep = resolveStepFromStatus(resumable.status);
+        const counts = resumable._count
+          ? { clubs: resumable._count.clubs, leagues: resumable._count.leagues }
+          : undefined;
+        const targetStep = resolveStepFromStatus(resumable.status, counts);
         // resolveStepFromStatus renvoie null pour tout statut non reprenable : ne pas hydrater.
         if (targetStep === null) return;
 
         setSeason({ id: resumable.id, label: resumable.label, status: resumable.status });
-        setStep(targetStep);
+        // Étapes 3 et 4 : passer par les loaders qui hydratent leur état depuis
+        // la base (ligues, comptes, affectations) avant d'afficher l'étape.
+        if (targetStep === 4) {
+          await goToParticipants(resumable.id);
+        } else if (targetStep === 3) {
+          await goToLeagues(resumable.id);
+        } else {
+          setStep(targetStep);
+        }
 
         // Si la saison est en SETUP, on tente de pré-peupler les clubs déjà importés
         // (comme le fait EffectifsTools) pour que l'écran d'import soit directement utilisable.
@@ -268,12 +279,14 @@ export default function NouvelleSaisonPage() {
   }
 
   // ── Étape 3 ────────────────────────────────────────────────────────────
-  async function goToLeagues() {
-    if (!season) return;
+  // seasonIdArg : fourni par la reprise (le state season n'est pas encore posé).
+  async function goToLeagues(seasonIdArg?: number) {
+    const seasonId = seasonIdArg ?? season?.id;
+    if (!seasonId) return;
     setStep(3);
     setError("");
     try {
-      const res = await fetch(`/api/admin/seasons/leagues?seasonId=${season.id}`);
+      const res = await fetch(`/api/admin/seasons/leagues?seasonId=${seasonId}`);
       const data = await res.json();
       if (res.ok && Array.isArray(data.prefill) && data.prefill.length > 0) {
         setPrefillLabel(data.prevSeasonLabel);
@@ -326,11 +339,13 @@ export default function NouvelleSaisonPage() {
   }
 
   // ── Étape 4 : participants ─────────────────────────────────────────────
-  async function goToParticipants() {
-    if (!season) return;
+  // seasonIdArg : fourni par la reprise (le state season n'est pas encore posé).
+  async function goToParticipants(seasonIdArg?: number) {
+    const seasonId = seasonIdArg ?? season?.id;
+    if (!seasonId) return;
     setError("");
     try {
-      const res = await fetch(`/api/admin/seasons/participants?seasonId=${season.id}`);
+      const res = await fetch(`/api/admin/seasons/participants?seasonId=${seasonId}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur");
       setPLeagues(data.leagues);
@@ -589,7 +604,7 @@ export default function NouvelleSaisonPage() {
                 <span className="text-sm text-foreground">{importResult}</span>
               )}
               {importResult && (
-                <button className={btnGhost} onClick={goToLeagues}>
+                <button className={btnGhost} onClick={() => goToLeagues()}>
                   Étape suivante : créer les ligues →
                 </button>
               )}
@@ -679,7 +694,7 @@ export default function NouvelleSaisonPage() {
             {leaguesSaved && (
               <>
                 <span className="text-sm text-foreground">Ligues créées.</span>
-                <button className={btnGhost} onClick={goToParticipants}>
+                <button className={btnGhost} onClick={() => goToParticipants()}>
                   Étape suivante : inscrire les participants →
                 </button>
               </>

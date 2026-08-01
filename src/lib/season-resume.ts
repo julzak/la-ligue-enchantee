@@ -9,6 +9,8 @@ export interface ResumableSeason {
   label: string;
   status: string;
   isCurrent: boolean;
+  /** Compteurs Prisma renvoyés par GET /api/admin/seasons (absents dans les vieux appels). */
+  _count?: { clubs: number; players: number; leagues: number };
 }
 
 /**
@@ -34,16 +36,27 @@ export function findResumableSeason(seasons: ResumableSeason[]): ResumableSeason
 /**
  * Détermine l'étape du stepper à afficher selon le statut d'une saison reprenable.
  *
- * SETUP   → étape 2 (import clubs/joueurs)
+ * SETUP   → première étape incomplète d'après les compteurs :
+ *           0 club → étape 2 (import clubs/joueurs)
+ *           0 ligue → étape 3 (ligues)
+ *           sinon → étape 4 (participants)
+ *           Sans compteurs fournis → étape 2 (comportement historique).
  * AUCTION → étape 5 (saison ouverte aux enchères, fin de préparation)
  * Autres  → null  (statut non reprenable, rester à l'étape 1)
  *
  * Le retour null indique à l'appelant qu'aucune reprise n'est applicable.
  */
-export function resolveStepFromStatus(status: string): number | null {
+export interface SeasonCounts {
+  clubs: number;
+  leagues: number;
+}
+
+export function resolveStepFromStatus(status: string, counts?: SeasonCounts): number | null {
   switch (status) {
     case "SETUP":
-      return 2;
+      if (!counts || counts.clubs === 0) return 2;
+      if (counts.leagues === 0) return 3;
+      return 4;
     case "AUCTION":
       return 5;
     default:
