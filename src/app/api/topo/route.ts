@@ -16,7 +16,10 @@ async function callClaude(prompt: string): Promise<string> {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-5",
+      // Sonnet 5 : thinking actif par defaut et compte dans max_tokens ;
+      // desactive pour garder le budget 600 et content[0] en bloc text.
+      thinking: { type: "disabled" },
       max_tokens: 600,
       messages: [{ role: "user", content: prompt }],
     }),
