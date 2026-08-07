@@ -330,6 +330,25 @@ export async function POST(request: Request) {
     };
 
     if (action === "open") {
+      // Garde-fou : jamais d'enchère sur une ligue d'une saison clôturée
+      // (pendant la préparation, aucune saison n'est courante et la liste des
+      // ligues contient encore les divisions de la saison passée).
+      const league = await prisma.league.findUnique({
+        where: { id: leagueId },
+        include: { season: { select: { status: true, label: true } } },
+      });
+      if (!league) {
+        return NextResponse.json({ error: "Ligue introuvable" }, { status: 404 });
+      }
+      if (league.season?.status === "CLOSED") {
+        return NextResponse.json(
+          {
+            error: `Cette ligue appartient à la saison clôturée ${league.season.label} — sélectionne une division de la nouvelle saison.`,
+          },
+          { status: 409 }
+        );
+      }
+
       // Valider la deadline si fournie
       const deadlineDate = deadline ? new Date(deadline) : null;
       if (deadlineDate !== null && isNaN(deadlineDate.getTime())) {
