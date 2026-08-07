@@ -103,7 +103,16 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
         const res = await fetch("/api/admin/seasons", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: season.id, status: to, ...(to === "ACTIVE" ? { isCurrent: true } : {}) }),
+          // Ouvrir les enchères (SETUP -> AUCTION) marque la saison comme
+          // courante : c'est le moment où le module enchères doit scoper joueurs,
+          // clubs, ligues et URL sur la nouvelle saison. Sans ça, le runtime
+          // reste en mode legacy (aucun filtre) et mélange les saisons passées.
+          // WINTER -> ACTIVE conserve aussi la saison courante.
+          body: JSON.stringify({
+            id: season.id,
+            status: to,
+            ...(to === "ACTIVE" || to === "AUCTION" ? { isCurrent: true } : {}),
+          }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Erreur");
