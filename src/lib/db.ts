@@ -122,16 +122,22 @@ export async function getLeagues() {
       ? await prisma.league.findMany({
           where: { seasonId: scope.season.id },
           orderBy: [{ tier: "asc" }, { id: "asc" }],
+          include: { season: { select: { status: true } } },
         })
       : await prisma.league.findMany({
           where: { id: { gt: 0 } }, // exclude legacy league 0
           orderBy: { id: "asc" },
+          include: { season: { select: { status: true } } },
         });
   return leagues.map((l) => ({
     id: l.id,
     slug: leagueSlug(l.name),
     name: l.name,
     dbId: l.id,
+    // Statut de la saison de rattachement (null = ligue legacy non rattachée).
+    // Permet aux consommateurs admin d'écarter les ligues de saisons clôturées
+    // pendant la fenêtre de transition où aucune saison n'est courante.
+    seasonStatus: l.season?.status ?? null,
   }));
 }
 

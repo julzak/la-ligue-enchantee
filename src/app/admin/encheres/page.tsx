@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Gavel, Loader2, Clock, AlertTriangle, Check, Copy, ClipboardCheck, Search, X, Send, UserPlus } from "lucide-react";
 import { formatParticipantRecap, formatAllRecaps, type ParticipantRoundRecap } from "@/lib/auction-recap";
 import { validateSubmission, type Line, type EnginePlayer } from "@/lib/auction-engine";
+import { isLeagueAuctionable, type SeasonStatus } from "@/lib/season-mutation-guard";
 
 interface AuctionData {
   id: number;
@@ -400,7 +401,16 @@ export default function AdminEncheresPage() {
   useEffect(() => {
     fetch("/api/admin/jokers/leagues")
       .then((r) => r.json())
-      .then((d) => setLeagues(d.leagues ?? []))
+      // Écarte les divisions des saisons clôturées : pendant la préparation
+      // (aucune saison courante), la liste contient sinon les ligues de la
+      // saison passée en plus des nouvelles.
+      .then((d) =>
+        setLeagues(
+          (d.leagues ?? []).filter((l: League & { seasonStatus?: SeasonStatus | null }) =>
+            isLeagueAuctionable(l.seasonStatus ?? null)
+          )
+        )
+      )
       .catch(() => {});
   }, []);
 

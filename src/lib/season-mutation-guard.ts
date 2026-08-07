@@ -21,6 +21,17 @@ export function canMutateSeason(season: MutationGuardInput): boolean {
   return season.status === "SETUP" && !season.isCurrent;
 }
 
+/**
+ * Une ligue est éligible aux enchères sauf si sa saison de rattachement est
+ * clôturée. Pendant la préparation d'une nouvelle saison, aucune saison n'est
+ * courante : la liste des ligues contient alors les divisions de la saison
+ * passée EN PLUS des nouvelles, d'où le risque d'ouvrir un tour sur une
+ * division morte. Une ligue legacy sans saison (null) reste éligible.
+ */
+export function isLeagueAuctionable(seasonStatus: SeasonStatus | null): boolean {
+  return seasonStatus !== "CLOSED";
+}
+
 export function assertCanMutateSeason(season: MutationGuardInput): void {
   if (!canMutateSeason(season)) {
     throw new Error(
