@@ -117,6 +117,11 @@ export default function SeasonManager({ refreshKey = 0, onResumeSetup }: SeasonM
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Erreur");
         setMsg(`Saison ${season.label} -> ${to}`);
+        // Ouvrir les enchères doit refléter la progression dans le stepper
+        // du wizard (étape 5) sans attendre un rechargement de page.
+        if (to === "AUCTION") {
+          onResumeSetup?.({ id: season.id, label: season.label, status: "AUCTION" });
+        }
       }
       await load();
     } catch (e) {

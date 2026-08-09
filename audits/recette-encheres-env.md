@@ -273,3 +273,25 @@ Suite au merge du correctif chantier/04 (commit 13df70a) et au re-smoke :
 ---
 
 *Environnement préparé le 2026-06-11 par Claude Code. Re-smoke exécuté le 2026-06-11.*
+
+---
+
+## Alignements de schéma appliqués le 2026-08-09
+
+Le conteneur datait du 2026-06-11 ; deux évolutions prod n'y avaient jamais été reportées :
+
+```sql
+ALTER TABLE SCORING_CONFIG
+  ADD COLUMN deadline_hour INT NOT NULL DEFAULT 15,
+  ADD COLUMN early_match_hour INT NOT NULL DEFAULT 17,
+  ADD COLUMN early_match_offset_hours INT NOT NULL DEFAULT 2;
+
+CREATE TABLE APP_CONFIG (
+  NAME varchar(50) NOT NULL,
+  VALUE text,
+  UPDATED_AT datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (NAME)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+En cas de recréation from scratch du conteneur, appliquer aussi ces deux blocs.
