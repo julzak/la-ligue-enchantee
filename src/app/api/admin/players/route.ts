@@ -21,9 +21,19 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   if (searchParams.get("list") === "clubs") {
-    const clubs = await prisma.$queryRawUnsafe<{ ID_CLUB: number; NAME: string }[]>(
-      "SELECT ID_CLUB, NAME FROM CLUB ORDER BY NAME"
-    );
+    // Clubs de la saison courante uniquement : la liste non scopée mélangeait
+    // les 18 clubs actuels avec les fiches des saisons passées (mêmes clubs
+    // sous leurs anciens noms), source d'erreur d'affectation. Fallback legacy
+    // (aucune saison courante) : tous les clubs, comportement historique.
+    const currentSeason = await getCurrentSeason();
+    const clubs = currentSeason
+      ? await prisma.$queryRawUnsafe<{ ID_CLUB: number; NAME: string }[]>(
+          "SELECT ID_CLUB, NAME FROM CLUB WHERE ID_SEASON = ? ORDER BY NAME",
+          currentSeason.id
+        )
+      : await prisma.$queryRawUnsafe<{ ID_CLUB: number; NAME: string }[]>(
+          "SELECT ID_CLUB, NAME FROM CLUB ORDER BY NAME"
+        );
     return NextResponse.json({
       clubs: clubs.map((c) => ({ id: Number(c.ID_CLUB), name: c.NAME })),
     });
