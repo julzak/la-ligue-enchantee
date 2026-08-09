@@ -13,6 +13,20 @@ const VALID_POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"];
 // saison : l'ancien id codé en dur (21) ne correspondait à aucun club.
 const LEGION_ETRANGERE_NAME = "Légion étrangère";
 
+// Fiche « Légion étrangère » de la saison donnée, créée au besoin (idempotent
+// par nom + saison). Chaque saison a la sienne : celle des saisons passées
+// reste attachée à leur historique.
+async function ensureLegionClub(seasonId: number | null): Promise<{ id: number; name: string }> {
+  const legion = await prisma.club.findFirst({
+    where: { name: LEGION_ETRANGERE_NAME, seasonId },
+  });
+  if (legion) return { id: legion.id, name: legion.name };
+  const created = await prisma.club.create({
+    data: { name: LEGION_ETRANGERE_NAME, idClubEq: "", seasonId },
+  });
+  return { id: created.id, name: created.name };
+}
+
 // GET: search players by name
 export async function GET(request: Request) {
   const auth = await requireAdmin();
@@ -26,6 +40,11 @@ export async function GET(request: Request) {
     // sous leurs anciens noms), source d'erreur d'affectation. Fallback legacy
     // (aucune saison courante) : tous les clubs, comportement historique.
     const currentSeason = await getCurrentSeason();
+    // La Légion étrangère de la saison doit toujours figurer dans la liste
+    // (pari mercato) : on la crée au besoin AVANT de lister, sinon le scoping
+    // saison la fait disparaître tant qu'aucun joueur n'y a été créé
+    // (signalé par Thomas le 2026-08-11).
+    if (currentSeason) await ensureLegionClub(currentSeason.id);
     const clubs = currentSeason
       ? await prisma.$queryRawUnsafe<{ ID_CLUB: number; NAME: string }[]>(
           "SELECT ID_CLUB, NAME FROM CLUB WHERE ID_SEASON = ? ORDER BY NAME",
@@ -94,18 +113,8 @@ export async function POST(request: Request) {
 
     let targetClubId = clubId ? Number(clubId) : 0;
     if (!targetClubId) {
-      // Sans club explicite : Légion étrangère de la saison courante,
-      // créée au besoin (idempotent par nom + saison).
-      const legion = await prisma.club.findFirst({
-        where: { name: LEGION_ETRANGERE_NAME, seasonId: currentSeason?.id ?? null },
-      });
-      targetClubId = legion
-        ? legion.id
-        : (
-            await prisma.club.create({
-              data: { name: LEGION_ETRANGERE_NAME, idClubEq: "", seasonId: currentSeason?.id ?? null },
-            })
-          ).id;
+      // Sans club explicite : Légion étrangère de la saison courante.
+      targetClubId = (await ensureLegionClub(currentSeason?.id ?? null)).id;
     }
 
     const targetClub = await prisma.club.findUnique({ where: { id: targetClubId } });
