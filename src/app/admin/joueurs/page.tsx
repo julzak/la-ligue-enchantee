@@ -39,6 +39,7 @@ export default function AdminJoueursPage() {
   const [editFname, setEditFname] = useState("");
   const [editLname, setEditLname] = useState("");
   const [editPosition, setEditPosition] = useState("");
+  const [editClubId, setEditClubId] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
   // Fetch clubs on mount
@@ -100,6 +101,7 @@ export default function AdminJoueursPage() {
     setEditFname(p.fname);
     setEditLname(p.lname);
     setEditPosition(p.position);
+    setEditClubId(p.clubId);
   }
 
   function cancelEdit() {
@@ -113,13 +115,28 @@ export default function AdminJoueursPage() {
       const res = await fetch("/api/admin/players", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editId, fname: editFname, lname: editLname, position: editPosition }),
+        body: JSON.stringify({
+          id: editId,
+          fname: editFname,
+          lname: editLname,
+          position: editPosition,
+          ...(editClubId ? { clubId: editClubId } : {}),
+        }),
       });
       const data = await res.json();
       if (data.ok) {
+        const clubName = clubs.find((c) => c.id === editClubId)?.name;
         setResults((prev) =>
           prev.map((p) =>
-            p.id === editId ? { ...p, fname: editFname.trim(), lname: editLname.trim(), position: editPosition } : p
+            p.id === editId
+              ? {
+                  ...p,
+                  fname: editFname.trim(),
+                  lname: editLname.trim(),
+                  position: editPosition,
+                  ...(editClubId ? { clubId: editClubId, clubName: clubName ?? p.clubName } : {}),
+                }
+              : p
           )
         );
         setEditId(null);
@@ -257,6 +274,17 @@ export default function AdminJoueursPage() {
                         <option key={pos} value={pos}>{pos}</option>
                       ))}
                     </select>
+                    {/* Transferts du mercato réel : déplacer le joueur vers son
+                        nouveau club (préserve son ID, donc ses mises) */}
+                    <select
+                      value={editClubId}
+                      onChange={(e) => setEditClubId(Number(e.target.value))}
+                      className="h-7 bg-surface-2 border border-gold/30 rounded px-1 text-xs text-white focus:outline-none focus:border-gold"
+                    >
+                      {clubs.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
                     <div className="flex items-center gap-1">
                       <button onClick={saveEdit} disabled={saving} className="p-1 text-vert hover:text-vert/80" title="Sauvegarder">
                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
@@ -265,7 +293,6 @@ export default function AdminJoueursPage() {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <span />
                   </>
                 ) : (
                   <>

@@ -96,17 +96,20 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT: edit player fname/lname/position
+// PUT: edit player fname/lname/position, et clubId optionnel (transferts du
+// mercato réel : la source effectifs est en retard sur les transferts, le
+// déplacement manuel préserve l'ID joueur donc les mises qui le référencent).
 export async function PUT(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
   try {
 
-    const { id, fname, lname, position } = (await request.json()) as {
+    const { id, fname, lname, position, clubId } = (await request.json()) as {
       id: number;
       fname: string;
       lname: string;
       position: string;
+      clubId?: number;
     };
 
     if (!id) {
@@ -119,13 +122,30 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Position invalide" }, { status: 400 });
     }
 
-    const result = await prisma.$executeRawUnsafe(
-      "UPDATE PLAYER SET FNAME = ?, LNAME = ?, POSITION = ? WHERE ID_PLAYER = ?",
-      fname.trim(),
-      lname.trim(),
-      position,
-      id
-    );
+    if (clubId !== undefined) {
+      // Le club cible doit exister et appartenir à la même saison que le
+      // joueur (pas de déplacement inter-saisons, qui casserait le scoping).
+      const player = await prisma.player.findUnique({ where: { id: Number(id) } });
+      if (!player) return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
+      const club = await prisma.club.findUnique({ where: { id: Number(clubId) } });
+      if (!club) return NextResponse.json({ error: "Club introuvable" }, { status: 404 });
+      if ((club.seasonId ?? null) !== (player.seasonId ?? null)) {
+        return NextResponse.json(
+          { error: "Le club cible n'appartient pas à la même saison que le joueur" },
+          { status: 400 }
+        );
+      }
+    }
+
+    const result = clubId !== undefined
+      ? await prisma.$executeRawUnsafe(
+          "UPDATE PLAYER SET FNAME = ?, LNAME = ?, POSITION = ?, ID_CLUB = ? WHERE ID_PLAYER = ?",
+          fname.trim(), lname.trim(), position, Number(clubId), id
+        )
+      : await prisma.$executeRawUnsafe(
+          "UPDATE PLAYER SET FNAME = ?, LNAME = ?, POSITION = ? WHERE ID_PLAYER = ?",
+          fname.trim(), lname.trim(), position, id
+        );
 
     if (result === 0) {
       return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
