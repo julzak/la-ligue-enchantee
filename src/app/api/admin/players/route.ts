@@ -4,9 +4,13 @@ import { NextResponse } from "next/server";
 import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getCurrentSeason } from "@/lib/season";
 
 const VALID_POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"];
-const LEGION_ETRANGERE_ID = 21;
+// Club d'accueil des joueurs hors championnat (pari mercato historique :
+// miser sur un joueur pas encore arrivé en Ligue 1). Résolu par NOM et par
+// saison : l'ancien id codé en dur (21) ne correspondait à aucun club.
+const LEGION_ETRANGERE_NAME = "Légion étrangère";
 
 // GET: search players by name
 export async function GET(request: Request) {
@@ -73,14 +77,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Position invalide" }, { status: 400 });
     }
 
-    const targetClubId = clubId ?? LEGION_ETRANGERE_ID;
+    const currentSeason = await getCurrentSeason();
+
+    let targetClubId = clubId ? Number(clubId) : 0;
+    if (!targetClubId) {
+      // Sans club explicite : Légion étrangère de la saison courante,
+      // créée au besoin (idempotent par nom + saison).
+      const legion = await prisma.club.findFirst({
+        where: { name: LEGION_ETRANGERE_NAME, seasonId: currentSeason?.id ?? null },
+      });
+      targetClubId = legion
+        ? legion.id
+        : (
+            await prisma.club.create({
+              data: { name: LEGION_ETRANGERE_NAME, idClubEq: "", seasonId: currentSeason?.id ?? null },
+            })
+          ).id;
+    }
+
+    const targetClub = await prisma.club.findUnique({ where: { id: targetClubId } });
+    if (!targetClub) {
+      return NextResponse.json({ error: "Club introuvable" }, { status: 404 });
+    }
+
+    // ID_SEASON obligatoire pour que le joueur soit visible du pool d'enchères
+    // (le scoping saison exclut les joueurs sans saison). Un joueur créé sans
+    // saison était introuvable à la mise : chaîne du pari mercato cassée.
+    const playerSeasonId = targetClub.seasonId ?? currentSeason?.id ?? null;
 
     await prisma.$executeRawUnsafe(
-      "INSERT INTO PLAYER (ID_CLUB, FNAME, LNAME, POSITION) VALUES (?, ?, ?, ?)",
+      "INSERT INTO PLAYER (ID_CLUB, FNAME, LNAME, POSITION, ID_SEASON) VALUES (?, ?, ?, ?, ?)",
       targetClubId,
       fname.trim(),
       lname.trim(),
-      position
+      position,
+      playerSeasonId
     );
 
     const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>(
