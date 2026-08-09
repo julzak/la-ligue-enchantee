@@ -263,6 +263,54 @@ export async function GET(request: Request) {
   // Mises pending du tour courant (si le tour sélectionné est le tour courant et qu'il est fermé mais pas encore dépouillé)
   const myPendingBids: { playerName: string; position: string; clubName: string; amount: number }[] = [];
 
+  // Grand déballage (décision 2026-08-10, règlement §7) : une fois la PHASE
+  // terminée (status 'resolved'), TOUTES les mises de TOUS les tours
+  // deviennent publiques : noms, montants, issues. Tant que des tours restent
+  // à jouer, rien ne fuit (seules les acquisitions sont publiques ci-dessus) :
+  // révéler les mises perdues en cours de phase renseignerait chacun sur les
+  // cibles et budgets des autres.
+  let fullDisclosure: {
+    round: number;
+    bids: {
+      userName: string; playerName: string; position: string;
+      clubName: string; amount: number; status: string;
+    }[];
+  }[] | null = null;
+  if (auction.status === "resolved") {
+    const allBidRows = await prisma.$queryRawUnsafe<{
+      round: number; user_name: string; player_fname: string; player_lname: string;
+      position: string; club_name: string; amount: number; status: string;
+    }[]>(
+      `SELECT b.round, u.NAME as user_name, p.FNAME as player_fname, p.LNAME as player_lname,
+              p.POSITION as position, c.NAME as club_name, b.amount, b.status
+       FROM AUCTION_BID b
+       JOIN USER u ON b.user_id = u.ID_USER
+       JOIN PLAYER p ON b.player_id = p.ID_PLAYER
+       JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
+       WHERE b.auction_id = ?
+       ORDER BY b.round, p.LNAME, b.amount DESC`,
+      auction.id
+    );
+    const byRound = new Map<number, typeof allBidRows>();
+    for (const row of allBidRows) {
+      const r = Number(row.round);
+      const arr = byRound.get(r) ?? [];
+      arr.push(row);
+      byRound.set(r, arr);
+    }
+    fullDisclosure = Array.from(byRound.entries()).map(([round, rows]) => ({
+      round,
+      bids: rows.map((b) => ({
+        userName: (b.user_name ?? "").replace(/<[^>]*>/g, "").trim(),
+        playerName: `${b.player_fname} ${b.player_lname}`.trim(),
+        position: b.position,
+        clubName: b.club_name,
+        amount: Number(b.amount),
+        status: b.status,
+      })),
+    }));
+  }
+
   return NextResponse.json({
     auctionId: auction.id,
     auctionStatus: auction.status,
@@ -283,5 +331,6 @@ export async function GET(request: Request) {
     })),
     myPendingBids,
     allResults,
+    fullDisclosure,
   });
 }
