@@ -63,6 +63,47 @@
   /* Light mode shadows */
   [data-theme="light"] .bg-surface { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 
+  /* Light mode : les écrans d'enchères (maquette dark BRIEF-06) utilisent des
+     teintes claires codées en dur (papier/beige). Sur fond clair elles sont
+     invisibles — signalé par Pierre : montants de mise illisibles. On les
+     bascule vers une encre sombre équivalente. */
+  [data-theme="light"] .text-paper,
+  [data-theme="light"] .text-paper-dim,
+  [data-theme="light"] [class*="text-[#C9C3B5]"],
+  [data-theme="light"] [class*="text-[#D8D3C7]"],
+  [data-theme="light"] [class*="text-[#D8CBB6]"],
+  [data-theme="light"] [class*="text-[#D2CCBD]"],
+  [data-theme="light"] [class*="text-[#C9B7A8]"],
+  [data-theme="light"] [class*="text-[#C9B7A0]"],
+  [data-theme="light"] [class*="text-[#B8B3A7]"] { color: #2E2B24 !important; }
+  [data-theme="light"] [class*="text-[#A8A294]"],
+  [data-theme="light"] [class*="text-[#A39E92]"],
+  [data-theme="light"] [class*="text-[#9C978B]"],
+  [data-theme="light"] [class*="text-[#8C877C]"],
+  [data-theme="light"] [class*="text-[#8A8270]"] { color: #55503F !important; }
+  [data-theme="light"] [class*="text-[#7C776C]"],
+  [data-theme="light"] [class*="text-[#6E6A60]"] { color: #6B665A !important; }
+  /* Boutons/pastilles sur fond doré : l'encre sombre reste correcte, mais les
+     fonds sombres codés en dur de ces écrans doivent s'éclaircir. */
+  [data-theme="light"] [class*="bg-[#16160F]"],
+  [data-theme="light"] [class*="bg-[#1B1B19]"],
+  [data-theme="light"] [class*="bg-[#201F1C]"],
+  [data-theme="light"] [class*="bg-[#201F1D]"] { background-color: var(--color-surface) !important; }
+  [data-theme="light"] [class*="bg-[#2A2824]"],
+  [data-theme="light"] [class*="bg-[#252523]"],
+  [data-theme="light"] [class*="bg-[#242220]"],
+  [data-theme="light"] [class*="bg-[#262421]"],
+  [data-theme="light"] [class*="bg-[#2C2A24]"],
+  [data-theme="light"] [class*="bg-[#2C2A22]"],
+  [data-theme="light"] [class*="bg-[#191917]"],
+  [data-theme="light"] [class*="bg-[#1A1A18]"] { background-color: var(--color-surface-2) !important; }
+  [data-theme="light"] [class*="border-[#232220]"],
+  [data-theme="light"] [class*="border-[#2A2824]"],
+  [data-theme="light"] [class*="border-[#322F2A]"],
+  [data-theme="light"] [class*="border-[#34322B]"],
+  [data-theme="light"] [class*="border-[#38362F]"],
+  [data-theme="light"] [class*="border-[#443F33]"] { border-color: rgba(0,0,0,0.12) !important; }
+
   /* Zebra striping for long lists */
   .zebra > :nth-child(even) { background-color: rgba(255,255,255,0.015); }
   [data-theme="light"] .zebra > :nth-child(even) { background-color: rgba(0,0,0,0.02); }

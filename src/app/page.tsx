@@ -243,10 +243,10 @@ async function LeagueSummariesSection() {
     <div>
       <h2 className="font-serif text-lg text-white mb-4">Les ligues</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[...leagues].sort((a, b) => {
-          const order: Record<string, number> = { "ligue-1": 0, "ligue-2": 1, "national-1": 2 };
-          return (order[a.slug] ?? 9) - (order[b.slug] ?? 9);
-        }).map((league) => {
+        {/* getLeagues renvoie déjà l'ordre des divisions (tier croissant) ;
+            l'ancien tri par slugs codés en dur ne connaissait pas les
+            nouvelles ligues et scramblait l'ordre. */}
+        {leagues.map((league) => {
           const stats = leagueStandingsMap.get(league.slug);
           if (!stats) return null;
           const leaderName = stats.standings[0]?.userName ?? "";
@@ -406,6 +406,30 @@ async function SidebarContent() {
 export default async function HomePage() {
   const currentMatchday = await getCurrentMatchday();
 
+  // Cartes de raccourci construites depuis les ligues réelles : les anciennes
+  // cartes codées en dur pointaient /ligue/national-1, une URL morte depuis la
+  // saison 2026-2027 (404 signalé par les participants). Logos réutilisés
+  // quand le nom correspond, initiale dorée sinon.
+  const quickLeagues = await getLeagues();
+  const leagueImg = (name: string): string | null => {
+    if (/^ligue 1/i.test(name)) return "/leagues/ligue1.svg";
+    if (/^ligue 2/i.test(name)) return "/leagues/ligue2.png";
+    if (/national/i.test(name)) return "/leagues/national.png";
+    return null;
+  };
+  const quickLinks = [
+    ...quickLeagues.map((l) => ({
+      href: `/ligue/${l.slug}/classement`,
+      label: l.name,
+      img: leagueImg(l.name),
+      bg: leagueImg(l.name) ? "bg-white" : "bg-gold/20",
+      invert: false,
+      fallback: l.name[0]?.toUpperCase() ?? "?",
+    })),
+    { href: "/coupe", label: "Coupe", img: "/leagues/coupe.png", bg: "bg-[#1B2A5B]", invert: true, fallback: "C" },
+    { href: "/forum", label: "Forum", img: null, bg: "bg-gold/20", invert: false, fallback: "💬" },
+  ];
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -440,13 +464,7 @@ export default async function HomePage() {
             <p className="text-xs text-white/30 italic tracking-wide">La fantasy league est une affaire sérieuse</p>
             {/* Quick links — visual cards with logos */}
             <div className="flex justify-center gap-3 mt-5 flex-wrap">
-              {[
-                { href: "/ligue/ligue-1/classement", label: "Ligue 1", img: "/leagues/ligue1.svg", bg: "bg-[#0052B4]", invert: false },
-                { href: "/ligue/ligue-2/classement", label: "Ligue 2", img: "/leagues/ligue2.png", bg: "bg-white", invert: false },
-                { href: "/ligue/national-1/classement", label: "National", img: "/leagues/national.png", bg: "bg-[#2BA3D4]", invert: false },
-                { href: "/coupe", label: "Coupe", img: "/leagues/coupe.png", bg: "bg-[#1B2A5B]", invert: true },
-                { href: "/forum", label: "Forum", img: null, bg: "bg-gold/20", invert: false },
-              ].map((item) => (
+              {quickLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -457,7 +475,7 @@ export default async function HomePage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.img} alt={item.label} className={`w-8 h-8 sm:w-10 sm:h-10 object-contain ${item.invert ? "invert brightness-0 contrast-200 brightness-200" : ""}`} style={item.invert ? { filter: "invert(1)" } : undefined} />
                     ) : (
-                      <span className="text-gold text-lg">💬</span>
+                      <span className="text-gold text-lg font-serif">{item.fallback}</span>
                     )}
                   </div>
                   <span className="text-[10px] sm:text-xs text-muted group-hover:text-gold transition-colors text-center leading-tight">{item.label}</span>
