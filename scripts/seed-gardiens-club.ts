@@ -64,10 +64,17 @@ async function main() {
   // Si la saison courante ne contient que des pseudo-gardiens (ou aucun
   // joueur du tout), seeder créerait un périmètre où les pseudo-joueurs sont
   // les seuls joueurs scopés, excluant tous les vrais joueurs.
+  // Attention SQL trois valeurs : `NOT (link LIKE ...)` exclut aussi les LINK
+  // NULL. Or l'import 2026-2027 ne renseigne pas LINK (contrairement aux
+  // anciens joueurs scrapés L'Équipe) : la garde voyait "0 joueur nommé" avec
+  // 471 joueurs en base et refusait le seed (trouvé en répétition P2).
   const namedPlayersCount = await prisma.player.count({
     where: {
       seasonId: currentSeason.id,
-      NOT: { link: { startsWith: CLUB_GK_KEY_PREFIX } },
+      OR: [
+        { link: null },
+        { NOT: { link: { startsWith: CLUB_GK_KEY_PREFIX } } },
+      ],
     },
   });
   if (namedPlayersCount === 0 && apply) {

@@ -581,11 +581,16 @@ export default function EncheresPage() {
         })));
       }
 
-      // Afficher l'onglet Résultats dès qu'il existe des mises résolues
+      // Afficher l'onglet Résultats dès qu'il existe des mises résolues OU
+      // qu'au moins un tour a été dépouillé (currentRound > 1). Le payload ne
+      // contient que les mises du tour COURANT : après l'ouverture du tour
+      // suivant, un participant sans nouvelle mise perdait tout accès à ses
+      // résultats (retraits, égalités, motifs) alors que l'historique existe
+      // dans /api/auction/results. Règle 3.2.d : consultables sur la plateforme.
       const resolved: MyBid[] = (data.myBids ?? []).filter((b: MyBid) =>
         ["won", "lost", "tie", "removed"].includes(b.status)
       );
-      if (resolved.length > 0) setHasResults(true);
+      if (resolved.length > 0 || (data.auction?.currentRound ?? 1) > 1) setHasResults(true);
     } catch {}
     setLoading(false);
   }, [leagueDbId]);
