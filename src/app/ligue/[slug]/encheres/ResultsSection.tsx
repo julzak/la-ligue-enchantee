@@ -62,6 +62,17 @@ interface ResultsData {
   myRemovals: RoundRemoval[];
   myPendingBids: { playerName: string; position: string; clubName: string; amount: number }[];
   allResults: ParticipantResult[] | null;
+  /** Grand déballage : toutes les mises de tous les tours, servi par l'API
+      uniquement quand la phase est terminée (décision 2026-08-10). */
+  fullDisclosure:
+    | {
+        round: number;
+        bids: {
+          userName: string; playerName: string; position: string;
+          clubName: string; amount: number; status: string;
+        }[];
+      }[]
+    | null;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -497,6 +508,57 @@ export function ResultsSection({ leagueDbId }: { leagueDbId: number }) {
             ))}
             <div className="text-center text-[9.5px] text-[#8A8270] italic py-2">
               Visible uniquement après dépouillement · source des notes : L&apos;Équipe
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Grand déballage (phase terminée uniquement) ──
+          Toutes les mises de tous les tours, groupées par joueur : qui a
+          coiffé qui, et pour combien. Le serveur ne fournit ces données
+          qu'une fois la phase clôturée. */}
+      {data.fullDisclosure && data.fullDisclosure.length > 0 && (
+        <div>
+          <div className="text-[10.5px] font-bold tracking-[1.4px] text-muted uppercase mb-2 px-0.5">
+            Le grand déballage · toutes les mises de la phase
+          </div>
+          <div className="bg-[#F5F2EB] rounded-xl px-4 pt-4 pb-2 shadow-[0_12px_30px_rgba(0,0,0,.38)] space-y-3">
+            {data.fullDisclosure.map((r) => {
+              const byPlayer = new Map<string, typeof r.bids>();
+              for (const b of r.bids) {
+                const arr = byPlayer.get(b.playerName) ?? [];
+                arr.push(b);
+                byPlayer.set(b.playerName, arr);
+              }
+              return (
+                <div key={r.round}>
+                  <div className="border-b-[1.5px] border-[#1A1A18] pb-1.5 mb-1">
+                    <span className="font-serif font-bold text-[15px] text-[#1A1A18]">Tour {r.round}</span>
+                  </div>
+                  {Array.from(byPlayer.entries()).map(([playerName, bids]) => (
+                    <div key={playerName} className="py-1.5 border-b border-[#DAD4C5] last:border-b-0">
+                      <span className="text-[12px] font-semibold text-[#1A1A18]">{playerName}</span>
+                      <span className="text-[11.5px] text-[#4A463C]">
+                        {" — "}
+                        {bids
+                          .map((b) =>
+                            b.status === "won"
+                              ? `${b.userName} ${b.amount} ✓`
+                              : b.status === "tie"
+                                ? `${b.userName} ${b.amount} (égalité)`
+                                : b.status === "removed"
+                                  ? `${b.userName} ${b.amount} (retiré)`
+                                  : `${b.userName} ${b.amount}`
+                          )
+                          .join("  ·  ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            <div className="text-center text-[9.5px] text-[#8A8270] italic py-2">
+              Archives complètes de la phase · ✓ = acquis
             </div>
           </div>
         </div>
