@@ -3,6 +3,7 @@ import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isDeadlinePassed, deadlineErrorMessage } from "@/lib/auction-deadline";
+import { isMember } from "@/lib/auction-membership";
 import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
 import { findDuplicatePlayerIds } from "@/lib/auction-duplicate-bids";
 import { validateSummerBids } from "@/lib/auction-validation";
@@ -180,6 +181,22 @@ export async function POST(request: Request) {
     leagueId: number;
     bids: { playerId: number; amount: number; playerOutId?: number }[];
   };
+
+  // Garde d'appartenance (même contrôle que /api/auction/results) : sans elle,
+  // n'importe quel compte pouvait poster une mise dans l'enchère d'une autre
+  // ligue. Mise invisible de la console admin (non comptée dans les soumissions)
+  // mais BLOQUANTE au dépouillement (409 "mise(s) sans statut"), sans aucun
+  // outil admin pour la retirer. Trouvé en répétition générale P2 (2026-08-09).
+  const [memberRow] = await prisma.$queryRawUnsafe<{ cnt: number }[]>(
+    "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+    leagueId, userId
+  );
+  if (!isMember(Number(memberRow?.cnt ?? 0))) {
+    return NextResponse.json(
+      { error: "Tu n'es pas membre de cette ligue" },
+      { status: 403 }
+    );
+  }
 
   // Find open auction
   const auction = await prisma.$queryRawUnsafe<{

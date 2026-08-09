@@ -8,7 +8,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Gavel, Loader2, Clock, AlertTriangle, Check, Copy, ClipboardCheck, Search, X, Send, UserPlus } from "lucide-react";
 import { formatParticipantRecap, formatAllRecaps, type ParticipantRoundRecap } from "@/lib/auction-recap";
-import { validateSubmission, type Line, type EnginePlayer } from "@/lib/auction-engine";
+import { validateSubmission, type EnginePlayer } from "@/lib/auction-engine";
+import { lineFromPosition } from "@/lib/auction-resolution";
 import { isLeagueAuctionable, type SeasonStatus } from "@/lib/season-mutation-guard";
 
 interface AuctionData {
@@ -94,15 +95,11 @@ function initials(name: string): string {
 
 const LINE_LABEL: Record<string, string> = { GK: "G", DEF: "DEF", MID: "MIL", ATT: "ATT" };
 
-// Même mapping position → ligne que la page participant (positionToLine), pour
-// que le compteur de quotas affiché à l'admin soit identique à celui du joueur.
-function positionToLine(pos: string): Line {
-  const p = pos.toLowerCase();
-  if (p.includes("ardien") || p === "gk" || p === "g") return "GK";
-  if (p === "def" || p.includes("défenseur") || p.includes("defenseur")) return "DEF";
-  if (p === "mid" || p === "mil" || p.includes("milieu")) return "MID";
-  return "ATT";
-}
+// Mapping canonique du moteur, identique à la page participant. L'ancienne
+// copie locale ne reconnaissait pas "Défense" (fallback "ATT") : les compteurs
+// de quotas affichés à l'admin classaient tous les défenseurs en attaquants
+// (même bug que le cas Coppola côté participant, corrigé la veille).
+const positionToLine = lineFromPosition;
 
 interface FreePlayer {
   id: number;
@@ -454,9 +451,12 @@ export default function AdminEncheresPage() {
         body: JSON.stringify({ action, leagueId: selectedLeague, ...extraBody }),
       });
       const data = await res.json();
-      setMessage(data.message ?? data.error ?? "OK");
       if (action === "close-phase" && data.ok) setPhaseCloseView(false);
-      fetchAuction();
+      // fetchAuction efface le message en début de chargement : rafraîchir
+      // D'ABORD, poser le message APRÈS, sinon une erreur (ex : 409 au
+      // dépouillement) disparaît instantanément et l'échec est silencieux.
+      await fetchAuction();
+      setMessage(data.message ?? data.error ?? "OK");
     } catch {
       setMessage("Erreur");
     } finally {
@@ -475,8 +475,8 @@ export default function AdminEncheresPage() {
         body: JSON.stringify({ action: "set-deadline", leagueId: selectedLeague, deadline }),
       });
       const data = await res.json();
+      await fetchAuction();
       setMessage(data.message ?? data.error ?? "OK");
-      fetchAuction();
     } catch {
       setMessage("Erreur");
     }
