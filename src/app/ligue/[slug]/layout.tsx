@@ -7,17 +7,16 @@ import { Navbar } from "@/components/layout/Navbar";
 import { LockCountdown } from "@/components/layout/LockCountdown";
 import { Gavel, Snowflake } from "lucide-react";
 
-const leagueNames: Record<string, string> = {
-  "ligue-1": "Ligue 1 (Baudens League)",
-  "ligue-2": "Ligue 2",
-  "national-1": "National 1",
-};
-
 export default function LigueLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const pathname = usePathname();
   const slug = params.slug as string;
-  const leagueName = leagueNames[slug] ?? slug;
+  // Nom réel de la ligue, résolu depuis la base (l'ancienne table codée en dur
+  // affichait les noms de la saison passée, ex "Ligue 1 (Baudens League)",
+  // et le slug brut pour toute nouvelle ligue). Fallback : slug lisible.
+  const [leagueName, setLeagueName] = useState(() =>
+    slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
 
   // Fetch current matchday + deadline from DB
   const [currentMatchday, setCurrentMatchday] = useState(28);
@@ -51,8 +50,11 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
         // Check auction
         const leaguesRes = await fetch("/api/admin/jokers/leagues");
         const leaguesData = await leaguesRes.json();
-        const league = (leaguesData.leagues ?? []).find((l: { slug: string }) => l.slug === slug);
+        const league = (leaguesData.leagues ?? []).find(
+          (l: { slug: string; name?: string }) => l.slug === slug
+        );
         if (!league) return;
+        if (league.name) setLeagueName(league.name);
         const res = await fetch(`/api/auction?leagueId=${league.dbId}`);
         const data = await res.json();
         if (data.auction?.isOpen) {

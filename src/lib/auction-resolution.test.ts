@@ -534,3 +534,38 @@ describe("entrées moteur : budgets et acquis reconstruits depuis les mises won"
     expect(input[0].owned).toHaveLength(10);
   });
 });
+
+// ── lineFromPosition : mapping avec le vocabulaire EXACT de la prod ─────────
+// Régression du 2026-08-09 (cas Coppola) : deux copies locales du mapping dans
+// l'UI ne reconnaissaient pas "Défense" (elles attendaient "défenseur") avec un
+// fallback "ATT" : tous les défenseurs s'affichaient en attaquants. Les
+// fixtures de test utilisaient "Défenseur", jamais le format réel de la base :
+// ces cas verrouillent le vocabulaire prod tel quel.
+describe("lineFromPosition : vocabulaire réel de la base de prod", () => {
+  it("import 2026-2027 : libellés courts", () => {
+    expect(lineFromPosition("Gardien")).toBe("GK");
+    expect(lineFromPosition("Défense")).toBe("DEF");
+    expect(lineFromPosition("Milieu")).toBe("MID");
+    expect(lineFromPosition("Attaque")).toBe("ATT");
+  });
+
+  it("données legacy : libellés préfixés N -", () => {
+    expect(lineFromPosition("1 - Gardien")).toBe("GK");
+    expect(lineFromPosition("2 - Défense")).toBe("DEF");
+    expect(lineFromPosition("3 - Milieu")).toBe("MID");
+    expect(lineFromPosition("4 - Attaque")).toBe("ATT");
+  });
+
+  it("sanity-check : l'ancien mapping UI bugué échouerait ces cas", () => {
+    // Copie exacte de l'ancien helper des pages enchères (supprimé).
+    const buggy = (pos: string) => {
+      const p = pos.toLowerCase();
+      if (p.includes("ardien") || p === "gk" || p === "g") return "GK";
+      if (p === "def" || p.includes("défenseur") || p.includes("defenseur")) return "DEF";
+      if (p === "mid" || p === "mil" || p.includes("milieu")) return "MID";
+      return "ATT";
+    };
+    expect(buggy("Défense")).toBe("ATT"); // le bug : défenseur classé attaquant
+    expect(lineFromPosition("Défense")).toBe("DEF"); // le correctif
+  });
+});

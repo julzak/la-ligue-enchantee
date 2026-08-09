@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Loader2, Search, X, Clock, Send, Lock, ArrowRightLeft, Minus, Plus } from "lucide-react";
 import { validateSubmission } from "@/lib/auction-engine";
 import type { Line, EnginePlayer } from "@/lib/auction-engine";
+import { lineFromPosition } from "@/lib/auction-resolution";
 import { ResultsSection } from "./ResultsSection";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -64,13 +65,12 @@ interface MyBid {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function positionToLine(pos: string): Line {
-  const p = pos.toLowerCase();
-  if (p.includes("ardien") || p === "gk" || p === "g") return "GK";
-  if (p === "def" || p.includes("défenseur") || p.includes("defenseur")) return "DEF";
-  if (p === "mid" || p === "mil" || p.includes("milieu")) return "MID";
-  return "ATT";
-}
+// Délégué au mapping canonique du moteur (auction-resolution). L'ancienne
+// copie locale ne reconnaissait pas "Défense" (elle attendait "défenseur") et
+// son fallback était "ATT" : tous les défenseurs s'affichaient en ATT et se
+// rangeaient dans la section Attaquants (signalé par Pierre, cas Coppola).
+// Ne JAMAIS re-dériver ce mapping localement : une seule source de vérité.
+const positionToLine = lineFromPosition;
 
 function positionLabel(pos: string): string {
   const line = positionToLine(pos);
