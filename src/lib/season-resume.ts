@@ -15,18 +15,21 @@ export interface ResumableSeason {
 
 /**
  * Parmi une liste de saisons retournées par GET /api/admin/seasons,
- * trouve la saison à reprendre. Seules les saisons EN PRÉPARATION sont
- * candidates : status ∈ {"SETUP","AUCTION"} ET isCurrent === false.
+ * trouve la saison à reprendre. Candidates :
+ * - SETUP non-courante (une SETUP courante est un état anormal, exclu) ;
+ * - AUCTION, courante OU non : depuis que "Ouvrir les enchères" marque la
+ *   saison comme courante (scoping du module enchères), l'état normal de la
+ *   phase enchères est AUCTION + isCurrent. L'exclure ferait retomber le
+ *   wizard à l'étape 1 pendant toute la phase (régression du 2026-08-09).
  *
- * Les saisons ACTIVE, WINTER, CLOSED ou isCurrent sont exclues pour éviter
- * qu'ouvrir "Nouvelle saison" en phase live saute à tort à l'étape d'import.
+ * Les saisons ACTIVE, WINTER, CLOSED restent exclues pour éviter qu'ouvrir
+ * "Nouvelle saison" en phase live saute à tort à l'étape d'import.
  *
  * Retourne la candidate la plus récente (id max), ou null si aucune.
  */
 export function findResumableSeason(seasons: ResumableSeason[]): ResumableSeason | null {
-  const RESUMABLE_STATUSES = new Set(["SETUP", "AUCTION"]);
   const candidates = seasons.filter(
-    (s) => RESUMABLE_STATUSES.has(s.status) && !s.isCurrent
+    (s) => s.status === "AUCTION" || (s.status === "SETUP" && !s.isCurrent)
   );
   if (candidates.length === 0) return null;
   // La plus récente = id le plus élevé

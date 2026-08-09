@@ -466,7 +466,8 @@ export default function NouvelleSaisonPage() {
           refreshKey={seasonManagerKey}
           onResumeSetup={(s) => {
             setSeason({ id: s.id, label: s.label, status: s.status });
-            setStep(2);
+            // AUCTION = préparation terminée, enchères en cours -> étape 5.
+            setStep(s.status === "AUCTION" ? 5 : 2);
           }}
         />
       </div>

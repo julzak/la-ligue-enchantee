@@ -4,6 +4,19 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { getAppConfig, setAppConfig, CONFIG_KEYS } from "@/lib/app-config";
 
+// Le driver renvoie les colonnes DATE/DATETIME en objet Date : String() donne
+// "Wed Sep 02..." et .slice(0,10) un fragment inutilisable par un <input type=date>.
+// Normalise en "YYYY-MM-DD" (en local, pour ne pas décaler d'un jour via UTC).
+function toDateInput(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    const mm = String(value.getMonth() + 1).padStart(2, "0");
+    const dd = String(value.getDate()).padStart(2, "0");
+    return `${value.getFullYear()}-${mm}-${dd}`;
+  }
+  return String(value).slice(0, 10);
+}
+
 function maskKey(key: string | null): string | null {
   if (!key) return null;
   return key.length <= 4 ? "****" : `****${key.slice(-4)}`;
@@ -80,15 +93,15 @@ export async function GET() {
   const jokers = {
     regularCount: regularJoker ? Number(regularJoker.max_count) : 4,
     summerCount: summerJoker ? Number(summerJoker.max_count) : 2,
-    summerDeadline: summerJoker?.deadline ? String(summerJoker.deadline).slice(0, 10) : "2025-09-15",
+    summerDeadline: toDateInput(summerJoker?.deadline) ?? "2025-09-15",
   };
 
   // Mercato
   const winterMercato = mercatoRows.find((m) => m.type === "winter");
   const mercatoHiver = {
     rankingMatchday: winterMercato?.ranking_matchday ?? null,
-    treveStart: winterMercato?.treve_start ? String(winterMercato.treve_start).slice(0, 10) : null,
-    treveEnd: winterMercato?.treve_end ? String(winterMercato.treve_end).slice(0, 10) : null,
+    treveStart: toDateInput(winterMercato?.treve_start),
+    treveEnd: toDateInput(winterMercato?.treve_end),
   };
 
   // Clés API effectifs/photos (jamais renvoyées en clair, seulement masquées)
@@ -152,20 +165,45 @@ export async function POST(request: Request) {
         );
         break;
 
-      case "jokers":
-        // Update regular jokers
-        await prisma.$executeRawUnsafe(
-          "UPDATE JOKER_CONFIG SET max_count = ? WHERE season = ? AND type = 'regular'",
-          data.regularCount, CURRENT_SEASON
-        );
-        // Update summer jokers
-        await prisma.$executeRawUnsafe(
-          "UPDATE JOKER_CONFIG SET max_count = ?, deadline = ? WHERE season = ? AND type = 'summer'",
-          data.summerCount, data.summerDeadline, CURRENT_SEASON
-        );
+      case "jokers": {
+        // Upsert manuel : JOKER_CONFIG n'a pas d'index unique sur (season, type),
+        // et les lignes de la saison n'existent pas avant le lancement (elles sont
+        // clonées par /seasons/launch). Un simple UPDATE ne touchait AUCUNE ligne
+        // pendant la phase enchères et l'enregistrement se perdait en silence.
+        const upsertJoker = async (
+          type: "regular" | "summer",
+          maxCount: number,
+          deadline: string | null
+        ) => {
+          const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
+            "SELECT id FROM JOKER_CONFIG WHERE season = ? AND type = ? LIMIT 1",
+            CURRENT_SEASON, type
+          );
+          if (existing.length > 0) {
+            await prisma.$executeRawUnsafe(
+              "UPDATE JOKER_CONFIG SET max_count = ?, deadline = ?, is_active = 1 WHERE id = ?",
+              maxCount, deadline, Number(existing[0].id)
+            );
+          } else {
+            await prisma.$executeRawUnsafe(
+              "INSERT INTO JOKER_CONFIG (season, type, max_count, deadline, is_active) VALUES (?, ?, ?, ?, 1)",
+              CURRENT_SEASON, type, maxCount, deadline
+            );
+          }
+        };
+        await upsertJoker("regular", data.regularCount, null);
+        await upsertJoker("summer", data.summerCount, data.summerDeadline ?? null);
         break;
+      }
 
       case "deadlines":
+        // SCORING_CONFIG a un index unique sur season : on garantit la ligne de la
+        // saison avant l'UPDATE (même cause que les jokers : ligne absente avant
+        // le lancement, UPDATE silencieusement sans effet).
+        await prisma.$executeRawUnsafe(
+          "INSERT IGNORE INTO SCORING_CONFIG (season) VALUES (?)",
+          CURRENT_SEASON
+        );
         await prisma.$executeRawUnsafe(
           `UPDATE SCORING_CONFIG SET deadline_hour = ?, early_match_hour = ?, early_match_offset_hours = ? WHERE season = ?`,
           data.defaultHour ?? 15, data.earlyMatchHour ?? 17, data.earlyMatchOffsetHours ?? 2, CURRENT_SEASON

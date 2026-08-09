@@ -67,6 +67,25 @@ describe("findResumableSeason", () => {
     const result = findResumableSeason(seasons);
     expect(result?.id).toBe(5);
   });
+
+  it("[REGRESSION 2026-08-09] saison AUCTION isCurrent=true → reprenable (étape 5)", () => {
+    // Depuis que "Ouvrir les enchères" pose isCurrent, l'état NORMAL de la
+    // phase enchères est AUCTION + courante. L'exclure faisait retomber le
+    // wizard à l'étape 1 pendant toute la phase (signalé par Pierre).
+    const seasons = [make(1, "CLOSED"), make(10, "AUCTION", true)];
+    const result = findResumableSeason(seasons);
+    expect(result?.id).toBe(10);
+    expect(resolveStepFromStatus(result!.status)).toBe(5);
+  });
+
+  it("sanity-check : l'ancien filtre (exclusion de toute saison courante) échouerait le cas ci-dessus", () => {
+    const seasons = [make(1, "CLOSED"), make(10, "AUCTION", true)];
+    const oldFilter = seasons.filter(
+      (s) => ["SETUP", "AUCTION"].includes(s.status) && !s.isCurrent
+    );
+    expect(oldFilter.length).toBe(0);
+    expect(findResumableSeason(seasons)).not.toBeNull();
+  });
 });
 
 describe("resolveStepFromStatus", () => {
