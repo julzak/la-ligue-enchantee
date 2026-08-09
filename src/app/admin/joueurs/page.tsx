@@ -74,12 +74,31 @@ export default function AdminJoueursPage() {
     setCreating(true);
     setCreateMsg("");
     try {
-      const res = await fetch("/api/admin/players", {
+      let res = await fetch("/api/admin/players", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fname, lname, position, clubId: clubId || undefined }),
       });
-      const data = await res.json();
+      let data = await res.json();
+      // 409 = un joueur au même nom existe déjà cette saison. Vrai homonyme :
+      // l'admin peut confirmer la création (force). Sinon : modifier le club
+      // du joueur existant, pas le recréer.
+      if (res.status === 409 && data.duplicate) {
+        const goOn = confirm(
+          `${data.error}\n\nCréer quand même un joueur distinct (vrai homonyme) ?`
+        );
+        if (!goOn) {
+          setCreateMsg("Création annulée : " + data.error);
+          setCreating(false);
+          return;
+        }
+        res = await fetch("/api/admin/players", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fname, lname, position, clubId: clubId || undefined, force: true }),
+        });
+        data = await res.json();
+      }
       if (data.ok) {
         setCreateMsg(`Joueur cree : ${data.player.fname} ${data.player.lname} (#${data.player.id})`);
         setFname("");

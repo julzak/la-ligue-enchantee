@@ -5,6 +5,7 @@ import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeason } from "@/lib/season";
+import { normalizePlayerName } from "@/lib/photo-sync";
 
 const VALID_POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"];
 // Club d'accueil des joueurs hors championnat (pari mercato historique :
@@ -63,11 +64,13 @@ export async function POST(request: Request) {
   if (auth.error) return auth.error;
   try {
 
-    const { fname, lname, position, clubId } = (await request.json()) as {
+    const { fname, lname, position, clubId, force } = (await request.json()) as {
       fname: string;
       lname: string;
       position: string;
       clubId?: number;
+      /** Créer malgré un doublon de nom détecté (vrai homonyme, confirmé par l'admin). */
+      force?: boolean;
     };
 
     if (!fname?.trim() || !lname?.trim()) {
@@ -104,6 +107,33 @@ export async function POST(request: Request) {
     // (le scoping saison exclut les joueurs sans saison). Un joueur créé sans
     // saison était introuvable à la mise : chaîne du pari mercato cassée.
     const playerSeasonId = targetClub.seasonId ?? currentSeason?.id ?? null;
+
+    // Garde anti-doublon : le pool de joueurs est PARTAGÉ entre les ligues.
+    // Deux admins servant deux demandes (ex : "crée Stassin") à quelques
+    // minutes d'intervalle créeraient un joueur misable deux fois. Comparaison
+    // sur le nom normalisé (accents/casse) dans la même saison, tous clubs
+    // confondus : un transfert en cours de saison DÉPLACE la ligne existante,
+    // il ne la duplique pas. `force: true` réservé aux vrais homonymes.
+    if (!force && playerSeasonId !== null) {
+      const seasonPlayers = await prisma.player.findMany({
+        where: { seasonId: playerSeasonId },
+        select: { id: true, fname: true, lname: true, clubId: true },
+      });
+      const wanted = normalizePlayerName(`${fname} ${lname}`);
+      const dup = seasonPlayers.find(
+        (p) => normalizePlayerName(`${p.fname} ${p.lname}`) === wanted
+      );
+      if (dup) {
+        const dupClub = await prisma.club.findUnique({ where: { id: dup.clubId } });
+        return NextResponse.json(
+          {
+            error: `${fname.trim()} ${lname.trim()} existe déjà cette saison (${dupClub?.name ?? "club inconnu"}). S'il a changé de club, modifie son club au lieu de le recréer. S'il s'agit d'un vrai homonyme, confirme la création.`,
+            duplicate: { id: dup.id, clubName: dupClub?.name ?? "" },
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     await prisma.$executeRawUnsafe(
       "INSERT INTO PLAYER (ID_CLUB, FNAME, LNAME, POSITION, ID_SEASON) VALUES (?, ?, ?, ?, ?)",
