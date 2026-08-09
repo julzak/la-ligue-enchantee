@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Trophy, AlertCircle } from "lucide-react";
+import { lineFromPosition } from "@/lib/auction-resolution";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -65,12 +66,13 @@ interface ResultsData {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+// Délégué au mapping canonique du moteur : la copie locale ne reconnaissait
+// pas "Défense" (format réel de la base) et son fallback était "ATT".
 function positionLabel(pos: string): string {
-  const p = pos.toLowerCase();
-  if (p.includes("ardien") || p === "gk" || p === "g") return "G";
-  if (p === "def" || p.includes("défenseur") || p.includes("defenseur")) return "DEF";
-  if (p === "mid" || p === "mil" || p.includes("milieu")) return "MIL";
-  return "ATT";
+  const line = lineFromPosition(pos);
+  if (line === "GK") return "G";
+  if (line === "MID") return "MIL";
+  return line;
 }
 
 function initials(name: string): string {
