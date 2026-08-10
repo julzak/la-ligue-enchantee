@@ -461,3 +461,7 @@ La recherche de l'écran Admin → Joueurs (`/admin/joueurs`) renvoie les joueur
 ### Hors scope (backlog, ne pas traiter)
 - Identité joueur unique inter-saisons (souhait de Pierre « plus simple avec 1 seul joueur ») : chantier structurel, à cadrer séparément.
 - Nettoyage des comptes USER en doublon (GeLo 59, Jun, Snake) : après le mercato.
+
+### Backlog complémentaire (remontées du 2026-08-10, non urgentes)
+- UX saisie admin d'une mise (`/admin/encheres`) : le formulaire ne précharge pas la mise en attente du participant (ressaisie complète obligatoire pour toute modification). Précharger la soumission existante rendrait l'édition incrémentale possible. Demande de Pierre.
+- Explorateur : masquer l'onglet/le club « Légion étrangère » de la vue publique (les paris mercato y sont en vitrine). Demande de Laurent, « pour les autres années ». La recherche d'enchères doit continuer à les trouver.
