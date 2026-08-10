@@ -435,3 +435,27 @@ Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
 2. Dépouillement : bouton admin après deadline vs cron automatique.
 3. Sort du tirage au sort existant.
 4. Source des effectifs réels + photos.
+
+---
+
+## HANDOFF session fraîche — Doublons multi-saisons dans l'écran Admin → Joueurs (2026-08-10)
+
+### Problème (signalé par Thomas, cas « 3 Gauthier Hein »)
+La recherche de l'écran Admin → Joueurs (`/admin/joueurs`) renvoie les joueurs de TOUTES les saisons : pour Gauthier Hein, 3 fiches (« 3 - Milieu / METZ » et « 4 - Attaque » = saisons passées ; « Milieu / OGC Nice » = 2026-2027, la seule misable). Les admins croient à des doublons à supprimer. NE JAMAIS SUPPRIMER les fiches des saisons passées : elles portent l'historique des scores.
+
+### Cause
+`GET /api/admin/players?search=...` (src/app/api/admin/players/route.ts, bloc search après le bloc `list=clubs`) ne filtre pas par saison. Le même écran a déjà été corrigé pour la liste des CLUBS (PR #39 : scope saison courante via `getCurrentSeason`, fallback legacy si aucune saison courante) : appliquer la même logique à la recherche de joueurs.
+
+### Fix attendu
+1. Par défaut, la recherche ne renvoie que les joueurs de la saison courante (`ID_SEASON = saison courante`).
+2. Option « toutes saisons » (case à cocher ou toggle dans src/app/admin/joueurs/page.tsx) pour les besoins d'archives, avec badge saison sur chaque ligne dans ce mode.
+3. Test de non-régression + vérification sur l'environnement de recette.
+
+### Environnement de vérification
+- Copie prod locale : base `ligueenc_p2` dans le conteneur Docker `ligue-recette-mysql` (port 3310), app : `DATABASE_URL="mysql://recette:recette2026@127.0.0.1:3310/ligueenc_p2" NEXTAUTH_SECRET="recette-secret-2026" NEXTAUTH_URL="http://localhost:3100" PORT=3100 npm run start`. Login admin : `Kazu` / `recette2026` (le champ identifiant = pseudo sans le HTML). Hein y existe en 3 exemplaires comme en prod.
+- Build avant commit : tunnel DB requis (`ssh -f -N -o ServerAliveInterval=15 -L 3307:127.0.0.1:3306 ligue-ovh`), sinon le prerender échoue.
+- Workflow : branche + PR + CI verte + merge (push direct sur main bloqué par hook) ; l'auto-deploy suit le merge (~1 min).
+
+### Hors scope (backlog, ne pas traiter)
+- Identité joueur unique inter-saisons (souhait de Pierre « plus simple avec 1 seul joueur ») : chantier structurel, à cadrer séparément.
+- Nettoyage des comptes USER en doublon (GeLo 59, Jun, Snake) : après le mercato.
