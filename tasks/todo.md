@@ -475,7 +475,9 @@ Diagnostic confirmé (code + requêtes DB prod en lecture seule, 2026-08-10) :
 - Prod au 2026-08-10 : AUCTION L2 (id 10, league 40) `open` round 2 avec 128 mises `won` en AUCTION_BID ; TEAM = 0 ligne pour les ligues 39/40/41. Donc explorateur vide pendant toute la phase : comportement structurel, pas un bug d'actualisation. Ce n'est PAS lié au dépouillement : même après dépouillement l'explorateur restera vide jusqu'à la clôture de phase.
 - Les autres surfaces gèrent déjà les `won` en cours de phase : recherche de mise (`/api/admin/jokers/free` exclut les won de l'enchère active) et onglet Résultats (`ResultsSection.tsx`, BRIEF-06). L'explorateur est la seule vue TEAM-only.
 
-Décision en attente (Julien) entre :
-- (a) brancher l'explorateur sur AUCTION_BID `won` de l'enchère d'été active pendant la phase (fallback TEAM hors phase) ; code + tests, zone à haut risque, branche + PR.
-- (b) statu quo assumé : répondre à Pierre que l'explorateur ne s'alimente qu'à la clôture de phase, et pointer vers l'onglet Résultats + la recherche de mise pour suivre les joueurs pris en cours de phase.
-Ne rien implémenter sans validation.
+Décision Julien 2026-08-10 : option (a) validée et implémentée.
+- Nouveau module pur `src/lib/explorer-auction-overlay.ts` (+ tests vitest avec sanity-check sur l'état prod buggué : TEAM vide + won → Libre sans overlay, pris avec).
+- `getClubsWithStats` (`src/lib/db.ts`) superpose les AUCTION_BID `won` de l'enchère d'été active (statut != resolved) sur TEAM ; TEAM garde priorité ; aucune écriture, machine d'états intacte.
+- Conforme à la décision de visibilité du 2026-08-10 (acquisitions publiques pendant les tours, docs/regles-encheres.md section 7).
+- Vérifié en runtime sur données prod (lecture seule, `scripts/diag-explorateur-overlay.ts`) : L2 passe de 0 à 128 joueurs pris ; ligue archivée sans enchère inchangée.
+- Réponse à Pierre : rédigée (session 2026-08-10), à envoyer par Julien après merge.
