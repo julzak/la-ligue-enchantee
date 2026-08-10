@@ -465,3 +465,7 @@ La recherche de l'écran Admin → Joueurs (`/admin/joueurs`) renvoie les joueur
 ### Backlog complémentaire (remontées du 2026-08-10, non urgentes)
 - UX saisie admin d'une mise (`/admin/encheres`) : le formulaire ne précharge pas la mise en attente du participant (ressaisie complète obligatoire pour toute modification). Précharger la soumission existante rendrait l'édition incrémentale possible. Demande de Pierre.
 - Explorateur : masquer l'onglet/le club « Légion étrangère » de la vue publique (les paris mercato y sont en vitrine). Demande de Laurent, « pour les autres années ». La recherche d'enchères doit continuer à les trouver.
+
+### À vérifier (remontée Pierre 2026-08-10 13:50) — explorateur et joueurs pris pendant les enchères
+Pierre : « J'ai ouvert le 2e tour en L2 mais l'explorateur n'est pas à jour. Aucun joueur pris. Possible qu'il s'actualise après chaque dépouillement ? »
+Hypothèse à vérifier dans le code : l'explorateur (`src/app/ligue/[slug]/explorateur/`) lirait la propriété des joueurs via TEAM/équipes, or le pont TEAM ne s'écrit qu'à la clôture de la PHASE (BRIEF-05), pas à chaque tour. Si confirmé : soit brancher l'explorateur sur les acquisitions d'enchères (AUCTION_BID status won) pendant la phase, soit répondre à Pierre que c'est le comportement attendu et documenter où voir les joueurs pris en cours de phase (recherche de mise + onglet Résultats). Vérifier aussi le scoping ligue : les acquisitions sont par ligue, l'explorateur est par ligue.
