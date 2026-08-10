@@ -6,6 +6,7 @@ import { Loader2, Search, X, Clock, Send, Lock, ArrowRightLeft, Minus, Plus } fr
 import { validateSubmission } from "@/lib/auction-engine";
 import type { Line, EnginePlayer } from "@/lib/auction-engine";
 import { lineFromPosition } from "@/lib/auction-resolution";
+import { findHardLimitErrors } from "@/lib/auction-hard-limits";
 import { ResultsSection } from "./ResultsSection";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -684,13 +685,25 @@ export default function EncheresPage() {
     draftBids.filter((b) => positionToLine(b.position) === "GK").length;
   // On délègue toujours à checkGoalkeeperLimit côté serveur ; côté UI on se base
   // sur gkCountUI pour ne jamais avoir compteur et erreur qui se contredisent.
-  const blockingError: string | null = gkCountUI > 1
+  const gkError: string | null = gkCountUI > 1
     ? `Votre mise contient ${gkCountUI} gardiens (acquis compris). Maximum autorisé : 1. La soumission est refusée tant que cette erreur n'est pas corrigée (règle du 2026-06-11).`
     : null;
 
+  // Garde-fou ferme (décision 2026-08-10) : >13 joueurs, budget restant
+  // dépassé, maxima de ligne. Mêmes règles et mêmes chiffres que le serveur
+  // (validateSummerBids) : `budget` est déjà le budget restant renvoyé par l'API.
+  const hardErrors = findHardLimitErrors({
+    ownedLines: ownedEngine.map((p) => p.line),
+    bidLines: bidsEngine.map((b) => b.player.line),
+    bidTotal: totalDraft,
+    budgetLeft: budget,
+  });
+  const blockingErrors: string[] = [...(gkError ? [gkError] : []), ...hardErrors];
+  const hasBlocking = blockingErrors.length > 0;
+
   const totalFilled = wonPlayers.length + draftBids.length;
-  // N2-fix : la conformité tient également compte de l'excès de gardiens.
-  const isConform = warnings.length === 0 && totalFilled === 13 && !blockingError;
+  // N2-fix : la conformité tient également compte des erreurs bloquantes.
+  const isConform = warnings.length === 0 && totalFilled === 13 && !hasBlocking;
 
   // M4 : le dénominateur de la barre budget est le budget API (valeur fixe),
   // pas budget + totalDraft (qui varie à chaque frappe).
@@ -925,19 +938,21 @@ export default function EncheresPage() {
           </div>
         )}
 
-        {/* ── Erreur BLOQUANTE : excès de gardiens (rouge, bouton désactivé) ── */}
-        {!isReadonly && blockingError && (
+        {/* ── Erreurs BLOQUANTES : gardiens, >13 joueurs, budget, maxima de ligne ── */}
+        {!isReadonly && hasBlocking && (
           <div className="bg-rouge/[0.13] border border-rouge/50 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2.5">
               <span className="text-sm">🚫</span>
               <span className="text-[11.5px] font-bold text-rouge tracking-tight">Soumission bloquée — composition invalide</span>
             </div>
-            <div className="flex gap-2 px-3 py-2 border-t border-rouge/20">
-              <span className="text-rouge text-[12px] leading-relaxed mt-px">•</span>
-              <span className="text-[11.5px] text-[#E0B0A8] leading-relaxed">{blockingError}</span>
-            </div>
+            {blockingErrors.map((e, i) => (
+              <div key={i} className="flex gap-2 px-3 py-2 border-t border-rouge/20">
+                <span className="text-rouge text-[12px] leading-relaxed mt-px">•</span>
+                <span className="text-[11.5px] text-[#E0B0A8] leading-relaxed">{e}</span>
+              </div>
+            ))}
             <div className="px-3 py-2 border-t border-rouge/20 text-[10.5px] text-rouge/70 italic">
-              Retirez un gardien de vos mises pour débloquer la soumission.
+              Corrigez votre mise pour débloquer la soumission (décision du 2026-08-10 : 13 joueurs max, budget restant max, maxima de ligne).
             </div>
           </div>
         )}
@@ -1186,10 +1201,10 @@ export default function EncheresPage() {
           <div className="space-y-2">
             {/* Indicateur conformité */}
             <div className="flex items-center gap-2">
-              {blockingError ? (
+              {hasBlocking ? (
                 <>
                   <span className="text-[12px]">🚫</span>
-                  <span className="text-[11px] text-rouge font-semibold">Soumission bloquée — retirez un gardien</span>
+                  <span className="text-[11px] text-rouge font-semibold">Soumission bloquée — corrigez votre mise</span>
                 </>
               ) : warnings.length > 0 && totalFilled > 0 ? (
                 // N4-fix : le footer ambre n'apparaît qu'à partir du moment où le joueur a saisi quelque chose
@@ -1212,8 +1227,8 @@ export default function EncheresPage() {
             {/* M2 : bouton activé si draftBids > 0 OU si 13 joueurs déjà acquis ; bloqué si erreur de composition */}
             <button
               onClick={submitBids}
-              disabled={submitting || !!blockingError || (draftBids.length === 0 && wonPlayers.length < 13)}
-              title={blockingError ?? undefined}
+              disabled={submitting || hasBlocking || (draftBids.length === 0 && wonPlayers.length < 13)}
+              title={hasBlocking ? blockingErrors.join(" ") : undefined}
               className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-gold text-night font-bold text-[14.5px] rounded-xl hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

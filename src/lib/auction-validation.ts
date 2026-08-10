@@ -15,6 +15,9 @@
  *   - B1       : chaque joueur existe dans le périmètre de la saison ET n'est pas
  *                un gardien nommé (les pseudo-gardiens « Gardiens [Club] » sont OK)
  *   - B2-GK    : au plus 1 gardien dans la mise (acquis compris)
+ *   - HARD     : garde-fou ferme (décision 2026-08-10) : 13 joueurs max
+ *                (acquis + mise), budget restant max, maxima de ligne
+ *                DEF/MIL/ATT (logique pure : src/lib/auction-hard-limits.ts)
  *
  * La garde deadline (tolérance 0) N'EST PAS ici : c'est une garde de TEMPS,
  * pas de composition. Elle reste propre à chaque route :
@@ -33,6 +36,8 @@ import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
 import { checkGoalkeeperLimit } from "@/lib/auction-goalkeeper-limit";
 import { findDuplicatePlayerIds } from "@/lib/auction-duplicate-bids";
+import { findHardLimitErrors } from "@/lib/auction-hard-limits";
+import { lineFromPosition } from "@/lib/auction-resolution";
 
 export interface SummerBid {
   playerId: number;
@@ -150,8 +155,8 @@ export async function validateSummerBids(
   }
 
   // B2-GK : au plus 1 gardien dans la mise (acquis compris)
-  const wonPositionRows = await db.$queryRawUnsafe<{ position: string }[]>(
-    `SELECT p.POSITION as position
+  const wonPositionRows = await db.$queryRawUnsafe<{ position: string; amount: number }[]>(
+    `SELECT p.POSITION as position, ab.amount as amount
      FROM AUCTION_BID ab JOIN PLAYER p ON ab.player_id = p.ID_PLAYER
      WHERE ab.auction_id = ? AND ab.user_id = ? AND ab.status = 'won'`,
     auctionId, userId
@@ -163,9 +168,27 @@ export async function validateSummerBids(
   const { rejected, totalGoalkeepers } = checkGoalkeeperLimit(wonPositionRows, draftPositionRows);
   if (rejected) {
     return {
-      error: `Soumission refusée : votre mise contient ${totalGoalkeepers} gardiens (acquis compris). Maximum autorisé : 1 (règle 2026-06-11 — seul cas de rejet pour motif de composition).`,
+      error: `Soumission refusée : votre mise contient ${totalGoalkeepers} gardiens (acquis compris). Maximum autorisé : 1 (règle 2026-06-11).`,
       status: 400,
     };
+  }
+
+  // HARD : garde-fou ferme (décision 2026-08-10). Budget restant = budget du
+  // tour (130) moins les points des acquisitions conservées : ce sont les
+  // MÊMES chiffres que ceux affichés au participant (GET /api/auction).
+  const [auctionRow] = await db.$queryRawUnsafe<{ budget_per_user: number }[]>(
+    `SELECT budget_per_user FROM AUCTION WHERE id = ?`,
+    auctionId
+  );
+  const wonSpent = wonPositionRows.reduce((s, r) => s + Number(r.amount), 0);
+  const hardErrors = findHardLimitErrors({
+    ownedLines: wonPositionRows.map((r) => lineFromPosition(r.position)),
+    bidLines: draftPositionRows.map((r) => lineFromPosition(r.position)),
+    bidTotal: bids.reduce((s, b) => s + b.amount, 0),
+    budgetLeft: Number(auctionRow?.budget_per_user ?? 0) - wonSpent,
+  });
+  if (hardErrors.length > 0) {
+    return { error: hardErrors.join(" "), status: 400 };
   }
 
   return null;

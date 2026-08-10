@@ -229,9 +229,10 @@ export async function POST(request: Request) {
 
   const isWinter = a.type === "winter";
 
-  // NOTE (règle 3.2.c) : le total des mises peut dépasser le budget.
-  // Un dépassement ne bloque PAS la soumission — une pénalité sera appliquée
-  // au dépouillement par le moteur. Aucun calcul de budget restant nécessaire ici.
+  // NOTE (décision 2026-08-10) : le dépassement de budget, l'excès de joueurs
+  // (>13 acquis + mise) et les maxima de ligne sont désormais REFUSÉS à la
+  // soumission par validateSummerBids (garde-fou ferme). Les minima de ligne
+  // et la mise incomplète restent des avertissements (pénalité au dépouillement).
 
   // Validate amounts > 0
   if (bids.some((b) => b.amount <= 0)) {

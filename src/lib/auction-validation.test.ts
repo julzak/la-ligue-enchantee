@@ -9,7 +9,12 @@
  * invalide — c'est ce que ces tests verrouillent.
  *
  * AUCUN accès DB : `getSeasonFilters` est mocké et la couche Prisma est un
- * faux objet qui répond aux 4 requêtes de lecture en fonction du SQL.
+ * faux objet qui répond aux requêtes de lecture en fonction du SQL.
+ *
+ * Depuis la décision du 2026-08-10, la validation applique aussi le garde-fou
+ * ferme (13 joueurs max, budget restant max, maxima de ligne) : le mock répond
+ * en plus à la requête AUCTION (budget_per_user) et renvoie les montants des
+ * acquisitions.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -28,10 +33,12 @@ import { validateSummerBids, type PrismaLike, type SummerBid } from "./auction-v
 // qu'on ne fait pas d'accès DB non prévu).
 
 interface FakeDbState {
-  // AUCTION_BID WHERE status='won' : (player_id, user_id)
-  wonBids: { player_id: number; user_id: number; position: string }[];
+  // AUCTION_BID WHERE status='won' : (player_id, user_id, position, amount)
+  wonBids: { player_id: number; user_id: number; position: string; amount?: number }[];
   // PLAYER : id → { position, link, seasonId }
   players: Map<number, { position: string; link: string | null; seasonId: number | null }>;
+  // AUCTION.budget_per_user (défaut 130)
+  budgetPerUser?: number;
 }
 
 function makeFakeDb(state: FakeDbState): PrismaLike {
@@ -63,12 +70,16 @@ function makeFakeDb(state: FakeDbState): PrismaLike {
             return { id, position: p.position, link: p.link };
           }) as T;
       }
-      // B2-GK : positions des won bids du participant (auctionId, userId)
+      // B2-GK + HARD : positions et montants des won bids du participant
       if (query.includes("AUCTION_BID ab JOIN PLAYER")) {
         const userId = Number(values[1]);
         return state.wonBids
           .filter((w) => w.user_id === userId)
-          .map((w) => ({ position: w.position })) as T;
+          .map((w) => ({ position: w.position, amount: w.amount ?? 0 })) as T;
+      }
+      // HARD : budget du tour (AUCTION.budget_per_user)
+      if (query.includes("budget_per_user FROM AUCTION")) {
+        return [{ budget_per_user: state.budgetPerUser ?? 130 }] as T;
       }
       // B2-GK : positions des joueurs misés
       if (query.includes("SELECT p.POSITION as position FROM PLAYER p WHERE p.ID_PLAYER IN")) {
@@ -96,10 +107,12 @@ beforeEach(() => {
 // Helper : un état DB avec quelques joueurs valides (saison legacy).
 function dbWith(
   players: { id: number; position: string; link?: string | null }[],
-  wonBids: FakeDbState["wonBids"] = []
+  wonBids: FakeDbState["wonBids"] = [],
+  budgetPerUser?: number
 ): PrismaLike {
   return makeFakeDb({
     wonBids,
+    budgetPerUser,
     players: new Map(
       players.map((p) => [p.id, { position: p.position, link: p.link ?? null, seasonId: null }])
     ),
@@ -187,6 +200,90 @@ describe("validateSummerBids — gardes de rejet (mêmes erreurs que /api/auctio
     const err = await validateSummerBids(db, AUCTION, ME, [{ playerId: 3, amount: 6 }]);
     expect(err?.status).toBe(400);
     expect(err?.error).toContain("2 gardiens");
+  });
+});
+
+// ── Garde-fou ferme (décision Julien 2026-08-10) ─────────────────────────────
+// 13 joueurs max (acquis + mise), budget restant max, maxima de ligne. La
+// logique pure est testée dans auction-hard-limits.test.ts ; ici on verrouille
+// le CÂBLAGE DB (budget_per_user, montants des acquisitions, positions).
+
+describe("garde-fou ferme 2026-08-10 — câblage dans validateSummerBids", () => {
+  // 14 joueurs misés sans excès de ligne : 1 GK club + 6 DEF + 6 MIL + 1 ATT.
+  const fourteen = [
+    { id: 1, position: "Gardien", link: "gardiens_marseille" },
+    ...Array.from({ length: 6 }, (_, i) => ({ id: 10 + i, position: "Defenseur" })),
+    ...Array.from({ length: 6 }, (_, i) => ({ id: 20 + i, position: "Milieu" })),
+    { id: 30, position: "Attaquant" },
+  ];
+
+  it("14 joueurs misés : 400 (plus de 13)", async () => {
+    const db = dbWith(fourteen);
+    const bids: SummerBid[] = fourteen.map((p) => ({ playerId: p.id, amount: 1 }));
+    const err = await validateSummerBids(db, AUCTION, ME, bids);
+    expect(err?.status).toBe(400);
+    expect(err?.error).toContain("14 joueurs");
+  });
+
+  it("mise de 131 pts sur budget 130 : 400 (budget restant dépassé)", async () => {
+    const db = dbWith([{ id: 1, position: "Defenseur" }, { id: 2, position: "Milieu" }]);
+    const err = await validateSummerBids(db, AUCTION, ME, [
+      { playerId: 1, amount: 100 },
+      { playerId: 2, amount: 31 },
+    ]);
+    expect(err?.status).toBe(400);
+    expect(err?.error).toContain("131 pts");
+    expect(err?.error).toContain("130 pts");
+  });
+
+  it("tour N avec acquis : 11 acquis / 111 pts → mise de 19 pts acceptée, 20 pts refusée", async () => {
+    // Duch-like : 11 acquis (1 GK + 5 DEF + 5 MIL) pour 111 pts → reste 19 pts.
+    const won = [
+      { player_id: 101, user_id: ME, position: "Gardien", amount: 11 },
+      ...Array.from({ length: 5 }, (_, i) => ({ player_id: 110 + i, user_id: ME, position: "Defenseur", amount: 10 })),
+      ...Array.from({ length: 5 }, (_, i) => ({ player_id: 120 + i, user_id: ME, position: "Milieu", amount: 10 })),
+    ];
+    const players = [{ id: 1, position: "Attaquant" }, { id: 2, position: "Attaquant" }];
+    const ok = await validateSummerBids(dbWith(players, won), AUCTION, ME, [
+      { playerId: 1, amount: 10 },
+      { playerId: 2, amount: 9 },
+    ]);
+    expect(ok).toBeNull();
+    const err = await validateSummerBids(dbWith(players, won), AUCTION, ME, [
+      { playerId: 1, amount: 10 },
+      { playerId: 2, amount: 10 },
+    ]);
+    expect(err?.status).toBe(400);
+    expect(err?.error).toContain("budget restant (19 pts");
+  });
+
+  it("5 attaquants (2 acquis + 3 misés) : 400 (maximum de ligne)", async () => {
+    const won = [
+      { player_id: 201, user_id: ME, position: "Attaquant", amount: 5 },
+      { player_id: 202, user_id: ME, position: "Attaquant", amount: 5 },
+    ];
+    const players = Array.from({ length: 3 }, (_, i) => ({ id: 1 + i, position: "Attaquant" }));
+    const err = await validateSummerBids(dbWith(players, won), AUCTION, ME,
+      players.map((p) => ({ playerId: p.id, amount: 2 })));
+    expect(err?.status).toBe(400);
+    expect(err?.error).toContain("5 attaquants");
+  });
+
+  it("minima non bloquants : 2 DEF seulement au tour 1 → accepté", async () => {
+    const db = dbWith([
+      { id: 1, position: "Defenseur" },
+      { id: 2, position: "Defenseur" },
+      { id: 3, position: "Milieu" },
+    ]);
+    const bids: SummerBid[] = [1, 2, 3].map((id) => ({ playerId: id, amount: 5 }));
+    expect(await validateSummerBids(db, AUCTION, ME, bids)).toBeNull();
+  });
+
+  it("sanity-check : 13 joueurs / 130 pts pile → accepté", async () => {
+    const thirteen = fourteen.slice(0, 13); // retire l'attaquant → 1 GK + 6 DEF + 6 MIL
+    const db = dbWith(thirteen);
+    const bids: SummerBid[] = thirteen.map((p) => ({ playerId: p.id, amount: 10 }));
+    expect(await validateSummerBids(db, AUCTION, ME, bids)).toBeNull();
   });
 });
 
