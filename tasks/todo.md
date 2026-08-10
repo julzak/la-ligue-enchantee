@@ -481,3 +481,20 @@ Décision Julien 2026-08-10 : option (a) validée et implémentée.
 - Conforme à la décision de visibilité du 2026-08-10 (acquisitions publiques pendant les tours, docs/regles-encheres.md section 7).
 - Vérifié en runtime sur données prod (lecture seule, `scripts/diag-explorateur-overlay.ts`) : L2 passe de 0 à 128 joueurs pris ; ligue archivée sans enchère inchangée.
 - Réponse à Pierre : rédigée (session 2026-08-10), à envoyer par Julien après merge.
+
+---
+
+## HANDOFF — Garde-fou ferme 13 joueurs / 130 points à la soumission (décision Julien 2026-08-10)
+
+### Décision
+L'acceptation des mises non conformes (pénalité au dépouillement) datait du monde asynchrone/xls. Désormais REFUS FERME à la soumission pour exactement 2 cas : (a) acquis conservés + joueurs de la mise > 13 ; (b) points des acquisitions conservées + total de la mise > 130 (= mise > budget restant, report des mises perdues/égalités inclus). Les quotas de ligne (DEF>6 etc.) RESTENT avertissement + pénalité au dépouillement. Pas de changement stratégique : le règlement comptait déjà les MISÉS (acquis inclus), pas les obtenus.
+
+### Implémentation attendue
+1. Garde serveur dans POST /api/auction (soumission participant) ET dans l'action admin enter-bid-for-user (même validation, cf. commentaire "validation identique" dans la console). Réutiliser les calculs existants de budget restant / compteur acquis (mêmes chiffres que les avertissements UI). Messages d'erreur explicites en français.
+2. UI participant (src/app/ligue/[slug]/encheres/page.tsx) : pour ces 2 cas uniquement, bouton de soumission DÉSACTIVÉ + message rouge (plus de "Mise non conforme — soumission autorisée") ; les autres avertissements restent ambre + soumission possible.
+3. Tests : cas unitaires sur la validation (dont tour N avec acquis + report : ex 11 acquis pour 111 pts -> mise max 2 joueurs / 19 pts) + sanity-check ; mettre à jour les guards e2e si nécessaire.
+4. Règlement docs/regles-encheres.md section 7 : consigner la décision (datée 2026-08-10, décision Julien après le cas réel "14 joueurs / 131 pts" du tour 1 L2).
+5. Mises déjà en attente non conformes au moment du déploiement : elles restent valides (pas d'effet rétroactif) ; signaler aux admins qu'ils peuvent demander une re-soumission (le garde-fou s'appliquera).
+
+### Vérification
+Copie prod ligueenc_p2 (Docker ligue-recette-mysql:3310, cf. handoff précédent pour le lancement). Cas à jouer : mise 14 joueurs -> 400 ; mise 131 pts -> 400 ; mise conforme -> 200 ; tour N avec acquis (Duch a 11 acquis / 19 pts restants dans la copie : parfait pour le test) ; saisie admin -> mêmes refus.
