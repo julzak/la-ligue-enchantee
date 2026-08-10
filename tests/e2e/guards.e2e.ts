@@ -62,13 +62,34 @@ describe("Couche route — gardes de soumission", () => {
     expect(r.body.ok).not.toBe(true);
   });
 
-  it("budget : total des mises > 130 ACCEPTÉ à la soumission (pénalité au dépouillement)", async () => {
-    // Règle 3.2.c : le dépassement n'est pas bloqué à la saisie ; il est
-    // pénalisé au dépouillement (couvert par auction-engine.test.ts). La route
-    // doit donc accepter 13 × 11 = 143.
+  it("garde-fou ferme : total des mises > 130 REFUSÉ à la soumission (400)", async () => {
+    // Décision 2026-08-10 : le dépassement de budget est un refus ferme
+    // (plus une pénalité au dépouillement). 13 × 11 = 143 > 130 → 400.
     const squad = validSquad(fx).map((b) => ({ ...b, amount: 11 }));
     const r = await submitBids(j1, squad);
-    expect(r.body.ok).toBe(true);
+    expect(r.body.ok).not.toBe(true);
+    expect(r.status).toBe(400);
+  });
+
+  it("garde-fou ferme : 14 joueurs misés REFUSÉS à la soumission (400)", async () => {
+    // Décision 2026-08-10 : cas réel « 14 joueurs / 131 pts » du tour 1 L2.
+    const squad = [...validSquad(fx), { playerId: fx.def[5], amount: 1 }];
+    const r = await submitBids(j1, squad);
+    expect(r.body.ok).not.toBe(true);
+    expect(r.status).toBe(400);
+  });
+
+  it("garde-fou ferme : 5 attaquants misés REFUSÉS à la soumission (400)", async () => {
+    // Remplace 2 MIL par 2 ATT : 5 ATT au total, maximum de ligne 4.
+    const squad = [
+      { playerId: fx.gkClubs[0], amount: 10 },
+      ...fx.def.slice(0, 5).map((id) => ({ playerId: id, amount: 10 })),
+      ...fx.mid.slice(0, 2).map((id) => ({ playerId: id, amount: 10 })),
+      ...fx.att.slice(0, 5).map((id) => ({ playerId: id, amount: 10 })),
+    ];
+    const r = await submitBids(j1, squad);
+    expect(r.body.ok).not.toBe(true);
+    expect(r.status).toBe(400);
   });
 
   it("set-deadline : une date déjà passée est refusée (garde-fou)", async () => {

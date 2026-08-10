@@ -59,9 +59,12 @@ export function acceptSubmission(input: {
 }
 
 // ── Validation d'une mise (avertissements UI, AVANT deadline) ─────────────
-// Mêmes règles que les pénalités du dépouillement : permet de prévenir le
-// participant avant qu'il soit trop tard. Ne bloque pas la soumission
-// (le règlement pénalise au dépouillement, il n'interdit pas de soumettre).
+// Avertissements NON bloquants uniquement. Depuis la décision du 2026-08-10
+// (garde-fou ferme, src/lib/auction-hard-limits.ts), les cas >13 joueurs,
+// dépassement de budget et maxima de ligne sont REFUSÉS à la soumission et ne
+// passent plus par ici. Restent en avertissement : l'absence de gardien, la
+// mise incomplète (<13, pénalisée au dépouillement, règle 3.2.c) et les
+// minima de ligne (exigibles seulement en fin de phase, règle 4).
 export function validateSubmission(
   owned: EnginePlayer[],
   bids: { player: EnginePlayer; amount: number }[],
@@ -72,14 +75,12 @@ export function validateSubmission(
   const count = (line: Line) => squad.filter((p) => p.line === line).length;
 
   if (count("GK") === 0) warnings.push("Aucun gardien dans la mise (pénalité : retrait d'1 joueur)");
-  if (count("DEF") > 6) warnings.push(`${count("DEF")} défenseurs (max 6) : retrait des défenseurs en excès`);
-  if (count("MID") > 6) warnings.push(`${count("MID")} milieux (max 6) : retrait des milieux en excès`);
-  if (count("ATT") > 4) warnings.push(`${count("ATT")} attaquants (max 4) : retrait des attaquants en excès`);
   if (squad.length < 13) warnings.push(`${squad.length} joueurs misés (acquis inclus) au lieu de 13 : retrait d'autant de joueurs que de manquants`);
-  if (squad.length > 13) warnings.push(`${squad.length} joueurs misés (acquis inclus) au lieu de 13 : retrait d'autant de joueurs que d'excédents`);
+  if (count("DEF") < 3) warnings.push(`${count("DEF")} défenseur(s) : minimum 3 exigé en fin de phase`);
+  if (count("MID") < 3) warnings.push(`${count("MID")} milieu(x) : minimum 3 exigé en fin de phase`);
+  if (count("ATT") < 1) warnings.push(`${count("ATT")} attaquant : minimum 1 exigé en fin de phase`);
 
-  const total = bids.reduce((s, b) => s + b.amount, 0);
-  if (total > budget) warnings.push(`Total des mises (${total}) supérieur au budget disponible (${budget}) : retrait d'1 joueur`);
+  void budget; // budget conservé dans la signature (appelants existants) ; le dépassement est désormais un refus ferme, plus un avertissement
 
   return warnings;
 }

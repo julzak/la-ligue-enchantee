@@ -484,7 +484,9 @@ Décision Julien 2026-08-10 : option (a) validée et implémentée.
 
 ---
 
-## HANDOFF — Garde-fou ferme 13 joueurs / 130 points à la soumission (décision Julien 2026-08-10)
+## HANDOFF TRAITÉ (2026-08-10) — Garde-fou ferme 13 joueurs / 130 points à la soumission (décision Julien 2026-08-10)
+
+**Résolu** (branche `feat/garde-fou-soumission-ferme`) : refus ferme à la soumission (participant ET saisie admin, via `validateSummerBids`) pour >13 joueurs (acquis + mise), mise > budget restant, et maxima de ligne (DEF>6, MIL>6, ATT>4 ; GK>1 déjà couvert par B2-GK). Minima de ligne et mise incomplète restent des avertissements ambre (soumission autorisée), avec nouveaux avertissements explicites sur les minima. Logique pure dans `src/lib/auction-hard-limits.ts` (+ tests avec sanity-checks, dont le cas réel 14 joueurs / 131 pts) ; UI : bandeau rouge multi-erreurs + bouton désactivé ; e2e guards mis à jour (budget 143 pts et 14 joueurs passent de « accepté » à 400) ; règlement §3.1, §3.2.c et §7 amendés. Vérifié en runtime sur la copie `ligueenc_p2` : Duch (11 acquis / 111 pts, reste 19) → 19 pts acceptés (200), 20 pts refusés, 14 joueurs refusés, 5 ATT refusés ; Thomas P 14 joueurs / 131 pts → 400 double motif ; saisie admin → mêmes refus. Copie recette restaurée à l'état initial après les tests. RESTE À FAIRE PAR JULIEN : signaler aux admins que les mises en attente non conformes déjà soumises restent valides (pas d'effet rétroactif) et qu'ils peuvent demander une re-soumission.
 
 ### Décision
 L'acceptation des mises non conformes (pénalité au dépouillement) datait du monde asynchrone/xls. Désormais REFUS FERME à la soumission pour exactement 2 cas : (a) acquis conservés + joueurs de la mise > 13 ; (b) points des acquisitions conservées + total de la mise > 130 (= mise > budget restant, report des mises perdues/égalités inclus). Les quotas de ligne (DEF>6 etc.) RESTENT avertissement + pénalité au dépouillement. Pas de changement stratégique : le règlement comptait déjà les MISÉS (acquis inclus), pas les obtenus.

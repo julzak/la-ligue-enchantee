@@ -40,6 +40,8 @@ La composition titulaires est validée par un module distinct du module enchère
 
 À chaque tour, chaque participant soumet une mise pour 13 joueurs (incluant les joueurs déjà acquis aux tours précédents, qui sont automatiquement reportés sans nouvelle mise). La répartition des points est libre, avec un total maximum de 130 points.
 
+Garde-fou ferme à la soumission (décision du 2026-08-10, voir §7) : la plateforme REFUSE toute soumission qui dépasse 13 joueurs (acquis conservés + mise), dépasse le budget restant (points des acquisitions déduits, report des mises perdues et égalités inclus), ou dépasse un maximum de ligne (1 gardien, 6 défenseurs, 6 milieux, 4 attaquants, acquis compris). Les minima de ligne (3 défenseurs, 3 milieux, 1 attaquant) et la mise incomplète (<13 joueurs) restent autorisés à la soumission : un effectif se construit progressivement, ils ne sont exigibles qu'en fin de phase.
+
 La date et heure butoir sont annoncées avant chaque tour. Le timestamp serveur de soumission fait foi. Une soumission reçue après la deadline, même d'1 seconde, est rejetée. Aucune tolérance, aucun report sur le tour suivant.
 
 ### 3.2 Dépouillement
@@ -64,6 +66,8 @@ budget_N+1 = budget_N - (somme des mises sur joueurs obtenus au tour N)
 **c) Pénalités de composition**
 
 Si la mise soumise est invalide selon les règles ci-dessous, des retraits sont appliqués sur les acquisitions du tour AVANT validation finale.
+
+Note (2026-08-10) : depuis le garde-fou ferme à la soumission (§3.1), les infractions « plus de 13 joueurs », « dépassement de budget » et « maxima de ligne » ne peuvent plus atteindre le dépouillement via la plateforme. Le tableau reste la référence pour les mises antérieures au garde-fou et comme filet de sécurité du moteur.
 
 | Infraction | Pénalité |
 |---|---|
@@ -117,4 +121,5 @@ Le règlement historique complet (toutes sections, pas seulement enchères) est 
 | 2026-06-11 | Notification des résultats (règle 3.2.d) : résultats consultables sur la plateforme ; l'email est envoyé MANUELLEMENT par les administrateurs/modérateurs à leurs joueurs, à partir du récap fourni par la plateforme. Pas d'email automatique. | L'app n'a aucune infra email ; pour ~20 participants l'envoi manuel par les modérateurs suffit (décision Julien). |
 | 2026-06-11 | Si deux gardiens du même club ont une note le même jour (changement en cours de match), le pseudo-joueur « Gardiens [Club] » reçoit la MEILLEURE des notes ; à égalité de note, le plus grand nombre de buts, puis le plus petit identifiant. | Cas absent du règlement papier. Choix favorable au participant, déterministe et vérifiable (décision Julien, implémenté dans src/lib/club-goalkeeper.ts). |
 | 2026-06-11 | Une mise ne peut pas contenir plus d'un gardien (acquis compris) : la soumission est REFUSÉE. Seul cas de rejet pour motif de composition ; toutes les autres infractions de composition restent des pénalités appliquées au dépouillement. | Aucune pénalité du tableau 3.2.c ne couvre l'excès de gardiens ; un effectif final à 2 gardiens serait invalide sans remède (décision Julien). |
+| 2026-08-10 | Garde-fou ferme à la soumission : refus (participant ET saisie admin) si acquis conservés + joueurs de la mise > 13, si le total de la mise dépasse le budget restant (acquisitions déduites, report des mises perdues/égalités inclus), ou si un maximum de ligne est dépassé acquis compris (GK > 1, DEF > 6, MIL > 6, ATT > 4). Les minima de ligne (≥3 DEF, ≥3 MIL, ≥1 ATT) et la mise incomplète restent des avertissements non bloquants, exigibles seulement en fin de phase. Les mises en attente non conformes au moment du déploiement restent valides (pas d'effet rétroactif) ; les admins peuvent demander une re-soumission. | L'acceptation des mises non conformes (pénalité au dépouillement) datait du monde asynchrone/xls ; sur la plateforme le refus immédiat évite des pénalités subies. Décision Julien après le cas réel « 14 joueurs / 131 pts » du tour 1 L2, amendée le même jour pour rendre les maxima de ligne également bloquants. Pas de changement stratégique : le règlement comptait déjà les misés (acquis inclus). |
 | 2026-08-10 | Visibilité des mises : PENDANT les tours, seules les acquisitions sont publiques (le battu voit qui a obtenu le joueur et à quel prix ; le vainqueur ne voit pas qui il a battu). À la CLÔTURE de la phase d'enchères, dépouillement intégral public : toutes les mises de tous les tours (noms, montants, issues), consultables dans l'onglet Résultats (« grand déballage »). | Révéler les mises perdues en cours de phase renseignerait chacun sur les cibles et budgets des autres pour les tours suivants ; en fin de phase l'information n'a plus de valeur stratégique, seulement une valeur de chambrage (décision Julien, demande de Laurent). |

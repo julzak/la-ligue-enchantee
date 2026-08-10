@@ -2,10 +2,10 @@
  * Règle : une mise ne peut pas contenir plus d'UN gardien (acquis compris).
  *
  * Décision Julien 2026-06-11 (docs/regles-encheres.md §7) :
- *   - C'est le SEUL cas de rejet pour motif de composition.
- *   - Toutes les autres infractions de composition restent des pénalités
- *     appliquées au dépouillement (philosophie « le règlement pénalise,
- *     il n'interdit pas »).
+ *   - Historiquement le SEUL cas de rejet pour motif de composition ; depuis
+ *     la décision du 2026-08-10 le garde-fou ferme (auction-hard-limits.ts)
+ *     rejette aussi >13 joueurs, le dépassement de budget et les maxima de
+ *     ligne. Les minima de ligne restent des avertissements.
  *   - Justification : aucune pénalité du tableau 3.2.c ne couvre l'excès
  *     de gardiens ; un effectif final à 2 gardiens bloquerait la clôture
  *     de phase (effectif invalide sans remède).
