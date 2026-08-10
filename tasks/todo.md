@@ -498,3 +498,6 @@ L'acceptation des mises non conformes (pénalité au dépouillement) datait du m
 
 ### Vérification
 Copie prod ligueenc_p2 (Docker ligue-recette-mysql:3310, cf. handoff précédent pour le lancement). Cas à jouer : mise 14 joueurs -> 400 ; mise 131 pts -> 400 ; mise conforme -> 200 ; tour N avec acquis (Duch a 11 acquis / 19 pts restants dans la copie : parfait pour le test) ; saisie admin -> mêmes refus.
+
+#### AMENDEMENT (Julien, 2026-08-10, remplace le point sur les quotas de ligne)
+Les quotas de ligne sont AUSSI bloquants à la soumission. Refus ferme pour les MAXIMA par ligne, en comptant acquis conservés + joueurs de la mise : GK > 1 (déjà refusé via B2-GK), DEF > 6, MIL > 6, ATT > 4. Les MINIMA (≥3 DEF, ≥3 MIL, ≥1 ATT) restent NON bloquants par tour : un effectif se construit progressivement, ils ne sont exigibles qu'en fin de phase (complétion d'office). Donc au total, refus ferme = 13 joueurs max, 130 points max, maxima de ligne ; avertissements restants = minima de ligne uniquement. Ajouter les cas de test correspondants (ex : 5 ATT misés+acquis -> 400 ; 2 DEF au tour 1 -> accepté avec avertissement minima).
