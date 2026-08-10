@@ -466,6 +466,18 @@ La recherche de l'écran Admin → Joueurs (`/admin/joueurs`) renvoie les joueur
 - UX saisie admin d'une mise (`/admin/encheres`) : le formulaire ne précharge pas la mise en attente du participant (ressaisie complète obligatoire pour toute modification). Précharger la soumission existante rendrait l'édition incrémentale possible. Demande de Pierre.
 - Explorateur : masquer l'onglet/le club « Légion étrangère » de la vue publique (les paris mercato y sont en vitrine). Demande de Laurent, « pour les autres années ». La recherche d'enchères doit continuer à les trouver.
 
-### À vérifier (remontée Pierre 2026-08-10 13:50) — explorateur et joueurs pris pendant les enchères
+### CONFIRMÉ (remontée Pierre 2026-08-10 13:50) — explorateur aveugle aux joueurs pris pendant la phase d'enchères
 Pierre : « J'ai ouvert le 2e tour en L2 mais l'explorateur n'est pas à jour. Aucun joueur pris. Possible qu'il s'actualise après chaque dépouillement ? »
-Hypothèse à vérifier dans le code : l'explorateur (`src/app/ligue/[slug]/explorateur/`) lirait la propriété des joueurs via TEAM/équipes, or le pont TEAM ne s'écrit qu'à la clôture de la PHASE (BRIEF-05), pas à chaque tour. Si confirmé : soit brancher l'explorateur sur les acquisitions d'enchères (AUCTION_BID status won) pendant la phase, soit répondre à Pierre que c'est le comportement attendu et documenter où voir les joueurs pris en cours de phase (recherche de mise + onglet Résultats). Vérifier aussi le scoping ligue : les acquisitions sont par ligue, l'explorateur est par ligue.
+
+Diagnostic confirmé (code + requêtes DB prod en lecture seule, 2026-08-10) :
+- L'explorateur (`src/app/ligue/[slug]/explorateur/page.tsx` → `getClubsWithStats`, `src/lib/db.ts:859`) lit la propriété des joueurs UNIQUEMENT via la table TEAM, scopée par ligue.
+- TEAM n'est écrite qu'à l'action admin close-phase (statut AUCTION `resolved`, BRIEF-05, `src/app/api/admin/auction/route.ts:647+`), jamais au dépouillement d'un tour (`tallied`).
+- Prod au 2026-08-10 : AUCTION L2 (id 10, league 40) `open` round 2 avec 128 mises `won` en AUCTION_BID ; TEAM = 0 ligne pour les ligues 39/40/41. Donc explorateur vide pendant toute la phase : comportement structurel, pas un bug d'actualisation. Ce n'est PAS lié au dépouillement : même après dépouillement l'explorateur restera vide jusqu'à la clôture de phase.
+- Les autres surfaces gèrent déjà les `won` en cours de phase : recherche de mise (`/api/admin/jokers/free` exclut les won de l'enchère active) et onglet Résultats (`ResultsSection.tsx`, BRIEF-06). L'explorateur est la seule vue TEAM-only.
+
+Décision Julien 2026-08-10 : option (a) validée et implémentée.
+- Nouveau module pur `src/lib/explorer-auction-overlay.ts` (+ tests vitest avec sanity-check sur l'état prod buggué : TEAM vide + won → Libre sans overlay, pris avec).
+- `getClubsWithStats` (`src/lib/db.ts`) superpose les AUCTION_BID `won` de l'enchère d'été active (statut != resolved) sur TEAM ; TEAM garde priorité ; aucune écriture, machine d'états intacte.
+- Conforme à la décision de visibilité du 2026-08-10 (acquisitions publiques pendant les tours, docs/regles-encheres.md section 7).
+- Vérifié en runtime sur données prod (lecture seule, `scripts/diag-explorateur-overlay.ts`) : L2 passe de 0 à 128 joueurs pris ; ligue archivée sans enchère inchangée.
+- Réponse à Pierre : rédigée (session 2026-08-10), à envoyer par Julien après merge.

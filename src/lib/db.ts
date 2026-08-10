@@ -11,6 +11,11 @@ import {
   buildDayScoreResolver,
   attributeClubGoalkeeperDayScores,
 } from "./club-goalkeeper";
+import {
+  isAuctionPhaseActive,
+  overlayAuctionOwners,
+  type WonOwnerRow,
+} from "./explorer-auction-overlay";
 
 // ── Request-scoped caches (dedup within same render) ────
 // Scopées sur la saison courante quand elle a des données rattachées,
@@ -840,6 +845,34 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
 }
 
 // ── Clubs with player counts ──────────────────────────────
+// Acquisitions (mises won) de l'enchère d'été active d'une ligue, pour
+// l'overlay explorateur. Vide hors phase active : après clôture (resolved),
+// TEAM fait foi (retraits et complétions d'office inclus) ; les acquisitions
+// sont publiques pendant les tours (docs/regles-encheres.md, décision
+// 2026-08-10).
+async function getActiveAuctionWonOwners(leagueDbId: number): Promise<WonOwnerRow[]> {
+  const auctions = await prisma.$queryRawUnsafe<{ id: number; status: string }[]>(
+    "SELECT id, status FROM AUCTION WHERE league_id = ? AND COALESCE(type, 'summer') = 'summer' ORDER BY id DESC LIMIT 1",
+    leagueDbId
+  );
+  if (!isAuctionPhaseActive(auctions[0]?.status)) return [];
+
+  const wonBids = await prisma.$queryRawUnsafe<{ user_id: number; player_id: number }[]>(
+    "SELECT user_id, player_id FROM AUCTION_BID WHERE auction_id = ? AND status = 'won'",
+    Number(auctions[0].id)
+  );
+  if (wonBids.length === 0) return [];
+
+  const userIds = Array.from(new Set(wonBids.map((b) => Number(b.user_id))));
+  const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
+  const nameById = new Map(users.map((u) => [u.id, parseUserName(u.name).cleanName]));
+
+  return wonBids.map((b) => ({
+    playerId: Number(b.player_id),
+    ownerName: nameById.get(Number(b.user_id)) ?? "?",
+  }));
+}
+
 export async function getClubsWithStats(leagueDbId: number, day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
   const allClubs = await getCachedClubs();
@@ -879,6 +912,12 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
     playerOwnerMap.set(t.playerId, userMap.get(t.userId) ?? "?");
   });
 
+  // Pendant la phase d'enchères d'été, TEAM est vide (écrite à la clôture de
+  // phase uniquement) : les joueurs attribués vivent en AUCTION_BID status='won'.
+  const auctionOwners = await getActiveAuctionWonOwners(leagueDbId);
+  const mergedOwnerMap = overlayAuctionOwners(playerOwnerMap, auctionOwners);
+  auctionOwners.forEach((row) => takenPlayerIds.add(row.playerId));
+
   return clubs.map((c) => {
     const clubPlayers = playersByClub.get(c.id) || [];
     const taken = clubPlayers.filter((p) => takenPlayerIds.has(p.id));
@@ -892,7 +931,7 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
         id: p.id,
         name: `${p.fname} ${p.lname}`.trim(),
         position: mapPosition(p.position),
-        owner: playerOwnerMap.get(p.id) ?? null,
+        owner: mergedOwnerMap.get(p.id) ?? null,
       })),
     };
   }).filter((c) => c.effectif > 0);
