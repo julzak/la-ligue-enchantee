@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UserPlus, Search, Pencil, Check, X, Loader2 } from "lucide-react";
+import { POSITIONS, normalizePosition } from "@/lib/player-position";
 
 interface Player {
   id: number;
@@ -17,8 +18,6 @@ interface Club {
   id: number;
   name: string;
 }
-
-const POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"];
 
 export default function AdminJoueursPage() {
   // Clubs list
@@ -124,7 +123,10 @@ export default function AdminJoueursPage() {
     setEditId(p.id);
     setEditFname(p.fname);
     setEditLname(p.lname);
-    setEditPosition(p.position);
+    // Fiches des saisons passées : POSITION legacy ("3 - Milieu"). Sans
+    // normalisation, le select retombe sur sa première option ("Gardien")
+    // et une sauvegarde écrase le poste historique.
+    setEditPosition(normalizePosition(p.position) ?? p.position);
     setEditClubId(p.clubId);
   }
 
@@ -143,7 +145,9 @@ export default function AdminJoueursPage() {
           id: editId,
           fname: editFname,
           lname: editLname,
-          position: editPosition,
+          // Poste legacy non normalisable resté sélectionné : on ne l'envoie
+          // pas, le PUT conserve alors le poste historique tel quel
+          ...(POSITIONS.includes(editPosition) ? { position: editPosition } : {}),
           ...(editClubId ? { clubId: editClubId } : {}),
         }),
       });
@@ -304,6 +308,12 @@ export default function AdminJoueursPage() {
                       onChange={(e) => setEditPosition(e.target.value)}
                       className="h-7 bg-surface-2 border border-gold/30 rounded px-1 text-xs text-white focus:outline-none focus:border-gold"
                     >
+                      {/* Poste legacy non normalisable : on le garde comme
+                          option (désactivée) pour ne pas l'écraser, comme le
+                          fallback club archivé ci-dessous */}
+                      {!POSITIONS.includes(editPosition) && (
+                        <option value={editPosition} disabled>{editPosition}</option>
+                      )}
                       {POSITIONS.map((pos) => (
                         <option key={pos} value={pos}>{pos}</option>
                       ))}

@@ -7,8 +7,8 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeason } from "@/lib/season";
 import { buildPlayerSearchQuery } from "@/lib/admin-player-search";
 import { normalizePlayerName } from "@/lib/photo-sync";
+import { POSITIONS as VALID_POSITIONS } from "@/lib/player-position";
 
-const VALID_POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"];
 // Club d'accueil des joueurs hors championnat (pari mercato historique :
 // miser sur un joueur pas encore arrivé en Ligue 1). Résolu par NOM et par
 // saison : l'ancien id codé en dur (21) ne correspondait à aucun club.
@@ -189,7 +189,9 @@ export async function PUT(request: Request) {
       id: number;
       fname: string;
       lname: string;
-      position: string;
+      // Optionnelle : une fiche archivée peut porter un POSITION legacy hors
+      // référentiel ; le client l'omet alors pour préserver le poste historique
+      position?: string;
       clubId?: number;
     };
 
@@ -199,7 +201,7 @@ export async function PUT(request: Request) {
     if (!fname?.trim() || !lname?.trim()) {
       return NextResponse.json({ error: "Prenom et nom requis" }, { status: 400 });
     }
-    if (!VALID_POSITIONS.includes(position)) {
+    if (position !== undefined && !VALID_POSITIONS.includes(position)) {
       return NextResponse.json({ error: "Position invalide" }, { status: 400 });
     }
 
@@ -218,15 +220,20 @@ export async function PUT(request: Request) {
       }
     }
 
-    const result = clubId !== undefined
-      ? await prisma.$executeRawUnsafe(
-          "UPDATE PLAYER SET FNAME = ?, LNAME = ?, POSITION = ?, ID_CLUB = ? WHERE ID_PLAYER = ?",
-          fname.trim(), lname.trim(), position, Number(clubId), id
-        )
-      : await prisma.$executeRawUnsafe(
-          "UPDATE PLAYER SET FNAME = ?, LNAME = ?, POSITION = ? WHERE ID_PLAYER = ?",
-          fname.trim(), lname.trim(), position, id
-        );
+    const sets = ["FNAME = ?", "LNAME = ?"];
+    const params: (string | number)[] = [fname.trim(), lname.trim()];
+    if (position !== undefined) {
+      sets.push("POSITION = ?");
+      params.push(position);
+    }
+    if (clubId !== undefined) {
+      sets.push("ID_CLUB = ?");
+      params.push(Number(clubId));
+    }
+    const result = await prisma.$executeRawUnsafe(
+      `UPDATE PLAYER SET ${sets.join(", ")} WHERE ID_PLAYER = ?`,
+      ...params, id
+    );
 
     if (result === 0) {
       return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
