@@ -5,6 +5,7 @@ import { jsonError500 } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeason } from "@/lib/season";
+import { buildPlayerSearchQuery } from "@/lib/admin-player-search";
 import { normalizePlayerName } from "@/lib/photo-sync";
 
 const VALID_POSITIONS = ["Gardien", "Défense", "Milieu", "Attaque"];
@@ -64,16 +65,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ players: [] });
   }
 
+  // Recherche scopée à la saison courante par défaut (même logique que la
+  // liste des clubs ci-dessus) ; `scope=all` pour les besoins d'archives.
+  const allSeasons = searchParams.get("scope") === "all";
+  const currentSeason = await getCurrentSeason();
+  const query = buildPlayerSearchQuery(search, currentSeason?.id ?? null, allSeasons);
+
   const players = await prisma.$queryRawUnsafe<
-    { ID_PLAYER: number; FNAME: string; LNAME: string; POSITION: string; ID_CLUB: number; clubName: string }[]
-  >(
-    `SELECT p.ID_PLAYER, p.FNAME, p.LNAME, p.POSITION, p.ID_CLUB, COALESCE(c.NAME, '') as clubName
-     FROM PLAYER p LEFT JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
-     WHERE p.LNAME LIKE ? OR p.FNAME LIKE ?
-     ORDER BY p.LNAME ASC LIMIT 50`,
-    `%${search}%`,
-    `%${search}%`
-  );
+    { ID_PLAYER: number; FNAME: string; LNAME: string; POSITION: string; ID_CLUB: number; clubName: string; seasonLabel: string }[]
+  >(query.sql, ...query.params);
 
   return NextResponse.json({
     players: players.map((p) => ({
@@ -83,6 +83,7 @@ export async function GET(request: Request) {
       position: p.POSITION,
       clubId: Number(p.ID_CLUB),
       clubName: p.clubName,
+      seasonLabel: p.seasonLabel,
     })),
   });
 }

@@ -10,6 +10,7 @@ interface Player {
   position: string;
   clubId: number;
   clubName: string;
+  seasonLabel: string;
 }
 
 interface Club {
@@ -33,6 +34,10 @@ export default function AdminJoueursPage() {
 
   // Search + edit
   const [search, setSearch] = useState("");
+  // Recherche scopée à la saison courante par défaut : les fiches des saisons
+  // passées (historique des scores, à ne JAMAIS supprimer) passaient pour des
+  // doublons. Le toggle « toutes saisons » sert aux besoins d'archives.
+  const [allSeasons, setAllSeasons] = useState(false);
   const [results, setResults] = useState<Player[]>([]);
   const [searching, setSearching] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -60,14 +65,14 @@ export default function AdminJoueursPage() {
     if (search.length < 2) { setResults([]); return; }
     const timer = setTimeout(() => {
       setSearching(true);
-      fetch(`/api/admin/players?search=${encodeURIComponent(search)}`)
+      fetch(`/api/admin/players?search=${encodeURIComponent(search)}${allSeasons ? "&scope=all" : ""}`)
         .then((r) => r.json())
         .then((d) => setResults(d.players ?? []))
         .catch(() => {})
         .finally(() => setSearching(false));
     }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, allSeasons]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -257,19 +262,29 @@ export default function AdminJoueursPage() {
           />
           {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted" />}
         </div>
+        <label className="flex items-center gap-2 mb-4 text-xs text-muted cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={allSeasons}
+            onChange={(e) => setAllSeasons(e.target.checked)}
+            className="accent-gold"
+          />
+          Inclure les saisons passées (archives : ces fiches portent l&apos;historique des scores, ce ne sont pas des doublons)
+        </label>
 
         {results.length > 0 && (
           <div className="border border-white/[0.07] rounded overflow-hidden">
             {/* Header */}
-            <div className="grid grid-cols-[8rem_10rem_7rem_8rem_2.5rem] gap-2 px-3 py-2 text-[10px] uppercase tracking-wider text-muted bg-surface-2 border-b border-white/[0.05]">
+            <div className={`grid ${allSeasons ? "grid-cols-[8rem_10rem_7rem_8rem_5rem_2.5rem]" : "grid-cols-[8rem_10rem_7rem_8rem_2.5rem]"} gap-2 px-3 py-2 text-[10px] uppercase tracking-wider text-muted bg-surface-2 border-b border-white/[0.05]`}>
               <span>Prenom</span>
               <span>Nom</span>
               <span>Poste</span>
               <span>Club</span>
+              {allSeasons && <span>Saison</span>}
               <span />
             </div>
             {results.map((p) => (
-              <div key={p.id} className="grid grid-cols-[8rem_10rem_7rem_8rem_2.5rem] gap-2 px-3 py-1.5 items-center border-b border-white/[0.04] last:border-b-0">
+              <div key={p.id} className={`grid ${allSeasons ? "grid-cols-[8rem_10rem_7rem_8rem_5rem_2.5rem]" : "grid-cols-[8rem_10rem_7rem_8rem_2.5rem]"} gap-2 px-3 py-1.5 items-center border-b border-white/[0.04] last:border-b-0`}>
                 {editId === p.id ? (
                   <>
                     <input
@@ -300,10 +315,19 @@ export default function AdminJoueursPage() {
                       onChange={(e) => setEditClubId(Number(e.target.value))}
                       className="h-7 bg-surface-2 border border-gold/30 rounded px-1 text-xs text-white focus:outline-none focus:border-gold"
                     >
+                      {/* Fiche d'une saison passée : son club n'est pas dans la
+                          liste (scopée saison courante), on le garde comme
+                          option pour ne pas l'écraser à la sauvegarde */}
+                      {!clubs.some((c) => c.id === editClubId) && editClubId !== 0 && (
+                        <option value={editClubId}>{results.find((r) => r.id === editId)?.clubName ?? "Club archivé"}</option>
+                      )}
                       {clubs.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
+                    {allSeasons && (
+                      <span className="text-[10px] text-muted truncate">{results.find((r) => r.id === editId)?.seasonLabel || "archive"}</span>
+                    )}
                     <div className="flex items-center gap-1">
                       <button onClick={saveEdit} disabled={saving} className="p-1 text-vert hover:text-vert/80" title="Sauvegarder">
                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
@@ -319,6 +343,11 @@ export default function AdminJoueursPage() {
                     <span className="text-xs text-white truncate">{p.lname}</span>
                     <span className="text-xs text-muted">{p.position}</span>
                     <span className="text-xs text-muted truncate">{p.clubName}</span>
+                    {allSeasons && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-2 border border-white/[0.07] text-muted truncate w-fit" title="Fiche liée à cette saison, porte l'historique des scores">
+                        {p.seasonLabel || "archive"}
+                      </span>
+                    )}
                     <button onClick={() => startEdit(p)} className="p-1 text-white/30 hover:text-gold transition-colors" title="Modifier">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
