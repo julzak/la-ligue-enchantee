@@ -438,7 +438,9 @@ Prérequis hors module : effectifs réels + photos (joueurs actuellement MOCK).
 
 ---
 
-## HANDOFF session fraîche — Doublons multi-saisons dans l'écran Admin → Joueurs (2026-08-10)
+## HANDOFF TRAITÉ (2026-08-10, PR #41) — Doublons multi-saisons dans l'écran Admin → Joueurs
+
+**Résolu** : recherche scopée saison courante par défaut (logique PR #39), toggle « Inclure les saisons passées » avec badge saison (« archive » pour les fiches legacy sans ID_SEASON), requête extraite dans `src/lib/admin-player-search.ts` + 5 tests vitest. Vérifié sur recette (`ligueenc_p2`) : défaut = 1 Sissoko 2026-2027, toutes saisons = 3 avec badges. Notes : en prod TOUTES les fiches archives sont en `ID_SEASON NULL` (pas un id de saison passée) ; la copie recette est antérieure au transfert de Hein vers Nice (fiche 18457 absente), vérification croisée faite en lecture seule sur la DB prod. Reste (chip spawné, hors scope) : le POSITION legacy (« 3 - Milieu ») retombe sur « Gardien » dans le select d'édition d'une fiche archive, risque d'écrasement silencieux à la sauvegarde.
 
 ### Problème (signalé par Thomas, cas « 3 Gauthier Hein »)
 La recherche de l'écran Admin → Joueurs (`/admin/joueurs`) renvoie les joueurs de TOUTES les saisons : pour Gauthier Hein, 3 fiches (« 3 - Milieu / METZ » et « 4 - Attaque » = saisons passées ; « Milieu / OGC Nice » = 2026-2027, la seule misable). Les admins croient à des doublons à supprimer. NE JAMAIS SUPPRIMER les fiches des saisons passées : elles portent l'historique des scores.
