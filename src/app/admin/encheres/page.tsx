@@ -24,6 +24,7 @@ interface AuctionData {
 }
 
 interface Bid {
+  bidId: number;
   userId: number;
   playerId: number;
   playerName: string;
@@ -35,6 +36,7 @@ interface Bid {
 
 // M1 : Acquisition d'un tour quelconque (tous tours confondus)
 interface WonBid {
+  bidId: number;
   userId: number;
   playerId: number;
   playerName: string;
@@ -462,6 +464,18 @@ export default function AdminEncheresPage() {
     } finally {
       setActionPending(false);
     }
+  }
+
+  // Retrait manuel d'une acquisition (handoff 2026-08-11) : confirmation
+  // explicite (joueur, participant, montant), puis action remove-acquisition.
+  // Le rafraîchissement recalcule budget et joueurs pris (won uniquement).
+  function handleRemoveAcquisition(b: { bidId: number; playerName: string; amount: number; userId: number }) {
+    const owner = participants.find((p) => p.userId === b.userId);
+    handleAction(
+      "remove-acquisition",
+      { bidId: b.bidId },
+      `Retirer ${b.playerName} (${b.amount} pts) de l'effectif de ${owner?.userName ?? `#${b.userId}`} ? Le joueur redevient misable, les points sont recrédités.`
+    );
   }
 
   async function handleSetDeadline() {
@@ -938,6 +952,44 @@ export default function AdminEncheresPage() {
                 />
               )}
 
+              {/* Acquisitions des tours précédents avec retrait manuel
+                  (handoff 2026-08-11 : « vue des acquis en mode tour ouvert »).
+                  Visible dès qu'un tour au moins a été dépouillé. */}
+              {(mode === "open" || mode === "closed") && allWonBids.length > 0 && (
+                <div className="bg-surface border border-white/[0.07] rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
+                    <span className="text-[15px] font-bold text-paper">Acquisitions des tours précédents</span>
+                    <span className="text-[11px] text-muted">Retirer une acquisition recrédite les points et remet le joueur en jeu</span>
+                  </div>
+                  {participants.map((p) => {
+                    const acqs = allAcquisitionsByUser.get(p.userId) ?? [];
+                    if (acqs.length === 0) return null;
+                    return (
+                      <div key={p.userId} className="grid grid-cols-[140px_1fr] gap-0 items-center px-5 py-3 border-b border-white/[0.04]">
+                        <span className="text-[13px] font-bold text-paper-dim">{p.userName}</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {acqs.map((a) => (
+                            <span key={a.bidId} className="inline-flex items-center gap-1.5 text-[11px] text-paper-dim bg-gold/[0.08] border border-gold/25 rounded px-2 py-0.5">
+                              {a.playerName} <span className="text-gold font-bold">{a.amount}</span>
+                              <span className="text-[9.5px] text-muted">T{a.round}</span>
+                              <button
+                                onClick={() => handleRemoveAcquisition(a)}
+                                disabled={actionPending}
+                                className="text-muted hover:text-rouge disabled:opacity-40"
+                                title="Retirer cette acquisition (le joueur redevient misable, les points sont recrédités)"
+                                aria-label={`Retirer ${a.playerName}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* DÉPOUILLÉ : résultats + zone récap (logique BRIEF-06) */}
               {mode === "tallied" && auction && (
                 <>
@@ -957,8 +1009,17 @@ export default function AdminEncheresPage() {
                           <span className="text-[13px] font-bold text-paper-dim">{p.userName}</span>
                           <div className="flex flex-wrap gap-1.5 pr-3">
                             {acqs.map((a) => (
-                              <span key={a.playerId} className="text-[11px] text-paper-dim bg-gold/[0.08] border border-gold/25 rounded px-2 py-0.5">
+                              <span key={a.playerId} className="inline-flex items-center gap-1.5 text-[11px] text-paper-dim bg-gold/[0.08] border border-gold/25 rounded px-2 py-0.5">
                                 {a.playerName} <span className="text-gold font-bold">{a.amount}</span>
+                                <button
+                                  onClick={() => handleRemoveAcquisition(a)}
+                                  disabled={actionPending}
+                                  className="text-muted hover:text-rouge disabled:opacity-40"
+                                  title="Retirer cette acquisition (le joueur redevient misable, les points sont recrédités)"
+                                  aria-label={`Retirer ${a.playerName}`}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
                               </span>
                             ))}
                             {acqs.length === 0 && <span className="text-[11.5px] text-muted italic">aucune</span>}
