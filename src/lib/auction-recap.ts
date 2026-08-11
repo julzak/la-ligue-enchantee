@@ -19,7 +19,7 @@ export interface RecapLoss {
   /** 'surenchere' | 'tie' | 'lost' */
   reasonType: "surenchere" | "tie" | "lost";
   yourBid: number;
-  /** ex: "obtenu par Dupont à 18 pts" ou "égalité : personne, remis en jeu au Tour 4" */
+  /** ex: "obtenu par Dupont à 18 pts" ou "entre Troyan et GeLo 59 à 20 pts, personne ne l'obtient, remis en jeu au tour suivant" */
   detail: string;
   refund?: number;
 }
@@ -39,6 +39,22 @@ export interface ParticipantRoundRecap {
   budgetRemaining: number;
   playersWon: number;
   playersPerUser: number;
+}
+
+/**
+ * Formate le détail d'une égalité de mise avec les pseudos des participants à égalité.
+ * Utilisé pour les DEUX cas : les participants à égalité (status 'tie') ET ceux qui
+ * ont misé moins sur le même joueur (status 'lost' sans gagnant), afin qu'il soit
+ * clair pour tous que le joueur n'est attribué à personne.
+ * Rendu : "entre Troyan et GeLo 59 à 20 pts, personne ne l'obtient, remis en jeu au tour suivant"
+ */
+export function formatTieDetail(names: string[], amount: number): string {
+  const sorted = [...names].sort((a, b) => a.localeCompare(b, "fr"));
+  const list =
+    sorted.length > 1
+      ? `${sorted.slice(0, -1).join(", ")} et ${sorted[sorted.length - 1]}`
+      : sorted[0] ?? "";
+  return `entre ${list} à ${amount} pts, personne ne l'obtient, remis en jeu au tour suivant`;
 }
 
 /**

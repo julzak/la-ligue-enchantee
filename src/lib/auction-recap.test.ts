@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatParticipantRecap, formatAllRecaps, type ParticipantRoundRecap } from "./auction-recap";
+import { formatParticipantRecap, formatAllRecaps, formatTieDetail, type ParticipantRoundRecap } from "./auction-recap";
 
 // Données de test canoniques
 const baseRecap: ParticipantRoundRecap = {
@@ -153,6 +153,33 @@ describe("formatAllRecaps", () => {
   it("un seul participant — pas de séparateur superflu", () => {
     const text = formatAllRecaps([baseRecap]);
     expect(text).not.toContain("---");
+  });
+});
+
+describe("formatTieDetail — égalité avec pseudos (demande admin août 2026)", () => {
+  it("2 participants : 'entre A et B à X pts' avec mention remis en jeu", () => {
+    const detail = formatTieDetail(["Troyan", "GeLo 59"], 20);
+    expect(detail).toBe("entre GeLo 59 et Troyan à 20 pts, personne ne l'obtient, remis en jeu au tour suivant");
+  });
+
+  it("3 participants et plus : virgules puis 'et' final", () => {
+    const detail = formatTieDetail(["Troyan", "GeLo 59", "Francis"], 15);
+    expect(detail).toBe("entre Francis, GeLo 59 et Troyan à 15 pts, personne ne l'obtient, remis en jeu au tour suivant");
+  });
+
+  it("tri alphabétique déterministe quel que soit l'ordre d'entrée", () => {
+    expect(formatTieDetail(["Zoé", "Alain"], 10)).toBe(formatTieDetail(["Alain", "Zoé"], 10));
+  });
+
+  it("sanity-check : l'ancien message ambigu n'apparaît plus", () => {
+    // Régression gardée : les participants surenchéris par une égalité voyaient
+    // "Surenchéri : surenchéri", donnant l'impression que le joueur était attribué.
+    const detail = formatTieDetail(["Troyan", "GeLo 59"], 20);
+    expect(detail).not.toContain("surenchéri");
+    expect(detail).toContain("personne ne l'obtient");
+    expect(detail).toContain("GeLo 59");
+    expect(detail).toContain("Troyan");
+    expect(detail).toContain("20 pts");
   });
 });
 

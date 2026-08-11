@@ -19,6 +19,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isMember } from "@/lib/auction-membership";
+import { formatTieDetail } from "@/lib/auction-recap";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -167,6 +168,25 @@ export async function GET(request: Request) {
     });
   }
 
+  // Mises à égalité du tour (tous participants) : permet d'afficher les pseudos
+  // ("entre Troyan et GeLo 59 à 20 pts") pour les participants à égalité ET pour
+  // ceux dont la mise a été battue par une égalité (joueur attribué à personne).
+  const tieRows = await prisma.$queryRawUnsafe<{
+    player_id: number; amount: number; user_name: string;
+  }[]>(
+    `SELECT b.player_id, b.amount, u.NAME as user_name
+     FROM AUCTION_BID b JOIN USER u ON b.user_id = u.ID_USER
+     WHERE b.auction_id = ? AND b.round = ? AND b.status = 'tie'`,
+    auction.id, selectedRound
+  );
+  const tieByPlayer = new Map<number, { names: string[]; amount: number }>();
+  for (const t of tieRows) {
+    const playerId = Number(t.player_id);
+    const entry = tieByPlayer.get(playerId) ?? { names: [], amount: Number(t.amount) };
+    entry.names.push((t.user_name ?? "").replace(/<[^>]*>/g, "").trim());
+    tieByPlayer.set(playerId, entry);
+  }
+
   // Acquisitions, mises perdues du tour sélectionné
   const myAcquisitions: {
     playerName: string; position: string; clubName: string; amount: number;
@@ -186,26 +206,42 @@ export async function GET(request: Request) {
     if (b.status === "won") {
       myAcquisitions.push({ playerName, position: b.position, clubName: b.club_name, amount });
     } else if (b.status === "tie") {
+      const tie = tieByPlayer.get(playerId);
       myLosses.push({
         playerName,
         position: b.position,
         yourBid: amount,
         reasonType: "tie",
-        detail: "personne — égalité, remis en jeu au tour suivant",
+        detail: tie
+          ? formatTieDetail(tie.names, tie.amount)
+          : "personne, égalité, remis en jeu au tour suivant",
         refund: amount,
       });
     } else if (b.status === "lost") {
       const winner = winnerByPlayer.get(playerId);
-      const detail = winner
-        ? `obtenu par ${winner.userName} à ${winner.amount} pts`
-        : "surenchéri";
-      myLosses.push({
-        playerName,
-        position: b.position,
-        yourBid: amount,
-        reasonType: "surenchere",
-        detail,
-      });
+      const tie = tieByPlayer.get(playerId);
+      if (!winner && tie) {
+        // Mise battue par une égalité : le joueur n'est attribué à personne.
+        // Même message que pour les participants à égalité, pseudos inclus.
+        myLosses.push({
+          playerName,
+          position: b.position,
+          yourBid: amount,
+          reasonType: "tie",
+          detail: formatTieDetail(tie.names, tie.amount),
+          refund: amount,
+        });
+      } else {
+        myLosses.push({
+          playerName,
+          position: b.position,
+          yourBid: amount,
+          reasonType: "surenchere",
+          detail: winner
+            ? `obtenu par ${winner.userName} à ${winner.amount} pts`
+            : "surenchéri",
+        });
+      }
     }
     // statut 'removed' : visible dans myRemovals, pas dans losses
   }
