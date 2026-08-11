@@ -7,6 +7,7 @@ import { getCurrentSeason, getSeasonFilters } from "@/lib/season";
 import { isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 import { canCompleteWith, type EnginePlayer } from "@/lib/auction-engine";
 import { validateSummerBids, type SummerBid } from "@/lib/auction-validation";
+import { planManualRemoval } from "@/lib/auction-manual-removal";
 import {
   planResolution,
   computeRosterStatuses,
@@ -111,10 +112,10 @@ export async function GET(request: Request) {
 
   // Bids du tour courant (tous statuts) pour le tableau admin
   const bids = await prisma.$queryRawUnsafe<{
-    user_id: number; player_id: number; amount: number; status: string;
+    id: number; user_id: number; player_id: number; amount: number; status: string;
     fname: string; lname: string; club_name: string; position: string;
   }[]>(
-    `SELECT b.user_id, b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position
+    `SELECT b.id, b.user_id, b.player_id, b.amount, b.status, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position
      FROM AUCTION_BID b
      JOIN PLAYER p ON b.player_id = p.ID_PLAYER
      JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
@@ -262,10 +263,10 @@ export async function GET(request: Request) {
   // M1 : Toutes les acquisitions de tous les tours (pour récap cumulé par participant).
   // Seules les mises status='won' comptent ; on joint joueur+club pour position et nom de club.
   const allWonBidsRows = await prisma.$queryRawUnsafe<{
-    user_id: number; player_id: number; amount: number; round: number;
+    id: number; user_id: number; player_id: number; amount: number; round: number;
     fname: string; lname: string; club_name: string; position: string;
   }[]>(
-    `SELECT b.user_id, b.player_id, b.amount, b.round, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position
+    `SELECT b.id, b.user_id, b.player_id, b.amount, b.round, p.FNAME as fname, p.LNAME as lname, c.NAME as club_name, p.POSITION as position
      FROM AUCTION_BID b
      JOIN PLAYER p ON b.player_id = p.ID_PLAYER
      JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
@@ -287,6 +288,7 @@ export async function GET(request: Request) {
       phaseClosed,
     },
     bids: bids.map((b) => ({
+      bidId: Number(b.id),
       userId: Number(b.user_id),
       playerId: Number(b.player_id),
       playerName: `${b.fname} ${b.lname}`.trim(),
@@ -297,6 +299,7 @@ export async function GET(request: Request) {
     })),
     // M1 : Acquisitions de tous les tours dépouillés (récap cumulé)
     allWonBids: allWonBidsRows.map((b) => ({
+      bidId: Number(b.id),
       userId: Number(b.user_id),
       playerId: Number(b.player_id),
       playerName: `${b.fname} ${b.lname}`.trim(),
@@ -311,14 +314,14 @@ export async function GET(request: Request) {
 }
 
 // POST: actions admin (open, set-deadline, close-round, resolve-round,
-// complete-roster, close-phase)
+// complete-roster, close-phase, enter-bid-for-user, remove-acquisition)
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
   try {
 
-    const { action, leagueId, deadline, userId, playerIds, bids, adminUserId } = await request.json() as {
-      action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline" | "enter-bid-for-user";
+    const { action, leagueId, deadline, userId, playerIds, bids, adminUserId, bidId } = await request.json() as {
+      action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline" | "enter-bid-for-user" | "remove-acquisition";
       leagueId: number;
       deadline?: string | null; // ISO 8601 ou null pour effacer
       userId?: number; // complete-roster | enter-bid-for-user (participant cible)
@@ -327,6 +330,7 @@ export async function POST(request: Request) {
       adminUserId?: number; // enter-bid-for-user : indicatif. La source de vérité
                             // de l'audit est la session admin (auth.session), pas
                             // ce champ client (non falsifiable côté serveur).
+      bidId?: number; // remove-acquisition (mise 'won' à retirer)
     };
 
     if (action === "open") {
@@ -787,6 +791,74 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         message: `${bids.length} mise(s) saisie(s) au nom du participant #${userId}`,
+      });
+    }
+
+    if (action === "remove-acquisition") {
+      // Retrait manuel d'une acquisition (cas réel du 2026-08-11 : bid 2667
+      // retiré en SQL faute d'outil). Gardes et plan dans la couche pure
+      // planManualRemoval ; effets automatiques (aucun autre write) : budget
+      // recrédité (calculé sur les won), joueur re-misable (takenIds = won).
+      if (!bidId) {
+        return NextResponse.json({ error: "bidId requis" }, { status: 400 });
+      }
+      const auction = await getSummerAuction(leagueId);
+      if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+
+      const bidRows = await prisma.$queryRawUnsafe<{
+        id: number; auction_id: number; round: number; user_id: number;
+        player_id: number; amount: number; status: string;
+      }[]>(
+        "SELECT id, auction_id, round, user_id, player_id, amount, status FROM AUCTION_BID WHERE id = ?",
+        bidId
+      );
+      const bid = bidRows.length > 0
+        ? {
+            id: Number(bidRows[0].id),
+            auctionId: Number(bidRows[0].auction_id),
+            round: Number(bidRows[0].round),
+            userId: Number(bidRows[0].user_id),
+            playerId: Number(bidRows[0].player_id),
+            amount: Number(bidRows[0].amount),
+            status: bidRows[0].status,
+          }
+        : null;
+
+      const plan = planManualRemoval({
+        bid,
+        auction: { id: auction.id, status: auction.status },
+        adminName: auth.session.user.name ?? "",
+      });
+      if (plan.error !== undefined) {
+        return NextResponse.json({ error: plan.error }, { status: plan.httpStatus });
+      }
+      const removal = plan.removal;
+
+      // Modèle du geste SQL du bid 2667. L'UPDATE conditionnel (WHERE
+      // status='won') est exécuté EN PREMIER : atomique, il sert de verrou
+      // anti-double-clic (affectedRows = 0 → un appel concurrent est passé
+      // avant, on ne trace rien). L'INSERT AUCTION_REMOVAL suit dans la même
+      // transaction interactive.
+      const removed = await prisma.$transaction(async (tx) => {
+        const updated = await tx.$executeRawUnsafe(
+          "UPDATE AUCTION_BID SET status = 'removed' WHERE id = ? AND status = 'won'",
+          bidId
+        );
+        if (updated === 0) return false;
+        await tx.$executeRawUnsafe(
+          "INSERT INTO AUCTION_REMOVAL (auction_id, round, user_id, player_id, amount, reason) VALUES (?, ?, ?, ?, ?, ?)",
+          removal.auctionId, removal.round, removal.userId,
+          removal.playerId, removal.amount, removal.reason
+        );
+        return true;
+      });
+      if (!removed) {
+        return NextResponse.json({ error: "Cette acquisition a déjà été retirée" }, { status: 409 });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: `Acquisition retirée (${removal.amount} pts recrédités, joueur remis en jeu)`,
       });
     }
 

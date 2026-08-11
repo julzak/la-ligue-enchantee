@@ -506,7 +506,9 @@ Les quotas de ligne sont AUSSI bloquants à la soumission. Refus ferme pour les 
 
 ---
 
-## HANDOFF — Bouton admin « Retirer une acquisition » (décision Julien 2026-08-11)
+## HANDOFF TRAITÉ (2026-08-11) — Bouton admin « Retirer une acquisition »
+
+Implémenté : action `remove-acquisition` (couche pure `src/lib/auction-manual-removal.ts` + tests vitest), boutons « Retirer » dans la Console (tableau dépouillé + panneau des acquis en tour ouvert/clôturé), garde supplémentaire phase close (resolved) car les effectifs TEAM sont déjà écrits. Vérifié en runtime sur copie ligueenc_p2 (script `scripts/diag-remove-acquisition-p2.ts`, copie supprimée après) : statut removed, removal tracé, idempotence double-clic, budget recrédité, joueur re-misable.
 
 ### Contexte
 Cas réel du 2026-08-11 : retrait du Troyen de Blek (bid 2667) fait en SQL faute d'outil (friction déjà relevée par la répétition générale P2). Les admins doivent pouvoir le faire seuls.
