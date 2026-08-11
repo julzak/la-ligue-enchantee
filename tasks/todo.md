@@ -524,3 +524,6 @@ INSERT INTO AUCTION_REMOVAL ... SELECT ... FROM AUCTION_BID WHERE id=? AND statu
 
 ### Tests + vérification
 Tests route (bid inexistant/déjà removed/autre ligue -> 4xx ; cas nominal -> removed + removal row) ; vérif sur copie ligueenc_p2 (il y a des acquisitions won au tour 1 de la ligue 39) ; contrôler côté participant que le joueur retiré apparaît « RETIRÉ » dans ses résultats et que le joueur redevient trouvable dans la recherche de mise.
+
+#### Précision cause racine — bandeau « J2 » avant la saison (diagnostic 2026-08-11)
+`GET /api/admin/deadline` (src/app/api/admin/deadline/route.ts:87) calcule `currentDay = getCurrentMatchday() + 1`. Or `getCurrentMatchday()` (src/lib/db.ts:177) retourne 1 par défaut quand AUCUN score n'existe pour la saison (MAX(SCORE.DAY) NULL), d'où J2 affichée avant que la J1 soit jouée. Fix : dans la route deadline, traiter le cas « aucun score » -> journée à préparer = 1 (distinguer NULL de 1 ; ne pas changer le défaut de getCurrentMatchday sans vérifier ses ~8 autres consommateurs, la home affiche « Journée {n} » avec ce même défaut). Cosmétique, se corrigera seul à la saisie des premières notes fin août.
