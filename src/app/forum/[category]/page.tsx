@@ -10,7 +10,7 @@ const CAT_LABELS: Record<string, string> = {
   general: "Infos G\u00e9n\u00e9rales",
   "ligue-1": "Ligue 1 (Baudens League)",
   "ligue-2": "Ligue 2",
-  "national-1": "National 1",
+  "national-1": "Ligue 3",
   coupe: "Coupe Enchant\u00e9e",
   reclamation: "R\u00e9clamations",
 };

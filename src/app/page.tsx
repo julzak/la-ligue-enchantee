@@ -414,6 +414,7 @@ export default async function HomePage() {
   const leagueImg = (name: string): string | null => {
     if (/^ligue 1/i.test(name)) return "/leagues/ligue1.svg";
     if (/^ligue 2/i.test(name)) return "/leagues/ligue2.png";
+    if (/^ligue 3/i.test(name)) return "/leagues/ligue3.svg";
     if (/national/i.test(name)) return "/leagues/national.png";
     return null;
   };

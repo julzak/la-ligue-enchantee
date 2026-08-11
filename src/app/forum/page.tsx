@@ -19,7 +19,9 @@ const CATEGORIES = [
     label: "Ligue 1 (Baudens League)",
     description: "Jokers, r\u00e9clamations, r\u00e9sultats, chambrages",
     borderColor: "border-l-blue-400",
-    badgeBg: "bg-blue-400/10 text-blue-400",
+    // Pastille claire : les logos de ligue sont noirs sur fond transparent,
+    // invisibles sur le thème sombre sans elle.
+    badgeBg: "bg-white/90",
     icon: "ligue1" as const,
   },
   {
@@ -27,16 +29,18 @@ const CATEGORIES = [
     label: "Ligue 2",
     description: "Jokers, r\u00e9clamations, r\u00e9sultats, chambrages",
     borderColor: "border-l-emerald-400",
-    badgeBg: "bg-emerald-400/10 text-emerald-400",
+    badgeBg: "bg-white/90",
     icon: "ligue2" as const,
   },
   {
+    // Slug historique conserv\u00e9 : les topics existants sont rattach\u00e9s \u00e0
+    // category='national-1' en DB. Seul l'affichage passe en Ligue 3.
     slug: "national-1",
-    label: "National 1",
+    label: "Ligue 3",
     description: "Jokers, r\u00e9clamations, r\u00e9sultats, chambrages",
     borderColor: "border-l-purple-400",
-    badgeBg: "bg-purple-400/10 text-purple-400",
-    icon: "national" as const,
+    badgeBg: "bg-white/90",
+    icon: "ligue3" as const,
   },
   {
     slug: "coupe",
@@ -56,8 +60,8 @@ function CategoryIcon({ icon, className }: { icon: (typeof CATEGORIES)[number]["
       return <Image src="/leagues/ligue1.svg" alt="Ligue 1" width={28} height={28} className="shrink-0" />;
     case "ligue2":
       return <Image src="/leagues/ligue2.png" alt="Ligue 2" width={28} height={28} className="shrink-0" />;
-    case "national":
-      return <Image src="/leagues/national.png" alt="National 1" width={28} height={28} className="shrink-0" />;
+    case "ligue3":
+      return <Image src="/leagues/ligue3.svg" alt="Ligue 3" width={28} height={28} className="shrink-0" />;
     case "coupe":
       return <Trophy className={className ?? "w-6 h-6"} />;
   }
