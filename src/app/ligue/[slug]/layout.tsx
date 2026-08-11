@@ -73,6 +73,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
     { href: `/ligue/${slug}/classement-general`, label: "GÉNÉRAL" },
     { href: `/ligue/${slug}/statistiques`, label: "STATS" },
     { href: `/ligue/${slug}/explorateur`, label: "CLUBS" },
+    { href: `/ligue/${slug}/mercato`, label: "MERCATO" },
   ];
 
   function isTabActive(tabHref: string) {
@@ -110,14 +111,14 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
           </div>
 
           {/* Tab bar */}
-          <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center gap-0 mt-2">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center gap-0 mt-2 overflow-x-auto">
             {tabs.map((tab) => {
               const active = isTabActive(tab.href);
               return (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`relative px-4 py-2.5 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  className={`relative shrink-0 whitespace-nowrap px-4 py-2.5 text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-colors ${
                     active
                       ? "text-gold"
                       : "text-white/35 hover:text-white/60"
