@@ -56,7 +56,7 @@ export default async function ClassementInterliguePage() {
                       </Link>
                     </td>
                     <td className="px-3 py-2.5 text-muted text-xs">
-                      {s.leagueName.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2")}
+                      {s.leagueName.replace("Ligue 1 (Baudens League)", "L1").replace("National 1", "Nat. 1").replace("Ligue 2", "L2").replace("Ligue 3", "L3")}
                     </td>
                     <td className="px-3 py-2.5 text-right text-white font-medium tabular-nums">
                       {s.totalPoints.toFixed(1)}
