@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Gavel, Loader2, Clock, AlertTriangle, Check, Copy, ClipboardCheck, Search, X, Send, UserPlus } from "lucide-react";
-import { formatParticipantRecap, formatAllRecaps, type ParticipantRoundRecap } from "@/lib/auction-recap";
+import { formatParticipantRecap, formatAllRecaps, formatTieDetail, type ParticipantRoundRecap } from "@/lib/auction-recap";
 import { validateSubmission, type EnginePlayer } from "@/lib/auction-engine";
 import { lineFromPosition } from "@/lib/auction-resolution";
 import { isLeagueAuctionable, type SeasonStatus } from "@/lib/season-mutation-guard";
@@ -609,6 +609,19 @@ export default function AdminEncheresPage() {
     }
   }
 
+  // Map playerId → { names, amount } pour les bids à égalité du tour courant
+  // (permet d'afficher "entre Troyan et GeLo 59 à 20 pts" avec les pseudos,
+  // pour les participants à égalité ET ceux surenchéris sur un joueur remis en jeu).
+  const tieByPlayerIdCurrentRound = new Map<number, { names: string[]; amount: number }>();
+  for (const b of bids) {
+    if (b.status !== "tie") continue;
+    const p = participants.find((u) => u.userId === b.userId);
+    if (!p) continue;
+    const entry = tieByPlayerIdCurrentRound.get(b.playerId) ?? { names: [], amount: b.amount };
+    entry.names.push(p.userName);
+    tieByPlayerIdCurrentRound.set(b.playerId, entry);
+  }
+
   // ── Récap copiable (BRIEF-06) ─────────────────────────────────────────────
   // Construit les données récap pour chaque participant.
   // M1 : Les acquisitions couvrent TOUS les tours (allAcquisitionsByUser).
@@ -633,18 +646,33 @@ export default function AdminEncheresPage() {
       const losses = bids
         .filter((b) => b.userId === p.userId && (b.status === "lost" || b.status === "tie"))
         .map((b) => {
+          const tie = tieByPlayerIdCurrentRound.get(b.playerId);
           if (b.status === "tie") {
             return {
               playerName: b.playerName,
               position: b.position, // B2 : vraie position
               yourBid: b.amount,
               reasonType: "tie" as const,
-              detail: "personne — égalité, remis en jeu au tour suivant",
+              detail: tie
+                ? formatTieDetail(tie.names, tie.amount)
+                : "personne, égalité, remis en jeu au tour suivant",
               refund: b.amount,
             };
           }
           // M2 : nom du gagnant depuis la map construite au-dessus
           const winner = winnerByPlayerIdCurrentRound.get(b.playerId);
+          if (!winner && tie) {
+            // Mise battue par une égalité : le joueur n'est attribué à personne.
+            // Même message que pour les participants à égalité (demande admin août 2026).
+            return {
+              playerName: b.playerName,
+              position: b.position,
+              yourBid: b.amount,
+              reasonType: "tie" as const,
+              detail: formatTieDetail(tie.names, tie.amount),
+              refund: b.amount,
+            };
+          }
           return {
             playerName: b.playerName,
             position: b.position, // B2 : vraie position
