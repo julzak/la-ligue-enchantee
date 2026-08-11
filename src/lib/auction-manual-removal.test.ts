@@ -75,7 +75,10 @@ describe("retrait manuel : cas nominal", () => {
   it("bid won → plan de retrait fidèle au geste SQL du bid 2667", () => {
     const plan = planManualRemoval({ bid: wonBid(), auction: AUCTION, adminName: "Julien" });
     expect(plan.error).toBeUndefined();
-    if (!plan.error) {
+    // Discrimination de l'union par `=== undefined` (même motif que la route
+    // consommatrice) : `!plan.error` ne narrow pas, `error` étant un string
+    // (une chaîne vide serait falsy sans écarter la branche erreur).
+    if (plan.error === undefined) {
       expect(plan.removal).toEqual({
         auctionId: 12,
         round: 1,
@@ -89,11 +92,11 @@ describe("retrait manuel : cas nominal", () => {
 
   it("le reason inclut TOUJOURS le pseudo de l'admin de la session (traçabilité)", () => {
     const plan = planManualRemoval({ bid: wonBid(), auction: AUCTION, adminName: "Laurent" });
-    if (!plan.error) expect(plan.removal.reason).toBe("Retrait manuel par Laurent");
+    if (plan.error === undefined) expect(plan.removal.reason).toBe("Retrait manuel par Laurent");
     // Repli si le pseudo de session est vide (jamais le cas en pratique) :
     // on ne stocke pas un reason sans auteur lisible.
     const fallback = planManualRemoval({ bid: wonBid(), auction: AUCTION, adminName: "  " });
-    if (!fallback.error) expect(fallback.removal.reason).toBe("Retrait manuel par admin");
+    if (fallback.error === undefined) expect(fallback.removal.reason).toBe("Retrait manuel par admin");
   });
 
   it("sanity-check : le détecteur distingue bien won des autres statuts", () => {
