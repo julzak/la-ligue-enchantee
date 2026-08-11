@@ -503,3 +503,22 @@ Copie prod ligueenc_p2 (Docker ligue-recette-mysql:3310, cf. handoff précédent
 
 #### AMENDEMENT (Julien, 2026-08-10, remplace le point sur les quotas de ligne)
 Les quotas de ligne sont AUSSI bloquants à la soumission. Refus ferme pour les MAXIMA par ligne, en comptant acquis conservés + joueurs de la mise : GK > 1 (déjà refusé via B2-GK), DEF > 6, MIL > 6, ATT > 4. Les MINIMA (≥3 DEF, ≥3 MIL, ≥1 ATT) restent NON bloquants par tour : un effectif se construit progressivement, ils ne sont exigibles qu'en fin de phase (complétion d'office). Donc au total, refus ferme = 13 joueurs max, 130 points max, maxima de ligne ; avertissements restants = minima de ligne uniquement. Ajouter les cas de test correspondants (ex : 5 ATT misés+acquis -> 400 ; 2 DEF au tour 1 -> accepté avec avertissement minima).
+
+---
+
+## HANDOFF — Bouton admin « Retirer une acquisition » (décision Julien 2026-08-11)
+
+### Contexte
+Cas réel du 2026-08-11 : retrait du Troyen de Blek (bid 2667) fait en SQL faute d'outil (friction déjà relevée par la répétition générale P2). Les admins doivent pouvoir le faire seuls.
+
+### Comportement attendu
+Dans la Console des enchères (src/app/admin/encheres/page.tsx), sur chaque acquisition affichée (tableau du mode dépouillé ET, si simple, une vue des acquis en mode tour ouvert), une action « Retirer » avec confirmation (nom du joueur, participant, montant, mention « le joueur redevient misable, les points sont recrédités »).
+
+### API
+Nouvelle action `remove-acquisition` dans POST /api/admin/auction : paramètre bidId ; gardes : requireAdmin, bid existant, status='won', enchère appartenant à la ligue sélectionnée. Transaction : INSERT AUCTION_REMOVAL (auction_id, round, user_id, player_id, amount, reason) + UPDATE AUCTION_BID SET status='removed'. Le reason DOIT inclure le pseudo de l'admin de la session (ex : « Retrait manuel par <admin> ») : traçabilité, en attendant le vrai journal des actions admin (backlog). Effets automatiques (aucun autre write) : budget recrédité (calculé sur les won), joueur re-misable (takenIds = won).
+
+### Modèle du geste (exactement ce qui a été fait en SQL pour le bid 2667)
+INSERT INTO AUCTION_REMOVAL ... SELECT ... FROM AUCTION_BID WHERE id=? AND status='won'; puis UPDATE ... SET status='removed' WHERE id=? AND status='won'. Idempotent via la condition status='won' (double-clic sans effet).
+
+### Tests + vérification
+Tests route (bid inexistant/déjà removed/autre ligue -> 4xx ; cas nominal -> removed + removal row) ; vérif sur copie ligueenc_p2 (il y a des acquisitions won au tour 1 de la ligue 39) ; contrôler côté participant que le joueur retiré apparaît « RETIRÉ » dans ses résultats et que le joueur redevient trouvable dans la recherche de mise.
