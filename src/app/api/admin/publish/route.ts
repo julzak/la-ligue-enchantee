@@ -5,6 +5,8 @@ import { getSeasonFilters } from "@/lib/season";
 import { buildDayScoreResolver } from "@/lib/club-goalkeeper";
 import { getScoringConfig } from "@/lib/scoring-config";
 import { computePlayerTotal, baseNoteAfterRedCard } from "@/lib/scoring-core";
+import { leagueSlug } from "@/lib/season-key";
+import { generateTopo } from "@/lib/topo";
 
 function dec(v: unknown): number {
   if (v === null || v === undefined) return 0;
@@ -197,6 +199,24 @@ export async function POST(request: Request) {
         );
       }
     }
+
+    // Génération automatique des synthèses Lia (remplace le déclenchement manuel).
+    // En tâche de fond et ESPACÉ : le free tier de Gemini 2.5 Pro plafonne à ~2
+    // requêtes/minute. On génère les ligues séquentiellement avec un délai pour
+    // qu'elles passent (presque) toutes sur Pro plutôt que de retomber sur Flash.
+    // Ne bloque JAMAIS la réponse de publication ; un échec est loggé, pas propagé.
+    const slugsToGenerate = leagues.map((l) => leagueSlug(l.name));
+    void (async () => {
+      for (let i = 0; i < slugsToGenerate.length; i++) {
+        if (i > 0) await new Promise((r) => setTimeout(r, 35_000)); // respect du quota Pro
+        try {
+          await generateTopo(slugsToGenerate[i], true);
+          console.log(`[publish] synthèse Lia générée: ${slugsToGenerate[i]} (J${day})`);
+        } catch (e) {
+          console.error(`[publish] synthèse Lia échouée (${slugsToGenerate[i]}):`, (e as Error).message);
+        }
+      }
+    })();
 
     return NextResponse.json({ ok: true, day, message: `Journée ${day} publiée pour ${leagues.length} ligues` });
   } catch (error) {
