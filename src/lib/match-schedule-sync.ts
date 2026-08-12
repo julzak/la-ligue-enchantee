@@ -20,6 +20,10 @@ export interface ScheduleSyncResult {
   synced: number;
   daysWithData: number;
   daysEmpty: number[];
+  // Nombre de journées dont la requête TheSportsDB a échoué (réseau/HTTP/JSON),
+  // distinct des journées réellement vides (API OK mais pas encore de calendrier).
+  // Permet de ne pas confondre "API en panne" et "pré-saison sans fixtures".
+  fetchErrors: number;
 }
 
 function nextDay(dateStr: string): string {
@@ -31,6 +35,7 @@ function nextDay(dateStr: string): string {
 export async function syncMatchSchedule(seasonKey: string): Promise<ScheduleSyncResult> {
   let synced = 0;
   let daysWithData = 0;
+  let fetchErrors = 0;
   const daysEmpty: number[] = [];
   const today = new Date().toISOString().slice(0, 10);
 
@@ -41,9 +46,13 @@ export async function syncMatchSchedule(seasonKey: string): Promise<ScheduleSync
         `https://www.thesportsdb.com/api/v1/json/3/eventsround.php?id=${LIGUE_1_ID}&r=${day}&s=${seasonKey}`,
         { cache: "no-store" }
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       events = Array.isArray(data.events) ? data.events : [];
-    } catch {
+    } catch (e) {
+      // Échec réel (réseau/HTTP/JSON), à distinguer d'une journée sans fixtures.
+      fetchErrors++;
+      console.error(`[syncMatchSchedule] J${day} fetch échec: ${(e as Error).message}`);
       events = [];
     }
 
@@ -101,5 +110,12 @@ export async function syncMatchSchedule(seasonKey: string): Promise<ScheduleSync
     await new Promise((r) => setTimeout(r, 150));
   }
 
-  return { synced, daysWithData, daysEmpty };
+  // Panne totale : toutes les requêtes ont échoué -> ce n'est pas un "succès
+  // vide", c'est TheSportsDB indisponible / rate-limité. On le signale bruyamment
+  // (le résultat porte fetchErrors pour que l'admin / le cron le remontent aussi).
+  if (fetchErrors === 38) {
+    console.error(`[syncMatchSchedule] PANNE : 38/38 journées en échec (TheSportsDB down ou rate-limité, saison ${seasonKey}). Aucun calendrier synchronisé.`);
+  }
+
+  return { synced, daysWithData, daysEmpty, fetchErrors };
 }

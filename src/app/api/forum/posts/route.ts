@@ -5,6 +5,7 @@ import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/admin-auth";
+import { jsonError500 } from "@/lib/api-error";
 
 // GET: list posts for a topic
 export async function GET(request: Request) {
@@ -106,25 +107,41 @@ export async function POST(request: Request) {
   }
 
   // Check topic exists and not locked
-  const [topic] = await prisma.$queryRawUnsafe<{ id: number; locked: number }[]>(
-    "SELECT id, locked FROM FORUM_TOPIC WHERE id = ?", topicId
+  const [topic] = await prisma.$queryRawUnsafe<{ id: number; locked: number; league_id: number }[]>(
+    "SELECT id, locked, league_id FROM FORUM_TOPIC WHERE id = ?", topicId
   );
   if (!topic) return NextResponse.json({ error: "Topic introuvable" }, { status: 404 });
   if (topic.locked) return NextResponse.json({ error: "Sujet verrouille" }, { status: 403 });
 
-  // Insert post
-  await prisma.$executeRawUnsafe(
-    "INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())",
-    topicId, userId, content.trim()
-  );
+  // Appartenance : répondre dans un sujet de ligue exige d'en être membre.
+  // league_id=0 = interligue, ouvert à tout utilisateur authentifié.
+  const topicLeagueId = Number(topic.league_id);
+  if (topicLeagueId > 0) {
+    const membership = await prisma.leagueUser.findUnique({
+      where: { leagueId_userId: { leagueId: topicLeagueId, userId } },
+    });
+    if (!membership) {
+      return NextResponse.json({ error: "Vous n'êtes pas membre de cette ligue" }, { status: 403 });
+    }
+  }
 
-  // Update topic stats
-  await prisma.$executeRawUnsafe(
-    "UPDATE FORUM_TOPIC SET post_count = post_count + 1, last_post_at = NOW(), last_post_by = ? WHERE id = ?",
-    userId, topicId
-  );
+  try {
+    // Insert post
+    await prisma.$executeRawUnsafe(
+      "INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())",
+      topicId, userId, content.trim()
+    );
 
-  return NextResponse.json({ ok: true });
+    // Update topic stats
+    await prisma.$executeRawUnsafe(
+      "UPDATE FORUM_TOPIC SET post_count = post_count + 1, last_post_at = NOW(), last_post_by = ? WHERE id = ?",
+      userId, topicId
+    );
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return jsonError500("Forum post create error:", e, "Erreur lors de la publication");
+  }
 }
 
 // DELETE: delete a post (admin only)
