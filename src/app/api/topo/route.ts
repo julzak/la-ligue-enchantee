@@ -30,13 +30,20 @@ async function callClaude(prompt: string): Promise<string> {
 }
 
 async function callGemini(modelId: string, prompt: string): Promise<string> {
-  const useThinking = modelId.includes("2.5");
+  const isPro = modelId.includes("2.5-pro");
+  const is25 = modelId.includes("2.5");
+  // Gemini 2.5 Pro : le "thinking" est obligatoire (thinkingBudget=0 interdit) et
+  // compte dans maxOutputTokens. On le plafonne et on laisse assez de marge pour
+  // que la synthèse (~600 tokens visibles) s'écrive APRÈS le raisonnement, sinon
+  // la réponse revient vide (finishReason=MAX_TOKENS). Le thinking améliore
+  // l'exactitude (pas d'inversion qualifié/éliminé, bonne attribution des joueurs).
+  // Flash 2.5 : thinking désactivé (rapide, free tier). 2.0 : pas de thinking.
+  const generationConfig: Record<string, unknown> = isPro
+    ? { maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: 1024 } }
+    : { maxOutputTokens: 600, ...(is25 ? { thinkingConfig: { thinkingBudget: 0 } } : {}) };
   const body: Record<string, unknown> = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: {
-      maxOutputTokens: 600,
-      ...(useThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-    },
+    generationConfig,
   };
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${GEMINI_KEY}`,
@@ -46,7 +53,8 @@ async function callGemini(modelId: string, prompt: string): Promise<string> {
     throw new Error(`Gemini ${modelId}: ${res.status} ${res.statusText}`);
   }
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const parts: { text?: string }[] = data.candidates?.[0]?.content?.parts ?? [];
+  return parts.map((p) => p.text ?? "").join("").trim();
 }
 
 // GET: retrieve saved topo (if exists)
@@ -237,7 +245,11 @@ Détail par participant (meilleurs/pires joueurs L1 de LEUR effectif) :
 ${participantDetails.join("\n\n")}
 `;
 
-    const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    // Qualité d'abord, gratuit d'abord : Gemini 2.5 Pro en primaire (meilleure
+    // plume + suit le prompt fidèlement = moins d'erreurs), repli Flash puis 2.0.
+    // Tout est sur le free tier Google. Sur une clé sans facturation, un dépassement
+    // de quota Pro renvoie un 429 -> repli automatique sur Flash, jamais de charge.
+    const MODELS = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
 
     const prompt = `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
 
@@ -278,11 +290,11 @@ ${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}
       }
       if (text) break;
     }
-    // Last resort: Claude Haiku
+    // Filet de secours (payant, déclenché seulement si TOUT Gemini est indisponible)
     if (!text && ANTHROPIC_KEY) {
       try {
         text = await callClaude(prompt);
-        console.log("Topo: fallback Claude Haiku OK");
+        console.log("Topo: fallback Claude Sonnet 5 OK");
       } catch (e: unknown) {
         console.error("Topo: Claude fallback failed:", (e as Error).message);
       }
