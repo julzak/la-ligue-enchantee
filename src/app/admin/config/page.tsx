@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Loader2, Save, Check } from "lucide-react";
+import { Settings, Loader2, Save, Check, Lock } from "lucide-react";
 
 interface ScoringConfig {
   goalBonusGk: number;
@@ -56,6 +56,11 @@ export default function AdminConfigPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({});
+  // Bareme fige des qu'une journee est publiee (verrou serveur ; ici on adapte l'UI).
+  const [seasonStarted, setSeasonStarted] = useState(false);
+  // Confirmation lourde pour toucher au bareme (retaper "Configuration").
+  const [scoringConfirmOpen, setScoringConfirmOpen] = useState(false);
+  const [scoringConfirmText, setScoringConfirmText] = useState("");
   const [effectifs, setEffectifs] = useState<EffectifsInfo>({
     footballDataToken: null, theSportsDbKey: null, theSportsDbKeySetAt: null,
   });
@@ -68,6 +73,7 @@ export default function AdminConfigPage() {
         const res = await fetch("/api/admin/config");
         const data = await res.json();
         if (data.scoring) setScoring(data.scoring);
+        setSeasonStarted(data.seasonStarted === true);
         if (data.jokers) setJokers(data.jokers);
         if (data.mercatoHiver) setMercato(data.mercatoHiver);
         if (data.deadlines) setDeadlines(data.deadlines);
@@ -220,55 +226,84 @@ export default function AdminConfigPage() {
         </div>
       </section>
 
-      {/* Section 2: Scoring */}
+      {/* Section 2: Scoring (bareme) — editable seulement avant le debut de saison */}
       <section className="bg-surface rounded-lg border border-white/[0.07] p-5">
-        <h2 className="font-serif text-base text-gold mb-4">Scoring</h2>
+        <div className="flex items-center gap-2 mb-1">
+          <h2 className="font-serif text-base text-gold">Scoring (bareme)</h2>
+          {seasonStarted && <Lock className="w-4 h-4 text-muted" />}
+        </div>
+        {seasonStarted ? (
+          <p className="text-xs text-amber-400/90 mb-4">
+            La saison a commence : le bareme est fige pour ne pas fausser le classement
+            deja calcule. Il ne sera de nouveau modifiable qu&apos;avant la prochaine saison.
+          </p>
+        ) : (
+          <p className="text-xs text-muted mb-4">
+            Modifiable uniquement maintenant, avant la premiere journee publiee. Toute
+            modification demande une confirmation.
+          </p>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Field
-            label="But gardien"
-            type="number"
-            value={scoring.goalBonusGk}
-            prefix="+"
+            label="But gardien" type="number" value={scoring.goalBonusGk} prefix="+"
+            disabled={seasonStarted}
             onChange={(v) => setScoring({ ...scoring, goalBonusGk: Number(v) })}
           />
           <Field
-            label="But defenseur"
-            type="number"
-            value={scoring.goalBonusDef}
-            prefix="+"
+            label="But defenseur" type="number" value={scoring.goalBonusDef} prefix="+"
+            disabled={seasonStarted}
             onChange={(v) => setScoring({ ...scoring, goalBonusDef: Number(v) })}
           />
           <Field
-            label="But milieu"
-            type="number"
-            value={scoring.goalBonusMid}
-            prefix="+"
+            label="But milieu" type="number" value={scoring.goalBonusMid} prefix="+"
+            disabled={seasonStarted}
             onChange={(v) => setScoring({ ...scoring, goalBonusMid: Number(v) })}
           />
           <Field
-            label="But attaquant"
-            type="number"
-            value={scoring.goalBonusAtt}
-            prefix="+"
+            label="But attaquant" type="number" value={scoring.goalBonusAtt} prefix="+"
+            disabled={seasonStarted}
             onChange={(v) => setScoring({ ...scoring, goalBonusAtt: Number(v) })}
           />
           <Field
-            label="CSC"
-            type="number"
-            value={scoring.cscMalus}
+            label="CSC" type="number" value={scoring.cscMalus}
+            disabled={seasonStarted}
             onChange={(v) => setScoring({ ...scoring, cscMalus: Number(v) })}
           />
           <Field
-            label="Penalty arrete"
-            type="number"
-            value={scoring.penaltySavedBonus}
-            prefix="+"
+            label="Penalty arrete" type="number" value={scoring.penaltySavedBonus} prefix="+"
+            disabled={seasonStarted}
             onChange={(v) => setScoring({ ...scoring, penaltySavedBonus: Number(v) })}
           />
+          <Field
+            label="Note plancher" type="number" value={scoring.minNote}
+            disabled={seasonStarted}
+            onChange={(v) => setScoring({ ...scoring, minNote: Number(v) })}
+          />
+          <div>
+            <label className="block text-xs text-muted mb-1">Carton rouge = note 0</label>
+            <select
+              value={scoring.redCardNoteZero}
+              disabled={seasonStarted}
+              onChange={(e) => setScoring({ ...scoring, redCardNoteZero: Number(e.target.value) })}
+              className="w-full bg-dark border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value={1}>Oui (note effacee, bonus conserves)</option>
+              <option value={0}>Non (note conservee)</option>
+            </select>
+          </div>
         </div>
-        <div className="mt-4 flex justify-end">
-          <SaveButton section="scoring" data={scoring} />
-        </div>
+        {!seasonStarted && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => { setScoringConfirmText(""); setScoringConfirmOpen(true); }}
+              disabled={(saveStatus.scoring ?? "idle") === "saving"}
+              className="flex items-center gap-2 px-4 py-2 rounded text-sm font-medium bg-gold/10 text-gold hover:bg-gold/20 transition-colors"
+            >
+              {(saveStatus.scoring ?? "idle") === "saved" ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              {(saveStatus.scoring ?? "idle") === "saved" ? "OK" : "Sauvegarder le bareme"}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Section 3: Mercato hiver */}
@@ -334,12 +369,56 @@ export default function AdminConfigPage() {
           Cloture a {deadlines.defaultHour}h le jour du match. Si match avant {deadlines.earlyMatchHour}h, cloture {deadlines.earlyMatchOffsetHours}h avant le coup d&apos;envoi. Override ponctuel dans la page Notes.
         </p>
       </section>
+
+      {/* Modale de confirmation lourde du bareme */}
+      {scoringConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-surface border border-white/10 rounded-lg p-6 max-w-md w-full space-y-4">
+            <div className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-amber-400" />
+              <h3 className="font-serif text-lg text-white">Confirmer la modification du bareme</h3>
+            </div>
+            <p className="text-sm text-muted">
+              Le bareme pilote le calcul du classement de toute la saison. Il ne pourra
+              plus etre modifie une fois la premiere journee publiee. Pour confirmer,
+              retapez <span className="text-white font-medium">Configuration</span> ci-dessous.
+            </p>
+            <input
+              type="text"
+              autoFocus
+              value={scoringConfirmText}
+              onChange={(e) => setScoringConfirmText(e.target.value)}
+              placeholder="Configuration"
+              className="w-full bg-dark border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold/50"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setScoringConfirmOpen(false)}
+                className="px-4 py-2 rounded text-sm text-muted hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                disabled={scoringConfirmText !== "Configuration"}
+                onClick={() => {
+                  setScoringConfirmOpen(false);
+                  saveSection("scoring", scoring);
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded text-sm font-medium bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function Field({
-  label, type, value, onChange, prefix, placeholder, className,
+  label, type, value, onChange, prefix, placeholder, className, disabled,
 }: {
   label: string;
   type: "number" | "date";
@@ -348,6 +427,7 @@ function Field({
   prefix?: string;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className={className}>
@@ -360,8 +440,9 @@ function Field({
           type={type}
           value={value}
           placeholder={placeholder}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full bg-dark border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold/50 ${
+          className={`w-full bg-dark border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-gold/50 disabled:opacity-50 disabled:cursor-not-allowed ${
             prefix ? "pl-7" : ""
           }`}
         />

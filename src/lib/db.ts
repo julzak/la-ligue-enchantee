@@ -2,7 +2,8 @@ import { cache } from "react";
 import { prisma } from "./prisma";
 import type { Decimal } from "@prisma/client/runtime/library";
 import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "./assets";
-import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
+import { getScoringConfig, type ScoringConfig } from "./scoring-config";
+import { computePlayerTotal, SCORING_DEFAULTS } from "./scoring-core";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { leagueSlug } from "./season-key";
 import { parisUtcOffsetHours, parisWallTimeToUtc } from "./paris-time";
@@ -49,24 +50,17 @@ function dec(v: Decimal | number | null): number {
 }
 
 // ── Scoring formula (config-driven) ─────────────────────
+// Delegue au socle pur scoring-core (source unique de verite, partagee avec le
+// moteur autoritaire publish). cfg absent -> bareme par defaut.
 function calcPlayerTotal(
   points: number, goals: number, passes: number, position: string,
   redCard = 0, ownGoals = 0, penaltySaved = 0,
   cfg?: ScoringConfig
 ): number {
-  const base = redCard ? 0 : points;
-  const gb = cfg ? goalBonusForPosition(position, cfg) : goalBonusForPositionDefault(position);
-  const cscPenalty = cfg ? cfg.cscMalus : -2;
-  const penBonus = cfg ? cfg.penaltySavedBonus : 2;
-  return Math.max(0, base + gb * goals + passes + cscPenalty * ownGoals + penBonus * penaltySaved);
-}
-
-// Fallback for when config isn't loaded yet (should not happen in practice)
-function goalBonusForPositionDefault(position: string): number {
-  const p = position.toLowerCase();
-  if (p.includes("gardien")) return 10;
-  if (p.includes("fense")) return 4;
-  return 2;
+  return computePlayerTotal(
+    { points, goals, passes, position, redCard: redCard !== 0, ownGoals, penaltySaved },
+    cfg ?? SCORING_DEFAULTS
+  );
 }
 
 // Trophy types from the img tags in USER.NAME

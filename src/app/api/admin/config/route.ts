@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey } from "@/lib/season";
+import { getCurrentMatchday } from "@/lib/db";
 import { getAppConfig, setAppConfig, CONFIG_KEYS } from "@/lib/app-config";
 
 // Le driver renvoie les colonnes DATE/DATETIME en objet Date : String() donne
@@ -111,7 +112,12 @@ export async function GET() {
     getAppConfig(CONFIG_KEYS.THESPORTSDB_KEY_SET_AT),
   ]);
 
+  // Le bareme n'est modifiable qu'avant le debut de saison (aucune journee
+  // publiee) : au-dela, une edition ferait diverger le classement deja calcule.
+  const seasonStarted = (await getCurrentMatchday()) > 0;
+
   return NextResponse.json({
+    seasonStarted,
     effectifs: {
       footballDataToken: maskKey(fdToken),
       theSportsDbKey: maskKey(sdbKey),
@@ -152,7 +158,16 @@ export async function POST(request: Request) {
 
   try {
     switch (section) {
-      case "scoring":
+      case "scoring": {
+        // Verrou serveur : bareme fige des qu'une journee est publiee. C'est le
+        // gate reel (le client ne fait qu'aider) : modifier le bareme en cours de
+        // saison ferait diverger le classement STATS_USER deja calcule.
+        if ((await getCurrentMatchday()) > 0) {
+          return NextResponse.json(
+            { error: "Le bareme ne peut etre modifie qu'avant le debut de la saison (aucune journee publiee)." },
+            { status: 403 }
+          );
+        }
         await prisma.$executeRawUnsafe(
           `INSERT INTO SCORING_CONFIG (season, goal_bonus_gk, goal_bonus_def, goal_bonus_mid, goal_bonus_att, csc_malus, penalty_saved_bonus, red_card_note_zero, min_note)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -164,6 +179,7 @@ export async function POST(request: Request) {
           data.cscMalus, data.penaltySavedBonus, data.redCardNoteZero ?? 1, data.minNote ?? 0
         );
         break;
+      }
 
       case "jokers": {
         // Upsert manuel : JOKER_CONFIG n'a pas d'index unique sur (season, type),

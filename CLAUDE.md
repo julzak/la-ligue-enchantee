@@ -64,6 +64,10 @@ Le mot "forfaitaire" dans `regles-scoring.md` veut dire "valeur fixe", pas "forf
 
 Toute régression sur ces 4 cas doit être détectée par un script `scripts/test-bareme-*.ts` avant deploy. Le test doit inclure un sanity-check sur la donnée buggée d'origine pour prouver qu'il peut détecter la régression qu'il garde.
 
+**Socle unique depuis 2026-08 (`src/lib/scoring-core.ts`).** Le calcul du barème est une fonction PURE (`computePlayerTotal`, `baseNoteAfterRedCard`, `goalBonusForPosition`) partagée par le moteur autoritaire (`api/admin/publish` qui écrit `STATS_USER` = le classement) ET l'affichage (`db.ts` `calcPlayerTotal`). Avant l'unification, `publish` codait le barème en dur et ignorait `SCORING_CONFIG` : éditer le barème faisait diverger classement et fiches joueurs. Ne JAMAIS re-coder un barème en dur dans `publish` ou `db.ts` : tout passe par `scoring-core` + `getScoringConfig`. Tests : `src/lib/scoring-core.test.ts` (dont un test d'épinglage prouvant que la config par défaut reproduit l'ancien calcul à l'identique), wrapper CLI `scripts/test-bareme-core.ts`.
+
+**Barème éditable uniquement en avant-saison.** L'UI admin (`/admin/config`, section Scoring) et la route `POST /api/admin/config` (section `scoring`) refusent toute modification du barème dès qu'une journée est publiée (`getCurrentMatchday() > 0`), pour ne pas fausser un classement déjà calculé. En avant-saison, la modification exige une confirmation lourde (retaper "Configuration" dans une modale). Les réglages deadline (`deadline_hour`, etc.) restent éditables toute la saison.
+
 ### Format Cup section (anti-inversion Gemini Flash)
 
 Depuis le commit `2f5f9d5`, le format pour la section Coupe est :
