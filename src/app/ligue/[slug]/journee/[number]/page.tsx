@@ -85,7 +85,7 @@ export default async function JourneePage({ params }: { params: Promise<{ slug: 
                   key={p.playerId}
                   className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-white/[0.02] rounded"
                 >
-                  <PlayerAvatar playerId={p.playerId} name={p.playerName} size={24} clubLogoUrl={p.clubLogo} />
+                  <PlayerAvatar imageUrl={p.imageUrl} name={p.playerName} size={24} clubLogoUrl={p.clubLogo} />
                   <PositionBadge position={p.position} />
                   <span className="text-white/80 flex-1 truncate text-xs">{p.playerName}</span>
                   <span className="text-[10px] text-muted">{p.clubShort}</span>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 
 interface PlayerAvatarProps {
-  imageUrl?: string;
+  imageUrl?: string | null;
   playerId?: number;
   name: string;
   size?: number;

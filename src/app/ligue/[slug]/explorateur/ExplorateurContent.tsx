@@ -11,6 +11,7 @@ interface ClubPlayer {
   name: string;
   position: Position;
   owner: string | null;
+  imageUrl: string | null;
 }
 
 interface ClubWithStats {
@@ -126,7 +127,7 @@ export function ExplorateurContent({ clubs }: { clubs: ClubWithStats[] }) {
                           player.owner ? "bg-gold/[0.06]" : "bg-transparent"
                         }`}
                       >
-                        <PlayerAvatar playerId={player.id} name={player.name} size={32} />
+                        <PlayerAvatar imageUrl={player.imageUrl} name={player.name} size={32} />
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-medium truncate">
                             {player.name}

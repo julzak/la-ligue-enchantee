@@ -70,6 +70,7 @@ model Player {
   lname    String  @default("") @map("LNAME") @db.VarChar(50)
   position String  @default("") @map("POSITION") @db.VarChar(50)
   link     String? @map("LINK") @db.VarChar(150)
+  photoUrl String? @map("PHOTO_URL") @db.VarChar(255)
   seasonId Int?    @map("ID_SEASON") @db.UnsignedInt
 
   season Season? @relation(fields: [seasonId], references: [id])

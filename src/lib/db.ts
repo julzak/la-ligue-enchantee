@@ -169,7 +169,7 @@ export async function getUserById(userId: number): Promise<ParsedUser | null> {
 }
 
 // ── Current matchday ──────────────────────────────────────
-export async function getCurrentMatchday(): Promise<number> {
+export const getCurrentMatchday = cache(async (): Promise<number> => {
   const scope = await getSeasonScope();
   if (scope.season && scope.hasPlayers) {
     // Saison scopée : seule la progression des joueurs de la saison compte.
@@ -186,7 +186,7 @@ export async function getCurrentMatchday(): Promise<number> {
   }
   const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
   return latest?.day ?? 0;
-}
+});
 
 // ── Locked clubs for a matchday ─────────────────────────
 // Retourne les clubIds dont la deadline de saisie d'equipe est passee
@@ -625,6 +625,7 @@ export async function getParticipantTeam(leagueDbId: number, userId: number, day
       clubShort: getClubShortNameByName(club?.name),
       clubLogo: getClubLogoUrlByName(club?.name),
       clubId: player?.clubId ?? 0,
+      imageUrl: player?.photoUrl ?? null,
       isStarter,
       indx: lineupEntry?.indx ?? 99,
       isSubs: t.isSubs === 1,
@@ -709,6 +710,7 @@ export async function getParticipantDayScores(leagueDbId: number, userId: number
       clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
       clubShort: getClubShortNameByName(player ? clubMap.get(player.clubId) : null),
       clubLogo: getClubLogoUrlByName(player ? clubMap.get(player.clubId) : null),
+      imageUrl: player?.photoUrl ?? null,
       indx: l.indx,
       rating: score ? dec(score.points) : null,
       goals: score?.goals ?? 0,
@@ -843,6 +845,7 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
       clubName: player ? (clubMap.get(player.clubId) ?? "") : "",
       clubShort: getClubShortNameByName(player ? clubMap.get(player.clubId) : null),
       clubLogo: getClubLogoUrlByName(player ? clubMap.get(player.clubId) : null),
+      imageUrl: player?.photoUrl ?? null,
       daysPlayed: stats.daysPlayed,
       daysInLineup,
       notes: Math.round(stats.notes * 10) / 10,
@@ -942,6 +945,7 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
         name: `${p.fname} ${p.lname}`.trim(),
         position: mapPosition(p.position),
         owner: mergedOwnerMap.get(p.id) ?? null,
+        imageUrl: p.photoUrl ?? null,
       })),
     };
   }).filter((c) => c.effectif > 0);
@@ -1075,6 +1079,7 @@ export async function getPlayerStats(limit = 10) {
         name: player ? `${player.fname} ${player.lname}`.trim() : `Player ${playerId}`,
         club: player ? (clubMap.get(player.clubId) ?? "") : "",
         clubId: player?.clubId ?? 0,
+        imageUrl: player?.photoUrl ?? null,
         position: player ? mapPosition(player.position) : "MID" as Position,
         value: stats[sortKey],
         days: stats.days,
