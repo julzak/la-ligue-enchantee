@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
+import { parisWallTimeToUtc } from "@/lib/paris-time";
 
 // Deadline config (loaded from DB, with defaults)
 interface DeadlineConfig {
@@ -58,15 +59,16 @@ function calcDeadline(matches: { date: string; time: string }[], config: Deadlin
   });
 
   const firstMatch = sorted[0];
-  const firstDate = new Date(firstMatch.date + "T" + (firstMatch.time || "20:00") + ":00+02:00"); // Paris time
+  // Heure du coup d'envoi (heure de Paris, stockee "HH:MM") convertie en UTC
+  // avec l'offset reel du jour (CET/CEST), au lieu d'un +2 fige.
+  const [fhStr, fmStr] = (firstMatch.time || "20:00").split(":");
+  const firstDate = parisWallTimeToUtc(firstMatch.date, Number(fhStr), Number(fmStr) || 0);
 
   // Default deadline: config.defaultHour Paris time on the day of the first match
-  const defaultUtcHour = config.defaultHour - 2; // Paris = UTC+2
-  const defaultDeadline = new Date(firstMatch.date + `T${String(defaultUtcHour).padStart(2, "0")}:00:00Z`);
+  const defaultDeadline = parisWallTimeToUtc(firstMatch.date, config.defaultHour);
 
   // Early match threshold
-  const earlyUtcHour = config.earlyMatchHour - 2;
-  const earlyThreshold = new Date(firstMatch.date + `T${String(earlyUtcHour).padStart(2, "0")}:00:00Z`);
+  const earlyThreshold = parisWallTimeToUtc(firstMatch.date, config.earlyMatchHour);
 
   if (firstDate < earlyThreshold) {
     // Match before threshold: deadline is N hours before kickoff

@@ -80,6 +80,26 @@ export async function POST(request: Request) {
     // Admins bypass ONLY when editing another user's team (not their own)
     const isEditingOwnTeam = userId === sessionUserId;
     if (!callerIsAdmin || isEditingOwnTeam) {
+      // Deadline manuelle admin (MATCHDAY_CONFIG.lock_at) : si posee et depassee,
+      // la journee entiere est fermee. Tolerance zero, le timestamp serveur fait
+      // foi (regle du reglement). C'est un verrou global, distinct du verrou
+      // par club derive des horaires de match ci-dessous.
+      try {
+        const manual = await prisma.$queryRawUnsafe<{ lock_at: Date | null }[]>(
+          "SELECT lock_at FROM MATCHDAY_CONFIG WHERE day = ? LIMIT 1",
+          day
+        );
+        const lockAt = manual[0]?.lock_at ? new Date(manual[0].lock_at) : null;
+        if (lockAt && !Number.isNaN(lockAt.getTime()) && new Date() >= lockAt) {
+          return NextResponse.json(
+            { error: `La journee ${day} est fermee : la deadline est depassee.` },
+            { status: 403 }
+          );
+        }
+      } catch (e) {
+        console.error("[lineup] verification deadline manuelle echouee:", e);
+      }
+
       try {
         const lockedClubIds = await getLockedClubIds(day);
 
@@ -136,8 +156,12 @@ export async function POST(request: Request) {
             );
           }
         }
-      } catch {
-        // Deadline check failed — allow save (fail open)
+      } catch (e) {
+        // Verification du verrou par club en echec : on laisse passer (fail-open)
+        // pour ne pas bloquer toute composition sur un hoquet transitoire, mais
+        // on loggue au lieu d'avaler silencieusement (la zero-date, cause de
+        // crash historique, est desormais geree en amont dans getLockedClubIds).
+        console.error("[lineup] verification verrou par club echouee (fail-open):", e);
       }
     }
 

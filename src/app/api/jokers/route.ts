@@ -181,9 +181,14 @@ export async function POST(request: Request) {
       leagueId, userId, playerInId, nextDay, outEntry.isSubs
     );
 
+    // JOKER_LOG.day = currentDay (jour de decision du joker = DAY_LAST du sortant),
+    // meme convention que la pose admin. L'annulation admin suppose
+    // DAY_LAST = jokerDay et DAY_FIRST = jokerDay + 1 : loguer nextDay ici
+    // rendait l'undo d'un joker self-service inoperant (0 ligne TEAM touchee)
+    // tout en supprimant le log -> effectif corrompu silencieusement.
     await prisma.$executeRawUnsafe(
       "INSERT INTO JOKER_LOG (league_id, user_id, player_out_id, player_in_id, day) VALUES (?, ?, ?, ?, ?)",
-      leagueId, userId, playerOutId, playerInId, nextDay
+      leagueId, userId, playerOutId, playerInId, currentDay
     );
 
     // Copy lineup from current day to next day, replacing OUT with IN player

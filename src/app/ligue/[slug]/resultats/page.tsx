@@ -33,7 +33,7 @@ export default async function ResultatsPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="font-serif text-xl text-white">Résultats de la journée {currentMatchday}</h2>
+        <h2 className="font-serif text-xl text-white">{currentMatchday > 0 ? `Résultats de la journée ${currentMatchday}` : "Résultats"}</h2>
         <form method="GET" className="flex items-center gap-2">
           <label htmlFor="day" className="text-sm text-muted">Journée</label>
           <select

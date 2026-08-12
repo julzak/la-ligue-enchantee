@@ -58,11 +58,14 @@ const positionLabels: Record<Position, string> = {
   ATT: "Attaquants",
 };
 
-// Position constraints
+// Position constraints (miroir du serveur : 1 GK, >=3 DEF, >=3 MID, 1-3 ATT,
+// total 11. Aucun max explicite sur DEF/MID cote serveur : le max effectif de 6
+// decoule de la somme a 11 avec les autres minima. Les formations 1-6-3-1 et
+// 1-3-6-1 sont donc legales.)
 const CONSTRAINTS = {
   GK: { min: 1, max: 1 },
-  DEF: { min: 3, max: 5 },
-  MID: { min: 3, max: 5 },
+  DEF: { min: 3, max: 6 },
+  MID: { min: 3, max: 6 },
   ATT: { min: 1, max: 3 },
 } as const;
 
@@ -79,8 +82,6 @@ function getConstraintErrors(counts: Record<Position, number>): string[] {
   if (counts.MID < 3) errors.push(`Min. 3 milieux (${counts.MID} selectionne${counts.MID > 1 ? "s" : ""})`);
   if (counts.ATT < 1) errors.push(`Min. 1 attaquant (${counts.ATT} selectionne)`);
   if (counts.ATT > 3) errors.push(`Max. 3 attaquants (${counts.ATT} selectionnes)`);
-  if (counts.DEF > 5) errors.push(`Max. 5 defenseurs (${counts.DEF} selectionnes)`);
-  if (counts.MID > 5) errors.push(`Max. 5 milieux (${counts.MID} selectionnes)`);
   return errors;
 }
 
@@ -347,7 +348,8 @@ export function MonEquipeContent({
         </div>
       </div>
 
-      {/* Summary last matchday */}
+      {/* Summary last matchday — masque avant-saison (aucune journee jouee) */}
+      {currentDay > 0 && (
       <div className="bg-surface rounded-lg border border-white/[0.07] p-5">
         <h3 className="text-xs uppercase tracking-wider text-muted mb-3">
           Resume derniere journee (J{currentDay})
@@ -375,6 +377,7 @@ export function MonEquipeContent({
           </div>
         </div>
       </div>
+      )}
 
       {/* Constraint violations */}
       {constraintErrors.length > 0 && starterCount > 0 && (

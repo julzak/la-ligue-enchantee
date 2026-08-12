@@ -461,7 +461,7 @@ export default async function HomePage() {
                 <text x="65" y="100" fontFamily="Georgia,serif" fontSize="11" fontWeight="400" fontStyle="italic" fill="#C8A84B" textAnchor="middle" dominantBaseline="central" letterSpacing="2.5">Enchantée</text>
               </svg>
             </div>
-            <h1 className="font-serif text-3xl text-gold mb-2">Journée {currentMatchday}</h1>
+            <h1 className="font-serif text-3xl text-gold mb-2">{currentMatchday > 0 ? `Journée ${currentMatchday}` : "Saison à venir"}</h1>
             <p className="text-xs text-white/30 italic tracking-wide">La fantasy league est une affaire sérieuse</p>
             {/* Quick links — visual cards with logos */}
             <div className="flex justify-center gap-3 mt-5 flex-wrap">
