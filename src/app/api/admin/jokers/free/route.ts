@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CLUB_GK_KEY_PREFIX } from "@/lib/club-goalkeeper";
 import { getSeasonFilters } from "@/lib/season";
+import { getCurrentMatchday } from "@/lib/db";
 
 export async function GET(request: Request) {
   // Volontairement sans requireAdmin (commit 477ae33) : consommé par les pages
@@ -18,14 +19,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ players: [] });
   }
 
-  const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
+  // Journée courante scopée saison (0 en avant-saison), pas le max global SCORE.
+  // Joueurs pris = effectif actif à la prochaine journée composable (rosterDay) :
+  // en avant-saison rosterDay=1, l'effectif issu des enchères (dayFirst=1) est bien
+  // exclu. NB : pendant la phase d'enchères, TEAM est vide (les pris viennent
+  // d'AUCTION_BID plus bas), donc ce scope est neutre pour le module enchères.
+  const currentDay = await getCurrentMatchday();
+  const rosterDay = currentDay + 1;
 
   // Get taken player IDs in this league (effectif constitué)
   const taken = await prisma.team.findMany({
     where: {
       leagueId,
-      dayFirst: { lte: currentDay },
-      dayLast: { gte: currentDay },
+      dayFirst: { lte: rosterDay },
+      dayLast: { gte: rosterDay },
     },
     select: { playerId: true },
   });
