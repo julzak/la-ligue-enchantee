@@ -128,12 +128,18 @@ function ManualBidEntry({
   participants,
   allWonBidsByUser,
   onSubmitted,
+  mode = "pending",
 }: {
   leagueId: number;
   participants: Participant[];
   allWonBidsByUser: Map<number, WonBid[]>;
   onSubmitted: (message: string) => void;
+  // "pending" (défaut) : saisie d'une mise avant dépouillement (enter-bid-for-user).
+  // "completion" : ajout direct à l'effectif APRÈS dépouillement, au prix indiqué
+  //   (add-acquisition). Même UI, seuls l'action postée et les libellés changent.
+  mode?: "pending" | "completion";
 }) {
+  const isCompletion = mode === "completion";
   const [targetUserId, setTargetUserId] = useState<number>(0);
   const [draftBids, setDraftBids] = useState<ManualBidDraft[]>([]);
   const [search, setSearch] = useState("");
@@ -215,7 +221,9 @@ function ManualBidEntry({
 
   async function submit() {
     if (!target || draftBids.length === 0) return;
-    const confirmMsg = `Vous allez saisir ${draftBids.length} mise(s) au nom de ${target.userName}, en contournant l'heure butoir. Confirmer ?`;
+    const confirmMsg = isCompletion
+      ? `Vous allez ajouter ${draftBids.length} joueur(s) à l'effectif de ${target.userName} au prix indiqué, après dépouillement. Confirmer ?`
+      : `Vous allez saisir ${draftBids.length} mise(s) au nom de ${target.userName}, en contournant l'heure butoir. Confirmer ?`;
     if (!confirm(confirmMsg)) return;
     setSubmitting(true);
     try {
@@ -223,7 +231,7 @@ function ManualBidEntry({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "enter-bid-for-user",
+          action: isCompletion ? "add-acquisition" : "enter-bid-for-user",
           leagueId,
           userId: targetUserId,
           bids: draftBids.map((b) => ({ playerId: b.playerId, amount: b.amount })),
@@ -247,8 +255,12 @@ function ManualBidEntry({
     <div className="bg-surface border border-white/[0.07] rounded-lg overflow-hidden">
       <div className="flex items-center gap-2 px-5 py-4 border-b border-white/[0.07]">
         <UserPlus className="w-4 h-4 text-gold" />
-        <span className="text-[15px] font-bold text-paper">Saisir une mise pour un participant</span>
-        <span className="text-[11px] text-muted ml-auto">Contourne l&apos;heure butoir · validation identique à la soumission joueur</span>
+        <span className="text-[15px] font-bold text-paper">
+          {isCompletion ? "Ajouter un joueur (prix libre) après dépouillement" : "Saisir une mise pour un participant"}
+        </span>
+        <span className="text-[11px] text-muted ml-auto">
+          {isCompletion ? "Ajout direct à l'effectif au prix indiqué" : "Contourne l'heure butoir · validation identique à la soumission joueur"}
+        </span>
       </div>
 
       <div className="p-5 space-y-4">
@@ -358,9 +370,13 @@ function ManualBidEntry({
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded text-[13px] font-bold bg-gold text-night hover:bg-gold/80 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Enregistrer la mise pour {target.userName}
+              {isCompletion ? `Ajouter à l'effectif de ${target.userName}` : `Enregistrer la mise pour ${target.userName}`}
             </button>
-            <p className="text-[10.5px] text-muted italic text-center">Remplace toute mise en attente de ce participant pour le tour courant. La validation serveur est identique à une soumission joueur (budget, quotas, gardien, joueurs déjà attribués).</p>
+            <p className="text-[10.5px] text-muted italic text-center">
+              {isCompletion
+                ? "Ajout direct à l'effectif (acquisition gagnée), sans toucher aux acquisitions existantes. Mêmes gardes serveur qu'une soumission : budget restant, quotas, gardien, joueur déjà attribué."
+                : "Remplace toute mise en attente de ce participant pour le tour courant. La validation serveur est identique à une soumission joueur (budget, quotas, gardien, joueurs déjà attribués)."}
+            </p>
           </>
         )}
       </div>
@@ -1135,6 +1151,18 @@ export default function AdminEncheresPage() {
                       </div>
                     );
                   })()}
+
+                  {/* Ajout d'un joueur au PRIX INDIQUÉ après dépouillement
+                      (décision 2026-08-12, demande Thomas) : compléter au prix
+                      voulu un participant sans soumission, ou re-ajouter à son
+                      prix un joueur retiré par erreur avec la croix. */}
+                  <ManualBidEntry
+                    mode="completion"
+                    leagueId={selectedLeague}
+                    participants={participants}
+                    allWonBidsByUser={allAcquisitionsByUser}
+                    onSubmitted={(msg) => { setMessage(msg); fetchAuction(); }}
+                  />
                 </>
               )}
 

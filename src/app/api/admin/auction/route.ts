@@ -323,7 +323,7 @@ export async function POST(request: Request) {
   try {
 
     const { action, leagueId, deadline, userId, playerIds, bids, adminUserId, bidId } = await request.json() as {
-      action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline" | "enter-bid-for-user" | "remove-acquisition";
+      action: "open" | "close-round" | "resolve-round" | "complete-roster" | "close-phase" | "set-deadline" | "enter-bid-for-user" | "add-acquisition" | "remove-acquisition";
       leagueId: number;
       deadline?: string | null; // ISO 8601 ou null pour effacer
       userId?: number; // complete-roster | enter-bid-for-user (participant cible)
@@ -800,6 +800,66 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         message: `${bids.length} mise(s) saisie(s) au nom du participant #${userId}`,
+      });
+    }
+
+    if (action === "add-acquisition") {
+      // Ajout d'un ou plusieurs joueurs à un participant APRÈS dépouillement, au
+      // PRIX INDIQUÉ (décision 2026-08-12, demande Thomas). Comble les deux trous
+      // que la complétion d'office à 1 pt ne couvre pas : compléter au prix voulu
+      // un participant sans soumission repéré après coup, et re-ajouter à son prix
+      // d'origine un joueur retiré par erreur avec la croix.
+      //
+      // Écrit directement status='won' (le tour est déjà dépouillé) SANS toucher
+      // aux acquisitions existantes (additif, contrairement à enter-bid-for-user
+      // qui remplace les 'pending'). Mêmes gardes que la soumission via la
+      // validation partagée : budget restant, cap 13, maxima de ligne, ≤1 gardien,
+      // joueur libre (non attribué) et scope saison.
+      if (!userId) {
+        return NextResponse.json({ error: "userId (participant cible) requis" }, { status: 400 });
+      }
+      if (!bids || !Array.isArray(bids) || bids.length === 0) {
+        return NextResponse.json({ error: "Au moins un joueur (bids) est requis" }, { status: 400 });
+      }
+
+      const auction = await getSummerAuction(leagueId);
+      if (!auction) return NextResponse.json({ error: "Pas d'enchère" }, { status: 400 });
+      if (auction.status !== "tallied") {
+        return NextResponse.json(
+          { error: `L'ajout au prix indiqué se fait après dépouillement, avant la clôture de phase (statut actuel : '${auction.status}').` },
+          { status: 400 }
+        );
+      }
+
+      const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
+        "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
+        leagueId, userId
+      );
+      if (Number(memberRows[0]?.cnt ?? 0) === 0) {
+        return NextResponse.json({ error: `L'utilisateur #${userId} ne fait pas partie de cette ligue` }, { status: 400 });
+      }
+
+      // Validation PARTAGÉE : mêmes règles/erreurs que la soumission participant.
+      // Elle rejette notamment un joueur déjà attribué, un dépassement du budget
+      // restant (acquis déduits), un cap 13 franchi ou un 2e gardien.
+      const validationError = await validateSummerBids(prisma, auction.id, userId, bids);
+      if (validationError) {
+        return NextResponse.json({ error: validationError.error }, { status: validationError.status });
+      }
+
+      const adminEnteredBy = auth.session.user.userId ?? adminUserId ?? null;
+      await prisma.$transaction(
+        bids.map((bid) =>
+          prisma.$executeRawUnsafe(
+            "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, admin_entered_by) VALUES (?, ?, ?, ?, ?, 'won', ?)",
+            auction.id, auction.currentRound, userId, bid.playerId, bid.amount, adminEnteredBy
+          )
+        )
+      );
+
+      return NextResponse.json({
+        ok: true,
+        message: `${bids.length} joueur(s) ajouté(s) à l'effectif du participant #${userId} au prix indiqué`,
       });
     }
 
