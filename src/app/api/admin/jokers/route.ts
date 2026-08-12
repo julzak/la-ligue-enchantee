@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getLeagues } from "@/lib/db";
+import { getLeagues, getCurrentMatchday } from "@/lib/db";
 
 // GET: get squad + joker usage for a participant
 export async function GET(request: Request) {
@@ -16,14 +16,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "leagueId and userId required" }, { status: 400 });
   }
 
-  const currentDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
+  // Journée courante scopée saison (0 en avant-saison), pas le max global SCORE.
+  // Effectif affiché = celui de la prochaine journée composable (rosterDay).
+  const currentDay = await getCurrentMatchday();
+  const rosterDay = currentDay + 1;
 
-  // Get current squad
+  // Get current squad (roster actif pour la prochaine journée)
   const squad = await prisma.team.findMany({
     where: {
       leagueId, userId,
-      dayFirst: { lte: currentDay },
-      dayLast: { gte: currentDay },
+      dayFirst: { lte: rosterDay },
+      dayLast: { gte: rosterDay },
     },
   });
 
@@ -183,7 +186,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "All fields required" }, { status: 400 });
     }
 
-    const latestDay = (await prisma.score.findFirst({ orderBy: { day: "desc" } }))?.day ?? 1;
+    // Journée courante scopée saison (0 en avant-saison), pas le max global SCORE.
+    const latestDay = await getCurrentMatchday();
     const currentDay = overrideDay && overrideDay > 0 && overrideDay <= latestDay ? overrideDay : latestDay;
     const nextDay = currentDay + 1;
 
@@ -207,25 +211,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Plus de jokers disponibles (${used}/${maxJokers} utilisés)` }, { status: 400 });
     }
 
-    // Validate: playerOut is in this user's squad
+    // Validate: playerOut is in this user's squad — au jour d'effet (nextDay),
+    // pour fonctionner aussi en avant-saison (currentDay=0, effectif dès J1).
     const outEntry = await prisma.team.findFirst({
       where: {
         leagueId, userId, playerId: playerOutId,
-        dayFirst: { lte: currentDay },
-        dayLast: { gte: currentDay },
+        dayFirst: { lte: nextDay },
+        dayLast: { gte: nextDay },
       },
     });
     if (!outEntry) {
       return NextResponse.json({ error: "Ce joueur n'est pas dans l'effectif" }, { status: 400 });
     }
 
-    // Validate: playerIn is free (not in any squad in this league)
+    // Validate: playerIn is free (not in any squad in this league) — au jour d'effet.
     const taken = await prisma.team.findFirst({
       where: {
         leagueId,
         playerId: playerInId,
-        dayFirst: { lte: currentDay },
-        dayLast: { gte: currentDay },
+        dayFirst: { lte: nextDay },
+        dayLast: { gte: nextDay },
       },
     });
     if (taken) {
