@@ -30,7 +30,16 @@ fois.
    Annoncez la date butoir aux participants.
 2. **Les participants misent** depuis leur page Enchères (ils répartissent leur
    budget sur 13 joueurs ; les joueurs déjà acquis aux tours précédents sont
-   reportés automatiquement).
+   reportés automatiquement). La plateforme **refuse à la soumission** toute
+   mise à plus **ou moins** de 13 joueurs (acquis compris), au-dessus du budget
+   restant, ou dépassant un maximum de ligne (plus d'1 gardien, plus de 6
+   défenseurs, plus de 6 milieux, plus de 4 attaquants). Un participant qui n'a
+   pas encore ses 13 joueurs
+   (par exemple en attendant qu'un admin crée un joueur pas encore en Ligue 1)
+   ne peut donc pas soumettre : son avancement est **sauvegardé
+   automatiquement en brouillon** et il revient compléter avant l'heure butoir.
+   Un brouillon n'est **pas** une mise : il n'apparaît pas dans votre console et
+   n'est pas dépouillé. Seule une mise **soumise** compte.
 3. **Clôturer le tour** (verrouille les soumissions).
 4. **Dépouiller.** Le système applique le règlement tout seul (voir les règles
    ci-dessous) et les résultats deviennent visibles côté participant.
@@ -50,12 +59,15 @@ fois.
 - **Report des points.** Les points misés sur des joueurs non obtenus sont
   **récupérés** pour le tour suivant. Le budget est donc dynamique : on ne perd
   que ce qu'on dépense réellement.
-- **Pénalités de composition.** Si une mise est invalide (pas de gardien,
-  dépassement de quota par ligne, mauvais total de joueurs, total > budget),
-  des **retraits** sont appliqués sur les acquisitions du tour, en commençant
-  par la **plus chère** (ordre alphabétique en cas d'égalité de prix ; dans la
-  ligne concernée pour un excès de ligne). On ne retire jamais plus de joueurs
-  que le participant n'en a obtenu : aucune dette n'est reportée.
+- **Pénalités de composition.** Depuis le garde-fou à la soumission (voir
+  point 2 ci-dessus), une mise de **participant** ne peut plus être invalide sur
+  ces critères : ces cas sont bloqués **avant** le dépouillement. Les pénalités
+  ne concernent donc plus que les mises que **vous** saisissez à la main pour un
+  retardataire (cette saisie admin, elle, accepte une mise incomplète). Le
+  mécanisme : des **retraits** sur les acquisitions du tour, en commençant par
+  la **plus chère** (ordre alphabétique en cas d'égalité de prix ; dans la ligne
+  concernée pour un excès de ligne). On ne retire jamais plus de joueurs que le
+  participant n'en a obtenu : aucune dette n'est reportée.
 
 ## La fin des enchères
 

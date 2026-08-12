@@ -64,9 +64,11 @@ export async function GET(request: Request) {
     roundDeadline: auctionRows[0].round_deadline ? new Date(auctionRows[0].round_deadline) : null,
   };
 
-  // Tours dépouillés = tous les rounds où il existe des bids avec statut != 'pending'
+  // Tours dépouillés = tous les rounds où il existe des bids avec statut
+  // résolu (ni 'pending' ni 'draft' : un brouillon auto-sauvegardé du tour
+  // courant ne doit pas faire apparaître le tour comme dépouillé)
   const resolvedRoundRows = await prisma.$queryRawUnsafe<{ round: number }[]>(
-    "SELECT DISTINCT round FROM AUCTION_BID WHERE auction_id = ? AND status != 'pending' ORDER BY round",
+    "SELECT DISTINCT round FROM AUCTION_BID WHERE auction_id = ? AND status NOT IN ('pending', 'draft') ORDER BY round",
     auction.id
   );
   const resolvedRounds = resolvedRoundRows.map((r) => Number(r.round));

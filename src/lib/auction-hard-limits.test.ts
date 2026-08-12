@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { findHardLimitErrors } from "./auction-hard-limits";
+import { findHardLimitErrors, findIncompleteSubmissionError } from "./auction-hard-limits";
 import type { Line } from "./auction-engine";
 
 const lines = (spec: Partial<Record<Line, number>>): Line[] =>
@@ -120,5 +120,41 @@ describe("garde-fou ferme : maxima de ligne (acquis compris)", () => {
     });
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("17 joueurs");
+  });
+});
+
+describe("soumission incomplète : moins de 13 joueurs = refus participant (décision 2026-08-12)", () => {
+  it("11 joueurs misés au tour 1 (0 acquis) : refus", () => {
+    const error = findIncompleteSubmissionError(0, 11);
+    expect(error).not.toBeNull();
+    expect(error).toContain("11 joueur(s)");
+    expect(error).toContain("sur 13 requis");
+  });
+
+  it("tour N : 8 acquis + 3 misés = 11 : refus", () => {
+    expect(findIncompleteSubmissionError(8, 3)).not.toBeNull();
+  });
+
+  it("soumission vide avec effectif incomplet : refus", () => {
+    expect(findIncompleteSubmissionError(5, 0)).not.toBeNull();
+  });
+
+  it("13 pile (acquis + mise) : accepté", () => {
+    expect(findIncompleteSubmissionError(10, 3)).toBeNull();
+  });
+
+  it("dernier tour : 13 acquis + 0 mise : accepté (cas M2)", () => {
+    expect(findIncompleteSubmissionError(13, 0)).toBeNull();
+  });
+
+  // Sanity-check : la régression gardée est le bug d'origine (2026-08-12) —
+  // un participant soumettait 11 joueurs en croyant "sauvegarder" en attendant
+  // la création d'un joueur de légion étrangère, et prenait la pénalité 3.2.c
+  // au dépouillement. Si la garde disparaît (retourne null pour <13), ce test
+  // échoue.
+  it("sanity-check : le cas d'origine (11/13 soumis « pour sauvegarder ») est bien détecté", () => {
+    expect(findIncompleteSubmissionError(0, 11)).not.toBeNull();
+    // et le >13 reste porté par findHardLimitErrors, pas par cette garde
+    expect(findIncompleteSubmissionError(0, 14)).toBeNull();
   });
 });

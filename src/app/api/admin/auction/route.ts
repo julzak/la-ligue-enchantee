@@ -110,7 +110,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ auction: null, seasonLabel });
   }
 
-  // Bids du tour courant (tous statuts) pour le tableau admin
+  // Bids du tour courant pour le tableau admin (tous statuts SAUF 'draft' :
+  // un brouillon n'est pas une soumission, il reste invisible de l'admin)
   const bids = await prisma.$queryRawUnsafe<{
     id: number; user_id: number; player_id: number; amount: number; status: string;
     fname: string; lname: string; club_name: string; position: string;
@@ -119,7 +120,7 @@ export async function GET(request: Request) {
      FROM AUCTION_BID b
      JOIN PLAYER p ON b.player_id = p.ID_PLAYER
      JOIN CLUB c ON p.ID_CLUB = c.ID_CLUB
-     WHERE b.auction_id = ? AND b.round = ?
+     WHERE b.auction_id = ? AND b.round = ? AND b.status != 'draft'
      ORDER BY b.amount DESC`,
     auction.id, auction.currentRound
   );
@@ -140,9 +141,10 @@ export async function GET(request: Request) {
     wonCountMap.set(w.userId, (wonCountMap.get(w.userId) ?? 0) + 1);
   }
 
-  // Soumissions du tour courant (au moins une mise, quel que soit le statut)
+  // Soumissions du tour courant (au moins une mise, quel que soit le statut —
+  // sauf 'draft' : un brouillon auto-sauvegardé n'est PAS une soumission)
   const submittedRows = await prisma.$queryRawUnsafe<{ user_id: number }[]>(
-    "SELECT DISTINCT user_id FROM AUCTION_BID WHERE auction_id = ? AND round = ?",
+    "SELECT DISTINCT user_id FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status != 'draft'",
     auction.id, auction.currentRound
   );
   const submittedSet = new Set(submittedRows.map((r) => Number(r.user_id)));
@@ -519,7 +521,14 @@ export async function POST(request: Request) {
       }
 
       // Écritures des statuts de mises et des retraits motivés (verrou déjà posé ci-dessus).
+      // Les brouillons du tour (status='draft', jamais soumis) sont purgés :
+      // un draft résiduel ferait apparaître le tour comme dépouillé côté
+      // /api/auction/results et rechargerait un panier obsolète au tour suivant.
       await prisma.$transaction([
+        prisma.$executeRawUnsafe(
+          "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND status = 'draft'",
+          auction.id, auction.currentRound
+        ),
         ...plan.updates.map((u) =>
           prisma.$executeRawUnsafe("UPDATE AUCTION_BID SET status = ? WHERE id = ?", u.status, u.bidId)
         ),
