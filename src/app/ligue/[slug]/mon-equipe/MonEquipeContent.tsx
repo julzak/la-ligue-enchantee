@@ -19,6 +19,7 @@ interface TeamPlayer {
   clubShort: string;
   clubLogo: string | null;
   clubId: number;
+  imageUrl: string | null;
   isStarter: boolean;
   indx: number;
   isSubs: boolean;
@@ -263,7 +264,7 @@ export function MonEquipeContent({
             : "hover:bg-white/[0.04] cursor-pointer active:scale-[0.98]"
         }`}
       >
-        <PlayerAvatar playerId={player.playerId} name={player.playerName} size={44} clubLogoUrl={player.clubLogo} />
+        <PlayerAvatar imageUrl={player.imageUrl} name={player.playerName} size={44} clubLogoUrl={player.clubLogo} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <PositionBadge position={player.position} />
