@@ -18,7 +18,11 @@ export default async function ReglesEncheresPage() {
   const userId = (session?.user as { userId?: number } | undefined)?.userId;
   if (!userId || !(await isUserAdmin(userId))) redirect("/login");
 
-  const md = await fs.readFile(path.join(process.cwd(), "docs", "regles-encheres.md"), "utf-8");
+  const full = await fs.readFile(path.join(process.cwd(), "docs", "regles-encheres.md"), "utf-8");
+  // Le journal des décisions (§7) reste CONSIGNÉ dans le fichier source (repo,
+  // non public) mais n'est PAS affiché sur cette page (décision 2026-08-12) :
+  // il contient des attributions nominatives à garder hors de la vue admin.
+  const md = full.split(/\n##\s+7\.\s/)[0].trimEnd() + "\n";
 
   return (
     <div className="max-w-3xl space-y-6">
