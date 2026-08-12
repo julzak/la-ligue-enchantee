@@ -639,14 +639,23 @@ export async function POST(request: Request) {
         );
       }
 
-      // Acquisitions d'office à 1 pt, persistées comme mises gagnées du tour courant
+      // Acquisitions d'office à 1 pt, persistées comme mises gagnées du tour courant.
+      // ON DUPLICATE KEY UPDATE : même garde que add-acquisition contre la
+      // contrainte UNIQUE (auction, round, user, player) si un joueur proposé
+      // avait une mise résolue (removed/lost/tie) sur ce tour.
       await prisma.$transaction(
-        uniquePlayerIds.map((pid) =>
+        uniquePlayerIds.flatMap((pid) => [
           prisma.$executeRawUnsafe(
-            "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, 1, 'won')",
+            `INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status)
+             VALUES (?, ?, ?, ?, 1, 'won')
+             ON DUPLICATE KEY UPDATE amount = 1, status = 'won'`,
             auction.id, auction.currentRound, userId, pid
-          )
-        )
+          ),
+          prisma.$executeRawUnsafe(
+            "DELETE FROM AUCTION_REMOVAL WHERE auction_id = ? AND round = ? AND user_id = ? AND player_id = ?",
+            auction.id, auction.currentRound, userId, pid
+          ),
+        ])
       );
       return NextResponse.json({
         ok: true,
@@ -848,13 +857,28 @@ export async function POST(request: Request) {
       }
 
       const adminEnteredBy = auth.session.user.userId ?? adminUserId ?? null;
+      // Contrainte UNIQUE (auction_id, round, user_id, player_id) : un joueur
+      // retiré par pénalité au dépouillement (règle 3.2.c) garde une ligne
+      // 'removed' sur ce tour. Le ré-attribuer avec un INSERT pur violerait la
+      // clé (500). ON DUPLICATE KEY UPDATE convertit la mise résolue
+      // (removed/lost/tie) en acquisition au prix indiqué ; s'il n'y a pas de
+      // ligne, c'est un INSERT normal. Le cas 'won' est déjà écarté en amont par
+      // validateSummerBids (B0/B0b), donc on n'écrase jamais une acquisition.
       await prisma.$transaction(
-        bids.map((bid) =>
+        bids.flatMap((bid) => [
           prisma.$executeRawUnsafe(
-            "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, admin_entered_by) VALUES (?, ?, ?, ?, ?, 'won', ?)",
+            `INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, admin_entered_by)
+             VALUES (?, ?, ?, ?, ?, 'won', ?)
+             ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'won', admin_entered_by = VALUES(admin_entered_by)`,
             auction.id, auction.currentRound, userId, bid.playerId, bid.amount, adminEnteredBy
-          )
-        )
+          ),
+          // Le motif de retrait n'a plus lieu d'être puisque le joueur est
+          // ré-attribué : on le purge pour un affichage cohérent (résultats).
+          prisma.$executeRawUnsafe(
+            "DELETE FROM AUCTION_REMOVAL WHERE auction_id = ? AND round = ? AND user_id = ? AND player_id = ?",
+            auction.id, auction.currentRound, userId, bid.playerId
+          ),
+        ])
       );
 
       return NextResponse.json({
