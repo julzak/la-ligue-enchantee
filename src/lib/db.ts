@@ -1045,9 +1045,17 @@ export async function getCupChampion(): Promise<CupChampion | null> {
 // ── Player stats (cumulative across all matchdays) ────────
 export async function getPlayerStats(limit = 10) {
   const scoringCfg = await getScoringConfig();
-  const scores = await prisma.score.findMany({ where: { used: { gt: 0 } } });
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
+
+  // Ne charger que les scores des joueurs de la saison courante (SCORE n'a pas de
+  // colonne saison : sans ce filtre on ramenait TOUTE la table — 20 ans d'historique —
+  // pour ensuite écarter en JS les joueurs hors saison). Résultat identique, volume
+  // divisé d'autant. Mode legacy (playerMap non scopé) : on garde le chargement complet.
+  const seasonPlayerIds = Array.from(playerMap.keys());
+  const scores = seasonPlayerIds.length > 0
+    ? await prisma.score.findMany({ where: { used: { gt: 0 }, playerId: { in: seasonPlayerIds } } })
+    : await prisma.score.findMany({ where: { used: { gt: 0 } } });
 
   // Aggregate per player
   const agg = new Map<number, { totalPts: number; goals: number; passes: number; days: number }>();
