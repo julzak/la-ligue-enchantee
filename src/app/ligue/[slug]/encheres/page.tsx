@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Search, X, Clock, Send, Lock, ArrowRightLeft, Minus, Plus } from "lucide-react";
 import { validateSubmission } from "@/lib/auction-engine";
@@ -40,6 +40,14 @@ interface SquadPlayer {
   playerName: string;
   position: string;
   clubName: string;
+}
+
+// Sérialisation canonique du panier (anti-écho de l'autosave brouillon) :
+// deux paniers avec les mêmes (playerId, amount) sont identiques, peu importe l'ordre.
+function serializeBids(bids: { playerId: number; amount: number }[]): string {
+  return JSON.stringify(
+    [...bids].sort((a, b) => a.playerId - b.playerId).map((b) => [b.playerId, b.amount])
+  );
 }
 
 interface DraftBid {
@@ -539,6 +547,13 @@ export default function EncheresPage() {
   // Mises en cours de composition
   const [draftBids, setDraftBids] = useState<DraftBid[]>([]);
 
+  // Brouillon auto-sauvegardé (décision 2026-08-12) : lastSyncedRef porte la
+  // sérialisation du dernier état connu du serveur (brouillon sauvegardé ou
+  // mise rechargée) pour que l'autosave ne ré-émette pas ce qu'il vient de
+  // recevoir. draftSavedAt alimente l'indicateur "Brouillon enregistré à HH:MM".
+  const lastSyncedRef = useRef<string>(serializeBids([]));
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+
   // Recherche de joueurs libres
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -570,16 +585,22 @@ export default function EncheresPage() {
       setMyBids(data.myBids ?? []);
       setSquad(data.squad ?? []);
 
-      // M1 : charger les mises pending du tour dans draftBids
+      // M1 (amendé 2026-08-12) : charger le panier depuis le brouillon s'il
+      // existe, sinon depuis la mise soumise (pending). lastSyncedRef est
+      // aligné sur ce que le serveur renvoie pour couper l'écho de l'autosave.
+      const draftRows: MyBid[] = (data.myBids ?? []).filter((b: MyBid) => b.status === "draft");
       const pending: MyBid[] = (data.myBids ?? []).filter((b: MyBid) => b.status === "pending");
-      if (pending.length > 0) {
-        setDraftBids(pending.map((b) => ({
+      const source = draftRows.length > 0 ? draftRows : pending;
+      if (source.length > 0) {
+        const loaded = source.map((b) => ({
           playerId: b.playerId,
           playerName: b.playerName,
           clubName: b.clubName,
           position: b.position,
           amount: b.amount,
-        })));
+        }));
+        lastSyncedRef.current = serializeBids(loaded);
+        setDraftBids(loaded);
       }
 
       // Afficher l'onglet Résultats dès qu'il existe des mises résolues OU
@@ -626,6 +647,41 @@ export default function EncheresPage() {
     }, 300);
     return () => clearTimeout(timer);
   }, [leagueDbId, search, draftBids, wonPlayers]);
+
+  // ── Brouillon auto-sauvegardé (décision 2026-08-12) ──────────────────────
+  // Toute modification du panier est persistée en brouillon serveur
+  // (POST /api/auction avec draft:true) après un débounce court : le
+  // participant qui attend la création d'un joueur (légion étrangère…) ne
+  // perd plus sa saisie, sans avoir à soumettre une mise incomplète.
+  useEffect(() => {
+    if (loading || submitting || !leagueDbId || !auction || auction.type === "winter" || !auction.isOpen) return;
+    const serialized = serializeBids(draftBids);
+    if (serialized === lastSyncedRef.current) return;
+    const timer = setTimeout(async () => {
+      // Deadline vérifiée au moment de l'envoi, PAS via secondsLeft dans les
+      // deps : le compte à rebours re-rend chaque seconde et casserait le débounce.
+      if (auction.roundDeadline && new Date(auction.roundDeadline).getTime() <= Date.now()) return;
+      try {
+        const res = await fetch("/api/auction", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            leagueId: leagueDbId,
+            draft: true,
+            bids: draftBids.map((b) => ({ playerId: b.playerId, amount: b.amount })),
+          }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          lastSyncedRef.current = serialized;
+          setDraftSavedAt(new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
+        }
+      } catch {
+        // silencieux : nouvelle tentative à la prochaine modification du panier
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [draftBids, auction, loading, submitting, leagueDbId]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -674,6 +730,10 @@ export default function EncheresPage() {
     amount: b.amount,
   }));
   const warnings = validateSubmission(ownedEngine, bidsEngine, budget);
+  // Le warning moteur "<13 au lieu de 13" (pénalité 3.2.c) n'est plus affiché
+  // au participant : depuis le 2026-08-12 la soumission incomplète est bloquée,
+  // et l'état "X / 13 · complétez" du footer porte déjà l'information.
+  const displayWarnings = warnings.filter((w) => !w.includes("au lieu de 13"));
 
   // Erreur BLOQUANTE : plus d'un gardien dans la mise (acquis compris).
   // Décision 2026-06-11 — seul cas de rejet pour motif de composition.
@@ -702,8 +762,6 @@ export default function EncheresPage() {
   const hasBlocking = blockingErrors.length > 0;
 
   const totalFilled = wonPlayers.length + draftBids.length;
-  // N2-fix : la conformité tient également compte des erreurs bloquantes.
-  const isConform = warnings.length === 0 && totalFilled === 13 && !hasBlocking;
 
   // M4 : le dénominateur de la barre budget est le budget API (valeur fixe),
   // pas budget + totalDraft (qui varie à chaque frappe).
@@ -730,7 +788,11 @@ export default function EncheresPage() {
       if (data.ok) {
         const now = new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
         setSubmittedAt(now);
-        setMessage({ text: `Mise enregistrée le ${now}`, ok: true });
+        setMessage({ text: `Mise soumise le ${now}`, ok: true });
+        // La soumission consomme le brouillon côté serveur : on réaligne
+        // l'anti-écho pour que l'autosave ne recrée pas un draft identique.
+        lastSyncedRef.current = serializeBids([]);
+        setDraftSavedAt(null);
         setDraftBids([]);
         fetchAuction();
       } else {
@@ -784,6 +846,9 @@ export default function EncheresPage() {
   //   - isAwaiting     = l'un ou l'autre → masque le rouge "Soumission refusée"
   const hasPendingBid = myBids.some((b) => b.status === "pending");
   const hasTalliedBid = myBids.some((b) => ["won", "removed", "tie", "lost"].includes(b.status));
+  // Brouillon jamais soumis : après la clôture, il faut le dire explicitement
+  // (aucune mise prise en compte), pas un simple "Soumission refusée".
+  const hasDraftBid = myBids.some((b) => b.status === "draft");
   const isAwaiting = isReadonly && (hasPendingBid || hasTalliedBid);
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
@@ -928,9 +993,13 @@ export default function EncheresPage() {
           <div className="flex gap-3 p-3.5 bg-rouge/[0.10] border border-rouge/40 rounded-lg">
             <Lock className="w-4 h-4 text-[#E0705F] flex-none mt-0.5" />
             <div>
-              <div className="text-[12.5px] font-bold text-[#E0705F] mb-0.5">Soumission refusée</div>
+              <div className="text-[12.5px] font-bold text-[#E0705F] mb-0.5">
+                {hasDraftBid ? "Brouillon non soumis" : "Soumission refusée"}
+              </div>
               <div className="text-[11.5px] text-[#C9B7A0] leading-relaxed">
-                {auction.roundDeadline
+                {hasDraftBid
+                  ? "Votre brouillon n'a pas été soumis avant la clôture : aucune mise n'est prise en compte pour ce tour."
+                  : auction.roundDeadline
                   ? `Tour clôturé le ${new Date(auction.roundDeadline).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}. Toute soumission est désormais refusée.`
                   : "Ce tour est clôturé. Toute soumission est refusée."}
               </div>
@@ -959,13 +1028,13 @@ export default function EncheresPage() {
 
         {/* ── Avertissements de composition (bandeau ambre non bloquant) ── */}
         {/* N4-fix : masqués à l'état vide (0 joueur), affichés dès qu'une mise ou un acquis existe */}
-        {!isReadonly && warnings.length > 0 && totalFilled > 0 && (
+        {!isReadonly && displayWarnings.length > 0 && totalFilled > 0 && (
           <div className="bg-[#D69634]/[0.10] border border-[#D69634]/42 rounded-lg overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2.5">
               <span className="text-sm">⚠️</span>
               <span className="text-[11.5px] font-bold text-[#E0A94E] tracking-tight">Avertissements de composition</span>
             </div>
-            {warnings.map((w, i) => (
+            {displayWarnings.map((w, i) => (
               <div key={i} className="flex gap-2 px-3 py-2 border-t border-[#D69634]/18">
                 <span className="text-[#E0A94E] text-[12px] leading-relaxed mt-px">•</span>
                 <span className="text-[11.5px] text-[#D8CBB6] leading-relaxed">{w}</span>
@@ -1206,34 +1275,43 @@ export default function EncheresPage() {
                   <span className="text-[12px]">🚫</span>
                   <span className="text-[11px] text-rouge font-semibold">Soumission bloquée — corrigez votre mise</span>
                 </>
-              ) : warnings.length > 0 && totalFilled > 0 ? (
+              ) : totalFilled !== 13 ? (
+                // Décision 2026-08-12 : la soumission incomplète est bloquée
+                // (plus de "soumission autorisée" en ambre pour <13). L'avancement
+                // est sauvegardé automatiquement en brouillon.
+                <>
+                  <span className="w-2 h-2 rounded-full bg-muted" />
+                  <span className="text-[11px] text-[#9C978B] font-semibold">{totalFilled} / 13 joueurs · complétez votre mise pour soumettre</span>
+                </>
+              ) : displayWarnings.length > 0 ? (
                 // N4-fix : le footer ambre n'apparaît qu'à partir du moment où le joueur a saisi quelque chose
                 <>
                   <span className="text-[12px]">⚠️</span>
                   <span className="text-[11px] text-[#E0A94E] font-semibold">Mise non conforme — soumission autorisée</span>
                 </>
-              ) : isConform ? (
+              ) : (
                 <>
                   <span className="w-4 h-4 rounded-full bg-vert/20 border border-vert flex items-center justify-center text-[9px] text-[#3FB873]">✓</span>
                   <span className="text-[11px] text-[#3FB873] font-semibold">Composition conforme · 13 / 13 joueurs</span>
                 </>
-              ) : (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-muted" />
-                  <span className="text-[11px] text-[#9C978B] font-semibold">{totalFilled} / 13 joueurs · complétez votre mise</span>
-                </>
               )}
             </div>
-            {/* M2 : bouton activé si draftBids > 0 OU si 13 joueurs déjà acquis ; bloqué si erreur de composition */}
+            {/* M2 : 13 = acquis + mise, donc bouton actif avec 0 mise si 13 acquis (dernier tour).
+                Décision 2026-08-12 : bloqué tant que l'effectif n'est pas exactement à 13. */}
             <button
               onClick={submitBids}
-              disabled={submitting || hasBlocking || (draftBids.length === 0 && wonPlayers.length < 13)}
+              disabled={submitting || hasBlocking || totalFilled !== 13}
               title={hasBlocking ? blockingErrors.join(" ") : undefined}
               className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-gold text-night font-bold text-[14.5px] rounded-xl hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Soumettre ma mise
             </button>
+            {draftSavedAt && (
+              <div className="text-center text-[10px] text-[#E0A94E]">
+                Brouillon enregistré à {draftSavedAt} · non soumis{hasPendingBid ? " — votre dernière mise soumise reste valable" : ""}
+              </div>
+            )}
             <div className="text-center text-[10px] text-muted italic">Remplace toute mise précédente de ce tour.</div>
           </div>
         )}

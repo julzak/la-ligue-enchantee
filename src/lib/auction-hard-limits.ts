@@ -12,9 +12,19 @@
 // L'excès de gardiens (GK > 1) reste porté par la garde B2-GK existante
 // (checkGoalkeeperLimit), il n'est PAS revérifié ici.
 //
-// Les MINIMA de ligne (≥3 DEF, ≥3 MIL, ≥1 ATT) et la mise incomplète (<13)
-// restent des avertissements non bloquants : un effectif se construit
-// progressivement, ils ne sont exigibles qu'en fin de phase (règle 4).
+// Les MINIMA de ligne (≥3 DEF, ≥3 MIL, ≥1 ATT) restent des avertissements
+// non bloquants : un effectif se construit progressivement, ils ne sont
+// exigibles qu'en fin de phase (règle 4).
+//
+// La mise incomplète (<13, acquis compris) est refusée à la soumission
+// PARTICIPANT depuis la décision du 2026-08-12 (findIncompleteSubmissionError,
+// câblée dans la route participant uniquement) : des participants soumettaient
+// une mise partielle en croyant "sauvegarder" et prenaient la pénalité 3.2.c
+// au dépouillement. L'avancement se sauvegarde désormais en brouillon
+// (AUCTION_BID status='draft', auto-sauvegardé). La saisie ADMIN
+// (enter-bid-for-user) n'applique PAS ce refus : elle reste la soupape pour
+// enregistrer une mise partielle reçue hors plateforme (la pénalité 3.2.c
+// s'applique alors au dépouillement, comme au règlement).
 //
 // Module PUR (zéro DB, zéro React) : importé par la validation serveur
 // partagée (src/lib/auction-validation.ts, donc participant ET saisie admin)
@@ -65,4 +75,23 @@ export function findHardLimitErrors(input: HardLimitInput): string[] {
     }
   }
   return errors;
+}
+
+/**
+ * Refus ferme de la mise incomplète (<13, acquis conservés + mise) à la
+ * soumission PARTICIPANT (décision 2026-08-12). Retourne `null` si la
+ * soumission est complète (exactement 13 — le cas >13 est porté par
+ * findHardLimitErrors).
+ *
+ * Volontairement NON câblée dans validateSummerBids : la saisie admin doit
+ * pouvoir enregistrer une mise partielle reçue hors plateforme (pénalité
+ * 3.2.c au dépouillement), exactement comme elle ignore la garde deadline.
+ */
+export function findIncompleteSubmissionError(
+  ownedCount: number,
+  bidCount: number
+): string | null {
+  const total = ownedCount + bidCount;
+  if (total >= 13) return null;
+  return `Soumission refusée : ${total} joueur(s) (acquis conservés + mise) sur 13 requis. Complétez votre mise avant de soumettre — votre avancement est sauvegardé automatiquement en brouillon jusqu'à l'heure butoir.`;
 }

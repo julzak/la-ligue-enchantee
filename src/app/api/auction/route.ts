@@ -7,6 +7,7 @@ import { isMember } from "@/lib/auction-membership";
 import { findAlreadyWonByOther, findAlreadyWonBySelf } from "@/lib/auction-already-won";
 import { findDuplicatePlayerIds } from "@/lib/auction-duplicate-bids";
 import { validateSummerBids } from "@/lib/auction-validation";
+import { findIncompleteSubmissionError } from "@/lib/auction-hard-limits";
 
 // GET: get auction state for current user
 export async function GET(request: Request) {
@@ -177,9 +178,13 @@ export async function POST(request: Request) {
   const userId = (session.user as { userId?: number }).userId;
   if (!userId) return NextResponse.json({ error: "User ID manquant" }, { status: 401 });
 
-  const { leagueId, bids } = await request.json() as {
+  const { leagueId, bids, draft } = await request.json() as {
     leagueId: number;
     bids: { playerId: number; amount: number; playerOutId?: number }[];
+    // draft=true : brouillon auto-sauvegardé (décision 2026-08-12). Remplace
+    // les lignes status='draft' du tour SANS toucher à la mise soumise
+    // (status='pending'), qui reste la seule prise en compte au dépouillement.
+    draft?: boolean;
   };
 
   // Garde d'appartenance (même contrôle que /api/auction/results) : sans elle,
@@ -251,6 +256,28 @@ export async function POST(request: Request) {
     );
   }
 
+  // Brouillon (décision 2026-08-12) : sauvegarde de l'avancement, été
+  // uniquement. Validations minimales (intégrité : amounts > 0 et doublons,
+  // déjà passées ci-dessus) : un brouillon peut être incomplet ou non conforme,
+  // c'est son rôle. Il n'est JAMAIS lu par le dépouillement (status='pending'
+  // uniquement) ni compté comme soumission côté admin.
+  if (draft) {
+    if (isWinter) {
+      return NextResponse.json({ error: "Le brouillon n'est pas disponible au mercato d'hiver." }, { status: 400 });
+    }
+    await prisma.$executeRawUnsafe(
+      "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status = 'draft'",
+      a.id, a.current_round, userId
+    );
+    for (const bid of bids) {
+      await prisma.$executeRawUnsafe(
+        "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, ?, 'draft')",
+        a.id, a.current_round, userId, bid.playerId, bid.amount
+      );
+    }
+    return NextResponse.json({ ok: true, draft: true, message: "Brouillon enregistré" });
+  }
+
   if (isWinter) {
     // For winter: validate each bid has a player_out_id
     for (const bid of bids) {
@@ -293,11 +320,24 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.error }, { status: error.status });
     }
+
+    // Refus ferme de la mise incomplète (<13, acquis compris) — décision
+    // 2026-08-12, PARTICIPANT uniquement (la saisie admin garde la soupape
+    // règle 3.2.c). L'avancement se sauvegarde via draft:true ci-dessus.
+    const [ownedCntRow] = await prisma.$queryRawUnsafe<{ cnt: number }[]>(
+      "SELECT COUNT(*) as cnt FROM AUCTION_BID WHERE auction_id = ? AND user_id = ? AND status = 'won'",
+      a.id, userId
+    );
+    const incompleteError = findIncompleteSubmissionError(Number(ownedCntRow?.cnt ?? 0), bids.length);
+    if (incompleteError) {
+      return NextResponse.json({ error: incompleteError }, { status: 400 });
+    }
   }
 
-  // Delete existing bids for this round (replace)
+  // Delete existing bids for this round (replace). La soumission finale
+  // remplace aussi le brouillon : il est consommé par la soumission.
   await prisma.$executeRawUnsafe(
-    "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status = 'pending'",
+    "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status IN ('pending', 'draft')",
     a.id, a.current_round, userId
   );
 
