@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSeasonFilters } from "@/lib/season";
 import { buildDayScoreResolver } from "@/lib/club-goalkeeper";
+import { getScoringConfig } from "@/lib/scoring-config";
+import { computePlayerTotal, baseNoteAfterRedCard } from "@/lib/scoring-core";
 
 function dec(v: unknown): number {
   if (v === null || v === undefined) return 0;
@@ -44,6 +46,11 @@ export async function POST(request: Request) {
     // ligne résoluble = pas de points, comme tout joueur sans note.
     // Cf docs/regles-encheres.md §7 (décision 2026-06-10).
     const resolveScore = buildDayScoreResolver(players, scores);
+
+    // Bareme : lu depuis SCORING_CONFIG (source unique de verite, partagee avec
+    // l'affichage). Auparavant code en dur ici : editer le bareme faisait diverger
+    // classement (STATS_USER) et fiches joueurs. Defaut = bareme historique.
+    const cfg = await getScoringConfig();
 
     for (const league of leagues) {
       // Get all participants in this league
@@ -119,13 +126,17 @@ export async function POST(request: Request) {
           if (!score || !player) continue;
 
           const pos = mapPosition(player.position);
-          // Red card: note replaced by 0, bonuses kept
-          const pts = score.redCard ? 0 : dec(score.points);
           const goals = score.goals;
           const passes = score.passes;
-          // Position-based goal bonus: GK +10, DEF +4, MID/ATT +2
-          const goalBonus = pos === "GK" ? 10 : pos === "DEF" ? 4 : 2;
-          const total = Math.max(0, pts + goalBonus * goals + passes - 2 * (score.ownGoals ?? 0) + 2 * (score.penaltySaved ?? 0));
+          const redCard = Boolean(score.redCard);
+          // Note de base (carton rouge -> 0 si redCardNoteZero, bonus conserves)
+          // et total, calcules par le socle partage avec le bareme configurable.
+          const pts = baseNoteAfterRedCard(dec(score.points), redCard, cfg);
+          const total = computePlayerTotal(
+            { points: dec(score.points), goals, passes, position: pos, redCard,
+              ownGoals: score.ownGoals ?? 0, penaltySaved: score.penaltySaved ?? 0 },
+            cfg
+          );
 
           playerUsed++;
           ptsFrf += pts;

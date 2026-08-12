@@ -1,28 +1,17 @@
 import { cache } from "react";
 import { prisma } from "./prisma";
 import { getCurrentSeasonKey } from "./season";
+import {
+  SCORING_DEFAULTS,
+  goalBonusForPosition,
+  computePlayerTotal,
+  type ScoringConfig,
+} from "./scoring-core";
 
-export interface ScoringConfig {
-  goalBonusGk: number;
-  goalBonusDef: number;
-  goalBonusMid: number;
-  goalBonusAtt: number;
-  cscMalus: number;
-  penaltySavedBonus: number;
-  redCardNoteZero: boolean;
-  minNote: number;
-}
+// Re-export du socle pur pour les importeurs existants (db.ts, etc.).
+export { goalBonusForPosition, computePlayerTotal, type ScoringConfig };
 
-const DEFAULTS: ScoringConfig = {
-  goalBonusGk: 10,
-  goalBonusDef: 4,
-  goalBonusMid: 2,
-  goalBonusAtt: 2,
-  cscMalus: -2,
-  penaltySavedBonus: 2,
-  redCardNoteZero: true,
-  minNote: 0,
-};
+const DEFAULTS = SCORING_DEFAULTS;
 
 interface ScoringConfigRow {
   goal_bonus_gk: number;
@@ -63,14 +52,3 @@ export const getScoringConfig = cache(async (): Promise<ScoringConfig> => {
     return DEFAULTS;
   }
 });
-
-/**
- * Get goal bonus for a position, using config values.
- */
-export function goalBonusForPosition(position: string, config: ScoringConfig): number {
-  const p = position.toLowerCase();
-  if (p.includes("gardien") || p === "gk") return config.goalBonusGk;
-  if (p.includes("fense") || p === "def") return config.goalBonusDef;
-  if (p.includes("milieu") || p === "mid") return config.goalBonusMid;
-  return config.goalBonusAtt;
-}
