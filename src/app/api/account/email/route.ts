@@ -16,7 +16,9 @@ export async function POST(request: Request) {
 
   const { email } = await request.json() as { email: string };
 
-  if (!email || !email.includes("@")) {
+  // Validation basique mais réelle : un identifiant, un @, un domaine avec point.
+  const emailOk = typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  if (!emailOk) {
     return NextResponse.json({ error: "Adresse email invalide" }, { status: 400 });
   }
 

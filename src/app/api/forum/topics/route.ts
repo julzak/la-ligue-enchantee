@@ -5,6 +5,7 @@ import { prisma, inParams } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/admin-auth";
+import { jsonError500 } from "@/lib/api-error";
 
 // GET: list topics for a league (or all if leagueId=0)
 export async function GET(request: Request) {
@@ -93,23 +94,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Titre et contenu requis" }, { status: 400 });
   }
 
-  // Create topic
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO FORUM_TOPIC (league_id, category, author_id, title, post_count, last_post_at, last_post_by, created_at)
-     VALUES (?, ?, ?, ?, 1, NOW(), ?, NOW())`,
-    leagueId ?? 0, category ?? "general", userId, title.trim(), userId
-  );
+  const targetLeagueId = leagueId ?? 0;
+  // Appartenance : poster dans une ligue précise exige d'en être membre.
+  // leagueId=0 = interligue, ouvert à tout utilisateur authentifié.
+  if (targetLeagueId > 0) {
+    const membership = await prisma.leagueUser.findUnique({
+      where: { leagueId_userId: { leagueId: targetLeagueId, userId } },
+    });
+    if (!membership) {
+      return NextResponse.json({ error: "Vous n'êtes pas membre de cette ligue" }, { status: 403 });
+    }
+  }
 
-  const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>("SELECT LAST_INSERT_ID() as id");
-  const topicId = Number(row.id);
+  try {
+    // Create topic
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO FORUM_TOPIC (league_id, category, author_id, title, post_count, last_post_at, last_post_by, created_at)
+       VALUES (?, ?, ?, ?, 1, NOW(), ?, NOW())`,
+      targetLeagueId, category ?? "general", userId, title.trim(), userId
+    );
 
-  // Create first post
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())`,
-    topicId, userId, content.trim()
-  );
+    const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>("SELECT LAST_INSERT_ID() as id");
+    const topicId = Number(row.id);
 
-  return NextResponse.json({ ok: true, topicId });
+    // Create first post
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())`,
+      topicId, userId, content.trim()
+    );
+
+    return NextResponse.json({ ok: true, topicId });
+  } catch (e) {
+    return jsonError500("Forum topic create error:", e, "Erreur lors de la création du sujet");
+  }
 }
 
 // DELETE: delete a topic and all its posts (admin only)

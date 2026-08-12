@@ -32,10 +32,13 @@ export async function POST(req: Request) {
     const result = await syncMatchSchedule(seasonKey);
 
     const message =
-      result.synced === 0
-        ? `Aucun match trouvé pour ${seasonKey} : le calendrier n'est probablement pas encore publié par TheSportsDB. Réessayer plus tard.`
-        : `${result.synced} matchs synchronisés sur ${result.daysWithData} journées (saison ${seasonKey}).` +
-          (result.daysEmpty.length > 0 ? ` Journées sans données : ${result.daysEmpty.join(", ")}.` : "");
+      result.fetchErrors === 38
+        ? `Échec : TheSportsDB indisponible ou rate-limité (38/38 journées en erreur, saison ${seasonKey}). Aucun calendrier synchronisé, réessayer plus tard.`
+        : result.synced === 0
+          ? `Aucun match trouvé pour ${seasonKey} : le calendrier n'est probablement pas encore publié par TheSportsDB. Réessayer plus tard.`
+          : `${result.synced} matchs synchronisés sur ${result.daysWithData} journées (saison ${seasonKey}).` +
+            (result.daysEmpty.length > 0 ? ` Journées sans données : ${result.daysEmpty.join(", ")}.` : "") +
+            (result.fetchErrors > 0 ? ` ⚠️ ${result.fetchErrors} journée(s) en erreur réseau.` : "");
 
     return NextResponse.json({ ok: true, ...result, seasonKey, message });
   } catch (e) {

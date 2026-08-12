@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentMatchday } from "@/lib/db";
 import { generateTopo, TopoError } from "@/lib/topo";
+import { requireAuth } from "@/lib/admin-auth";
 
 // GET: retrieve saved topo (if exists)
 export async function GET(request: Request) {
@@ -35,6 +36,12 @@ export async function GET(request: Request) {
 // La génération automatique à la publication passe par la même fonction
 // generateTopo (voir api/admin/publish).
 export async function POST(request: Request) {
+  // Regénération manuelle réservée aux utilisateurs authentifiés : évite l'abus
+  // anonyme (coût LLM) et le cache-poisoning via force:true depuis internet.
+  // L'auto-génération à la publication passe par generateTopo() en direct, pas
+  // par cette route, donc elle n'est pas impactée.
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
   try {
     const { slug, force } = await request.json();
     if (!slug) {
