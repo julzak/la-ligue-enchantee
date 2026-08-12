@@ -1,9 +1,11 @@
 # Comment fonctionnent les enchères
 
 Cette page explique le mécanisme des enchères d'été pour que vous puissiez les
-piloter et répondre aux participants. Le règlement complet et formel reste
-`docs/regles-encheres.md` (source de vérité). Pour la procédure pas à pas dans
-le kick-off de saison, voir **[Kick-off saison](/admin/kickoff)**, phase 7.
+piloter et répondre aux participants. Le règlement complet et formel (règles
+détaillées + journal des décisions) est consultable ici :
+**[Règlement des enchères](/admin/regles-encheres)** (source de vérité). Pour la
+procédure pas à pas dans le kick-off de saison, voir
+**[Kick-off saison](/admin/kickoff)**, phase 7.
 
 ## Le principe
 

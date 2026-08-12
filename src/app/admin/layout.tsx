@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users, UserPlus, BookOpen, Settings, Shield, ArrowUpDown, CalendarPlus, Rocket, HelpCircle } from "lucide-react";
+import { ClipboardList, Zap, Trophy, Gavel, Snowflake, CreditCard, Users, UserPlus, BookOpen, Settings, Shield, ArrowUpDown, CalendarPlus, Rocket, HelpCircle, ScrollText } from "lucide-react";
 
 // Opérations courantes de la saison en cours.
 const mainLinks = [
@@ -32,6 +32,7 @@ const guideLinks = [
   { href: "/admin/kickoff", label: "Kick-off saison", icon: Rocket },
   { href: "/admin/guide", label: "Guide admin", icon: BookOpen },
   { href: "/admin/aide-encheres", label: "Aide Mercato", icon: HelpCircle },
+  { href: "/admin/regles-encheres", label: "Règlement enchères", icon: ScrollText },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
