@@ -33,11 +33,11 @@ echo "$(date '+%F %T') START cron-scrape" >> "$LOG_FILE"
 echo "========================================" >> "$LOG_FILE"
 
 # Auto-detect matchday from DB
-MATCHDAY=$(npx tsx scripts/get-current-matchday.ts 2>/dev/null || echo "27")
+MATCHDAY=$(./node_modules/.bin/tsx scripts/get-current-matchday.ts 2>/dev/null || echo "27")
 echo "$(date '+%F %T') Detected matchday: $MATCHDAY" >> "$LOG_FILE"
 
 # Run the pipeline
-npx tsx scripts/process-matchday.ts "$MATCHDAY" >> "$LOG_FILE" 2>&1
+./node_modules/.bin/tsx scripts/process-matchday.ts "$MATCHDAY" >> "$LOG_FILE" 2>&1
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
@@ -48,6 +48,6 @@ fi
 
 # Sync match scores from TheSportsDB (for HP match results section)
 echo "$(date '+%F %T') Syncing match schedule from TheSportsDB..." >> "$LOG_FILE"
-npx tsx scripts/sync-match-schedule.ts "$MATCHDAY" >> "$LOG_FILE" 2>&1 || echo "$(date '+%F %T') WARN: match schedule sync failed" >> "$LOG_FILE"
+./node_modules/.bin/tsx scripts/sync-match-schedule.ts "$MATCHDAY" >> "$LOG_FILE" 2>&1 || echo "$(date '+%F %T') WARN: match schedule sync failed" >> "$LOG_FILE"
 
 echo "$(date '+%F %T') END cron-scrape" >> "$LOG_FILE"

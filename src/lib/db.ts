@@ -5,6 +5,7 @@ import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "
 import { getScoringConfig, goalBonusForPosition, type ScoringConfig } from "./scoring-config";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { leagueSlug } from "./season-key";
+import { parisUtcOffsetHours, parisWallTimeToUtc } from "./paris-time";
 import {
   isClubGoalkeeper,
   expandIdsForGoalkeeperResolution,
@@ -184,10 +185,13 @@ export async function getCurrentMatchday(): Promise<number> {
       scope.season.id
     );
     const maxDay = rows[0]?.maxDay;
-    return maxDay != null ? Number(maxDay) : 1;
+    // Aucune journee jouee (avant-saison) -> 0, pas 1. Sinon "prochaine journee"
+    // = currentDay + 1 vaudrait 2 avant J1 : les participants composeraient J2
+    // et J1 serait etiquetee "passee" (bug historique "bandeau J2 avant-saison").
+    return maxDay != null ? Number(maxDay) : 0;
   }
   const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
-  return latest?.day ?? 1;
+  return latest?.day ?? 0;
 }
 
 // ── Locked clubs for a matchday ─────────────────────────
@@ -242,9 +246,20 @@ export async function getLockedClubIds(day: number): Promise<Set<number>> {
     } else {
       effectiveDate = new Date(m.match_date as unknown as string);
     }
+    // Garde zero-date : une valeur '0000-00-00' ou invalide dans MATCH_SCHEDULE
+    // produit un Invalid Date dont .toISOString() leve un RangeError, ce qui
+    // faisait planter toute la fonction (500 sur /mon-equipe, ou deadline
+    // desactivee en silence cote /api/lineup). On saute la ligne fautive.
+    if (Number.isNaN(effectiveDate.getTime())) {
+      console.warn(`[getLockedClubIds] Date invalide J${day}: "${m.home_team}" / "${m.away_team}"`);
+      continue;
+    }
     const date = effectiveDate.toISOString().slice(0, 10);
     const timeObj = m.match_time ? new Date(m.match_time as unknown as string) : null;
-    const hour = timeObj ? timeObj.getUTCHours() + 2 : 20; // stored as UTC, Paris = +2
+    // match_time stocke en UTC -> heure de Paris avec l'offset reel du jour (CET/CEST).
+    const hour = timeObj && !Number.isNaN(timeObj.getTime())
+      ? timeObj.getUTCHours() + parisUtcOffsetHours(effectiveDate)
+      : 20;
     const homeId = clubIdByKey.get(canonicalClubKey(m.home_team)) ?? null;
     const awayId = clubIdByKey.get(canonicalClubKey(m.away_team)) ?? null;
     if (homeId === null || awayId === null) {
@@ -265,8 +280,9 @@ export async function getLockedClubIds(day: number): Promise<Set<number>> {
     if (earliestHour < Number(cfg.early_match_hour)) {
       deadlineHour = earliestHour - Number(cfg.early_match_offset_hours);
     }
-    const deadlineUtcHour = deadlineHour - 2; // Paris = UTC+2
-    const deadline = new Date(`${date}T${String(Math.max(0, deadlineUtcHour)).padStart(2, "0")}:00:00Z`);
+    // Heure de deadline en heure de Paris -> instant UTC avec l'offset reel du
+    // jour (au lieu d'un -2 fige qui avancait la deadline d'1h en hiver).
+    const deadline = parisWallTimeToUtc(date, Math.max(0, deadlineHour));
     if (now >= deadline) {
       clubIds.forEach((id) => lockedClubIds.add(id));
     }

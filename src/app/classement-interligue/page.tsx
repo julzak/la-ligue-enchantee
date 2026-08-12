@@ -19,7 +19,7 @@ export default async function ClassementInterliguePage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="font-serif text-2xl text-gold">Classement interligue</h1>
-              <p className="text-sm text-muted mt-1">{standings.length} participants - Journée {currentDay}</p>
+              <p className="text-sm text-muted mt-1">{standings.length} participants{currentDay > 0 ? ` - Journée ${currentDay}` : ""}</p>
             </div>
             <Link href="/" className="text-sm text-gold hover:underline">← Accueil</Link>
           </div>
