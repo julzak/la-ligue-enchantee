@@ -559,9 +559,17 @@ rien à relancer chez lui. Livré : un 3e état distinct.
 - Sélecteur de saisie manuelle : « (effectif complet) » au lieu de
   « — sans soumission ».
 - Aucun changement d'API, aucune écriture en base, aucune migration.
-- Vérif : `npm test` 346 tests verts, `npm run build` OK. Recette visuelle sur
-  l'env Docker :3310 (auction 4, ligue 24, tour 4 ouvert, Joueur2 monté à 13/13) :
-  à faire par Julien, l'agent ne saisit pas de mot de passe pour se connecter.
+- Vérif : `npm test` 351 tests verts, `npm run build` OK (tunnel DB requis).
+- Recette du rendu : la vérification navigateur a été impossible (l'agent ne
+  saisit pas de mot de passe pour s'authentifier, et le patch local de la garde
+  d'auth a été refusé par le classifier de permissions). Remplacée par un TEST DE
+  RENDU (`src/app/admin/encheres/page.render.test.tsx`) qui monte la vraie page
+  avec un fetch mocké, sans base ni auth, et vérifie les badges à l'écran.
+  Sanity-check exécuté : en retirant l'état « complete » du calcul, 4 des 5 cas
+  tombent. Nouvelles devDeps : @testing-library/react, @testing-library/dom,
+  jsdom ; `vitest.config.ts` passe oxc en JSX automatique (vitest 4 ignore
+  l'option esbuild). C'est le premier test de rendu du repo : les suivants
+  déclarent `// @vitest-environment jsdom` en tête de fichier.
 
 Demande d'origine de Pierre Berthet (WhatsApp, 2026-08-14) :
 > "Pour pas oublier, on visualise même ceux dont les équipes sont complètes
