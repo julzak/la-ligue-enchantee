@@ -527,3 +527,118 @@ Tests route (bid inexistant/déjà removed/autre ligue -> 4xx ; cas nominal -> r
 
 #### Précision cause racine — bandeau « J2 » avant la saison (diagnostic 2026-08-11)
 `GET /api/admin/deadline` (src/app/api/admin/deadline/route.ts:87) calcule `currentDay = getCurrentMatchday() + 1`. Or `getCurrentMatchday()` (src/lib/db.ts:177) retourne 1 par défaut quand AUCUN score n'existe pour la saison (MAX(SCORE.DAY) NULL), d'où J2 affichée avant que la J1 soit jouée. Fix : dans la route deadline, traiter le cas « aucun score » -> journée à préparer = 1 (distinguer NULL de 1 ; ne pas changer le défaut de getCurrentMatchday sans vérifier ses ~8 autres consommateurs, la home affiche « Journée {n} » avec ce même défaut). Cosmétique, se corrigera seul à la saisie des premières notes fin août.
+
+---
+
+## HANDOFF TRAITÉ (2026-08-14) — Console admin enchères : voir TOUS les participants chaque tour, effectifs complets inclus
+
+**Prémisse du handoff INVALIDÉE, chantier requalifié puis livré.**
+
+Vérification faite avant de coder (lecture de code, assumé) : la console montrait
+DÉJÀ 100% des participants, effectifs complets inclus. `participants` = tous les
+`LEAGUE_USER` de la ligue sans aucun filtre
+(`src/app/api/admin/auction/route.ts:129`) ; `hasSubmitted` = présence d'une mise
+du tour courant (`status != 'draft'`), jamais dérivé du nombre d'acquis
+(ligne 256) ; les 3 vues (tour ouvert, compteur `X / N`, tour dépouillé) mappent
+`participants` en entier. Les hypothèses (a), (b) et (c) ci-dessous sont donc
+toutes écartées : rien ne masquait un effectif complet.
+
+Requalification (décision Julien 2026-08-14) : la phrase de Pierre se lit dans
+les deux sens. Le vrai défaut n'était pas l'absence des effectifs complets mais
+leur badge : un participant à 13/13 était rangé en « EN ATTENTE » et compté dans
+le bandeau ambre « X participant(s) sans soumission — seront traités selon le
+règlement au dépouillement », alors qu'il n'a plus rien à miser et qu'il n'y a
+rien à relancer chez lui. Livré : un 3e état distinct.
+- Couche pure `src/lib/auction-submission-status.ts` (+ 11 tests vitest avec
+  sanity-check sur l'ancien calcul « pending dès que !hasSubmitted »).
+- Trois états disjoints : SOUMISE (a misé ce tour, prime toujours), COMPLET n/13
+  (effectif complet, aucune mise ce tour), EN ATTENTE (le seul groupe à relancer).
+- Les effectifs complets restent listés et au dénominateur du compteur
+  « X / N soumissions » (« pour pas oublier »), avec un encart doré dédié en tour
+  clôturé et un libellé propre dans le tableau du dépouillement.
+- Sélecteur de saisie manuelle : « (effectif complet) » au lieu de
+  « — sans soumission ».
+- Aucun changement d'API, aucune écriture en base, aucune migration.
+- Vérif : `npm test` 346 tests verts, `npm run build` OK. Recette visuelle sur
+  l'env Docker :3310 (auction 4, ligue 24, tour 4 ouvert, Joueur2 monté à 13/13) :
+  à faire par Julien, l'agent ne saisit pas de mot de passe pour se connecter.
+
+Demande d'origine de Pierre Berthet (WhatsApp, 2026-08-14) :
+> "Pour pas oublier, on visualise même ceux dont les équipes sont complètes
+> comme mises en attente de soumission dans le module admin."
+
+### Décodage
+Dans la console admin des enchères (mode tour ouvert / clôturé), l'admin suit
+qui a soumis (badge SOUMISE / EN ATTENTE). Pierre veut que les participants
+dont l'effectif est DÉJÀ COMPLET (13 joueurs acquis) restent visibles et
+comptés comme "en attente de soumission" tant qu'ils n'ont pas (re)soumis ce
+tour, pour ne pas les oublier. Cohérent avec le travail M2 déjà livré : un
+effectif à 13 peut encore soumettre pour confirmer (bouton participant actif à
+13 acquis). Le suivi admin doit refléter ça au lieu de considérer un effectif
+complet comme "terminé".
+
+### À VÉRIFIER D'ABORD (assumé, pas confirmé)
+Le comportement exact à corriger n'est pas certain. La vue "TOUR OUVERT :
+Soumissions en cours" (`src/app/admin/encheres/page.tsx`, ~ligne 921) mappe
+DÉJÀ tous les `participants` avec badge SOUMISE/EN ATTENTE. Donc soit :
+  (a) les effectifs complets sont exclus/masqués quelque part (filtre à trouver),
+  (b) le décompte "X / N soumissions" ou la liste `missing`
+      (`participants.filter(p => !p.hasSubmitted)`, ~ligne 514) les traite comme
+      faits,
+  (c) c'est `hasSubmitted` qui, pour un effectif complet, est mis à true sans
+      vraie soumission du tour.
+Reproduire d'abord l'écran que voit Pierre (recette Docker :3310) et identifier
+où un effectif complet cesse d'apparaître "en attente", AVANT de coder.
+
+### Piste technique
+- UI : `src/app/admin/encheres/page.tsx` (sections mode "open"/"closed" ~921-971,
+  et le calcul `missing` / `submitted` ~514).
+- Données : `submittedSet` vient de `GET /api/admin/auction`
+  (`src/app/api/admin/auction/route.ts`, "Soumissions du tour courant" :
+  `SELECT DISTINCT user_id ... AND status != 'draft'`). Un participant complet
+  qui n'a pas de mise ce tour n'est pas dans `submittedSet` → il DOIT apparaître
+  "EN ATTENTE", pas disparaître. Vérifier que rien en amont ne le retire de
+  `participants`.
+- Ne pas confondre "effectif complet" (13 won, tous tours) et "a soumis ce tour"
+  (mise pending/résolue du tour courant). Le badge doit refléter le second.
+
+### Critères d'acceptation
+- En tour ouvert ET clôturé, la liste montre les 100% des participants de la
+  ligue, y compris ceux à 13 joueurs, avec un état clair (SOUMISE / EN ATTENTE).
+- Le décompte "X / N soumissions" inclut les effectifs complets au dénominateur.
+- Un participant complet qui n'a rien soumis ce tour est visible comme EN ATTENTE.
+- Aucune régression sur le flux existant (dépouillement, complétion, add-acquisition).
+
+### Garde-fous d'environnement (IMPORTANT, appris cette session)
+- WORKING TREE PARTAGÉ : une 2e session Claude (optimisation avatars, branche
+  `perf/avatars-n-plus-1`) tourne parfois sur le MÊME répertoire → collisions de
+  branche/HEAD (un commit atterrit sur la mauvaise branche). Travailler dans un
+  `git worktree` isolé (ou un clone) : `git worktree add <path> -b <branch> origin/main`,
+  y symlinker `node_modules` et `.env` pour builder, committer, pousser, puis
+  `git worktree remove`.
+- Auto-deploy : peut rater si deux pushes main se chevauchent ; déclencher à la
+  main au besoin `gh workflow run deploy.yml --ref main` et surveiller.
+- Recette Docker (`ligue-recette-mysql`, port 3310, base `ligueenc_recette`,
+  comptes Joueur1-4 / `recette2026`) : lancer via preview `ligue-dev-recette`.
+  Snapshot de juin, plus vieux que la prod : cette session y a ajouté la colonne
+  `PLAYER.PHOTO_URL` et la contrainte `UNIQUE unique_bid (auction_id, round,
+  user_id, player_id)` sur `AUCTION_BID` pour l'aligner sur la prod. Pour tester
+  un admin, insérer temporairement dans `ADMIN_USER (user_id)` puis nettoyer.
+
+### État du module enchères au 2026-08-14 (tout mergé et déployé)
+PR #50 (blocage soumission <13 + brouillon auto), #51 (règlement en ligne admin),
+#52 (masquage §7 décisions), #56 (ajout joueur au prix après dépouillement,
+demande Thomas), #59 (fix ré-ajout d'un joueur retiré par pénalité : contrainte
+`unique_bid` → INSERT ... ON DUPLICATE KEY UPDATE dans add-acquisition et
+complete-roster). Aucune PR ouverte. Reste opérationnel avant août (hors code) :
+token football-data.org + simulation de recette 3-5 participants sur 2 tours.
+
+### Sujet connexe à cadrer (post-août, pas dans ce chantier) — jokers "légion étrangère"
+Trojan/Pierre : pouvoir "shooter" un joueur pas encore en base sans course à
+l'admin. NE PAS ouvrir la création libre de joueurs (doublons — la base a déjà
+2 "Ludovic Blas" —, triche, et surtout le joueur score 0 tant qu'un admin ne l'a
+pas rattaché au flux L'Équipe). Piste recommandée : découpler "réserver"
+(demande horodatée serveur, texte libre nom+club+poste, fige la priorité) de
+"créer la fiche canonique" (admin dédoublonne/valide/rattache). Conflits tranchés
+à l'horodatage, comme les enchères. Option d'allègement : pré-créer les candidats
+probables avant chaque fenêtre de joker. Ne bloque pas août.

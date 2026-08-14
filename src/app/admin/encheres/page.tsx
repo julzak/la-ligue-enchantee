@@ -11,6 +11,7 @@ import { formatParticipantRecap, formatAllRecaps, formatTieDetail, type Particip
 import { validateSubmission, type EnginePlayer } from "@/lib/auction-engine";
 import { lineFromPosition } from "@/lib/auction-resolution";
 import { isLeagueAuctionable, type SeasonStatus } from "@/lib/season-mutation-guard";
+import { summarizeSubmissions, submissionState } from "@/lib/auction-submission-status";
 
 interface AuctionData {
   id: number;
@@ -275,7 +276,12 @@ function ManualBidEntry({
             <option value={0}>Choisir un participant…</option>
             {participants.map((p) => (
               <option key={p.userId} value={p.userId}>
-                {p.userName}{p.hasSubmitted ? " (a déjà soumis)" : " — sans soumission"}
+                {p.userName}
+                {p.hasSubmitted
+                  ? " (a déjà soumis)"
+                  : submissionState(p, auctionPlayersPerUser(p)) === "complete"
+                    ? " (effectif complet)"
+                    : " — sans soumission"}
               </option>
             ))}
           </select>
@@ -526,8 +532,14 @@ export default function AdminEncheresPage() {
             ? "phase-close"
             : "tallied";
 
-  const submitted = participants.filter((p) => p.hasSubmitted);
-  const missing = participants.filter((p) => !p.hasSubmitted);
+  // Suivi des soumissions du tour : 3 états disjoints (demande Pierre 2026-08-14).
+  // Les effectifs complets restent listés et au dénominateur, mais ne sont plus
+  // comptés comme « soumission attendue » : ils n'ont plus rien à miser.
+  const playersPerUser = auction?.playersPerUser ?? 0;
+  const submissions = summarizeSubmissions(participants, playersPerUser);
+  const submitted = submissions.submitted;
+  const missing = submissions.pending;
+  const rosterComplete = submissions.complete;
   const subPct = participants.length > 0 ? Math.round((submitted.length / participants.length) * 100) : 0;
   const incomplete = participants.filter((p) => !p.rosterValid);
 
@@ -949,11 +961,25 @@ export default function AdminEncheresPage() {
                           </div>
                           <span className="text-[13px] text-paper-dim">{p.userName}</span>
                         </div>
-                        {p.hasSubmitted ? (
-                          <span className="text-[10px] font-bold tracking-[.4px] px-2 py-0.5 rounded-full bg-vert/15 border border-vert/40 text-emerald-400">SOUMISE</span>
-                        ) : (
-                          <span className="text-[10px] font-bold tracking-[.4px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 whitespace-nowrap">EN ATTENTE</span>
-                        )}
+                        {(() => {
+                          const state = submissionState(p, playersPerUser);
+                          if (state === "submitted") {
+                            return <span className="text-[10px] font-bold tracking-[.4px] px-2 py-0.5 rounded-full bg-vert/15 border border-vert/40 text-emerald-400">SOUMISE</span>;
+                          }
+                          if (state === "complete") {
+                            // Effectif déjà complet : plus rien à miser, mais on le
+                            // garde visible « pour pas oublier » (demande Pierre).
+                            return (
+                              <span
+                                className="text-[10px] font-bold tracking-[.4px] px-2 py-0.5 rounded-full bg-gold/10 border border-gold/30 text-gold whitespace-nowrap"
+                                title={`Effectif complet (${p.playersWon} / ${playersPerUser}) — aucune mise ce tour, rien à relancer.`}
+                              >
+                                COMPLET {p.playersWon}/{playersPerUser}
+                              </span>
+                            );
+                          }
+                          return <span className="text-[10px] font-bold tracking-[.4px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 whitespace-nowrap">EN ATTENTE</span>;
+                        })()}
                       </div>
                     ))}
                   </div>
@@ -971,13 +997,27 @@ export default function AdminEncheresPage() {
                   <div className="flex flex-col sm:flex-row gap-3.5 mb-5">
                     <div className="flex-1 bg-night border border-white/[0.07] rounded-lg px-4 py-3.5">
                       <div className="text-3xl font-extrabold text-gold tabular-nums leading-none">{submitted.length} / {participants.length}</div>
-                      <div className="text-[11.5px] text-muted mt-1.5">soumissions enregistrées</div>
+                      <div className="text-[11.5px] text-muted mt-1.5">
+                        soumissions enregistrées
+                        {rosterComplete.length > 0 && (
+                          <> · dont {rosterComplete.length} effectif(s) déjà complet(s)</>
+                        )}
+                      </div>
                     </div>
                     {missing.length > 0 && (
                       <div className="flex-[2] bg-amber-500/5 border border-amber-500/30 rounded-lg px-4 py-3.5">
                         <div className="text-[12.5px] font-bold text-amber-400 mb-1">{missing.length} participant(s) sans soumission</div>
                         <div className="text-[11.5px] text-muted leading-relaxed">
                           {missing.map((p) => p.userName).join(", ")} — seront traités selon le règlement au dépouillement (aucune acquisition, budget conservé).
+                        </div>
+                      </div>
+                    )}
+                    {/* Effectifs complets : listés à part, rien à relancer chez eux. */}
+                    {rosterComplete.length > 0 && (
+                      <div className="flex-[2] bg-gold/[0.05] border border-gold/25 rounded-lg px-4 py-3.5">
+                        <div className="text-[12.5px] font-bold text-gold mb-1">{rosterComplete.length} effectif(s) complet(s), sans mise ce tour</div>
+                        <div className="text-[11.5px] text-muted leading-relaxed">
+                          {rosterComplete.map((p) => p.userName).join(", ")} — {playersPerUser} joueurs acquis : plus rien à miser, aucune relance nécessaire.
                         </div>
                       </div>
                     )}
@@ -1075,7 +1115,11 @@ export default function AdminEncheresPage() {
                             {ties.map((t) => (
                               <div key={`${t.playerId}-tie`}>Égalité ({t.amount} pts) : {t.playerName} remis en jeu au tour suivant.</div>
                             ))}
-                            {!p.hasSubmitted && <div>Aucune soumission — budget conservé.</div>}
+                            {!p.hasSubmitted && (
+                              submissionState(p, playersPerUser) === "complete"
+                                ? <div>Effectif complet ({p.playersWon} / {playersPerUser}) — aucune mise ce tour.</div>
+                                : <div>Aucune soumission — budget conservé.</div>
+                            )}
                             {removals.length === 0 && ties.length === 0 && p.hasSubmitted && <span>—</span>}
                           </div>
                           <span className="text-sm font-bold text-gold text-right tabular-nums">{p.budget} pts</span>
