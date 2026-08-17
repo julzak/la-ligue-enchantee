@@ -1,49 +1,41 @@
 import { describe, it, expect } from "vitest";
-import { parisUtcOffsetHours, parisWallTimeToUtc } from "./paris-time";
+import { toParisDateTime, nextDay, seasonStartYear, parisWallTimeToUtc } from "./paris-time";
 
-describe("paris-time", () => {
-  describe("parisUtcOffsetHours : ete (CEST) = +2, hiver (CET) = +1", () => {
-    it("ete : +2 en aout (ouverture de saison)", () => {
-      expect(parisUtcOffsetHours(new Date("2026-08-15T12:00:00Z"))).toBe(2);
-    });
-    it("ete : +2 en septembre/octobre avant bascule", () => {
-      expect(parisUtcOffsetHours(new Date("2026-10-20T12:00:00Z"))).toBe(2);
-    });
-    it("hiver : +1 en novembre", () => {
-      expect(parisUtcOffsetHours(new Date("2026-11-15T12:00:00Z"))).toBe(1);
-    });
-    it("hiver : +1 en janvier et fevrier (coeur de saison)", () => {
-      expect(parisUtcOffsetHours(new Date("2027-01-15T12:00:00Z"))).toBe(1);
-      expect(parisUtcOffsetHours(new Date("2027-02-15T12:00:00Z"))).toBe(1);
-    });
-    it("ete : +2 en avril/mai (fin de saison)", () => {
-      expect(parisUtcOffsetHours(new Date("2027-05-01T12:00:00Z"))).toBe(2);
-    });
-
-    // Sanity-check : prouve que le test detecterait un offset code en dur a +2.
-    // Un code qui renverrait toujours 2 (le bug) echouerait sur ce cas hiver.
-    it("SANITY : un offset fige a +2 serait faux en hiver", () => {
-      const hiver = parisUtcOffsetHours(new Date("2027-01-15T12:00:00Z"));
-      expect(hiver).not.toBe(2);
-    });
+describe("toParisDateTime — utcDate football-data vers heure murale de Paris", () => {
+  it("convertit un coup d'envoi d'été (UTC+2)", () => {
+    // OM - Strasbourg, J1 2026-2027 : 18h45 UTC = 20h45 à Paris.
+    expect(toParisDateTime("2026-08-21T18:45:00Z")).toEqual({ date: "2026-08-21", time: "20:45" });
   });
 
-  describe("parisWallTimeToUtc : 15h Paris -> bon instant UTC selon la saison", () => {
-    it("ete : 15h Paris = 13h UTC", () => {
-      expect(parisWallTimeToUtc("2026-08-15", 15).toISOString()).toBe("2026-08-15T13:00:00.000Z");
-    });
-    it("hiver : 15h Paris = 14h UTC (et NON 13h : c'est le coeur du bug corrige)", () => {
-      expect(parisWallTimeToUtc("2027-01-15", 15).toISOString()).toBe("2027-01-15T14:00:00.000Z");
-    });
-    it("gere les minutes", () => {
-      expect(parisWallTimeToUtc("2026-08-15", 20, 45).toISOString()).toBe("2026-08-15T18:45:00.000Z");
-    });
+  it("convertit un coup d'envoi d'hiver (UTC+1)", () => {
+    expect(toParisDateTime("2027-01-15T20:00:00Z")).toEqual({ date: "2027-01-15", time: "21:00" });
+  });
 
-    // Sanity-check : avec l'ancien code (Paris = UTC+2 en dur), 15h Paris en
-    // hiver donnait 13h UTC. Le test ci-dessous prouve qu'on ne regenere pas ce bug.
-    it("SANITY : l'ancien calcul en dur (15h - 2 = 13h UTC) est bien rejete en hiver", () => {
-      const utc = parisWallTimeToUtc("2027-01-15", 15).toISOString();
-      expect(utc).not.toBe("2027-01-15T13:00:00.000Z");
-    });
+  it("bascule de jour quand le match UTC est la veille au soir", () => {
+    // SANITY-CHECK du piège : 22h05 Paris un samedi = 20h05 UTC le même jour,
+    // mais 23h00 UTC = 01h00 Paris le LENDEMAIN. Stocker la date UTC brute
+    // décalerait le match, l'édition L'Équipe et la deadline.
+    expect(toParisDateTime("2026-08-22T23:00:00Z")).toEqual({ date: "2026-08-23", time: "01:00" });
+  });
+
+  it("rejette une date invalide", () => {
+    expect(toParisDateTime("n/a")).toBeNull();
+  });
+
+  it("est l'inverse de parisWallTimeToUtc (helper deadlines existant)", () => {
+    const utc = parisWallTimeToUtc("2026-08-21", 20, 45);
+    expect(toParisDateTime(utc.toISOString())).toEqual({ date: "2026-08-21", time: "20:45" });
+  });
+});
+
+describe("nextDay / seasonStartYear", () => {
+  it("édition L'Équipe = lendemain, y compris sur fin de mois", () => {
+    expect(nextDay("2026-08-31")).toBe("2026-09-01");
+  });
+
+  it("extrait l'année de début des deux formats de clé de saison", () => {
+    expect(seasonStartYear("2026-2027")).toBe(2026);
+    expect(seasonStartYear("2026")).toBe(2026);
+    expect(seasonStartYear("saison prochaine")).toBeNull();
   });
 });

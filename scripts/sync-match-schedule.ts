@@ -1,118 +1,72 @@
 /**
- * Sync match schedule from TheSportsDB → DB.
+ * Sync du calendrier Ligue 1 → MATCH_SCHEDULE. Wrapper CLI du moteur partagé
+ * src/lib/match-schedule-sync.ts (même code que le bouton admin) : plus aucune
+ * logique ici.
  *
- * Usage:
- *   npx tsx scripts/sync-match-schedule.ts 26        # sync one matchday
- *   npx tsx scripts/sync-match-schedule.ts 26 38     # sync range
- *   npx tsx scripts/sync-match-schedule.ts --all      # sync all (1-38)
+ * SOURCE : football-data.org (saison complète en 1 requête). L'ancienne version
+ * appelait TheSportsDB round par round avec la clé de test publique "3", qui
+ * tronque chaque journée à 5 matchs sur 9 : ne jamais y revenir.
  *
- * Admin overrides (postponed matches) are preserved — only non-overridden rows are updated.
+ * Usage :
+ *   ./node_modules/.bin/tsx scripts/sync-match-schedule.ts          # sync complet
+ *   ./node_modules/.bin/tsx scripts/sync-match-schedule.ts 26       # sync complet + éditions J26
+ *   ./node_modules/.bin/tsx scripts/sync-match-schedule.ts --all    # idem sans arg
+ *
+ * Les arguments de journée des anciens crons restent acceptés : la synchro est
+ * de toute façon TOUJOURS complète (1 seul appel API), l'argument ne sert plus
+ * qu'à afficher les dates d'édition L'Équipe de la journée demandée.
+ *
+ * Les overrides admin (matchs reportés) sont préservés par le moteur.
  */
 
-import { PrismaClient } from "@prisma/client";
-import { getMatchday } from "./lib/sportsdb";
+import dotenv from "dotenv";
+import path from "path";
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+import { prisma } from "../src/lib/prisma";
 import { resolveSeasonKey } from "./lib/season";
-
-const prisma = new PrismaClient();
-
-async function syncMatchday(day: number, seasonKey: string) {
-  const matches = await getMatchday(day, seasonKey);
-  if (matches.length === 0) {
-    console.log(`  J${day}: no data from TheSportsDB`);
-    return 0;
-  }
-
-  let synced = 0;
-  for (const m of matches) {
-    // Check if admin has overridden this match
-    const existing = await prisma.$queryRawUnsafe<{ admin_override_date: string | null }[]>(
-      "SELECT admin_override_date FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ? AND home_team = ? AND away_team = ? LIMIT 1",
-      seasonKey, day, m.homeTeam, m.awayTeam
-    );
-
-    if (existing.length > 0 && existing[0].admin_override_date) {
-      // Admin override exists — don't touch it
-      // But still update the score if available
-      if (m.homeScore !== null) {
-        await prisma.$executeRawUnsafe(
-          "UPDATE MATCH_SCHEDULE SET home_score = ?, away_score = ? WHERE season = ? AND matchday = ? AND home_team = ? AND away_team = ?",
-          m.homeScore, m.awayScore, seasonKey, day, m.homeTeam, m.awayTeam
-        );
-      }
-      continue;
-    }
-
-    const editionDate = m.editionDate;
-    const isPostponed = m.homeScore === null && m.date < new Date().toISOString().slice(0, 10) ? 1 : 0;
-
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO MATCH_SCHEDULE (season, matchday, home_team, away_team, match_date, match_time, edition_date, home_score, away_score, is_postponed, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'thesportsdb')
-       ON DUPLICATE KEY UPDATE
-         match_date = VALUES(match_date),
-         match_time = VALUES(match_time),
-         edition_date = VALUES(edition_date),
-         home_score = COALESCE(VALUES(home_score), home_score),
-         away_score = COALESCE(VALUES(away_score), away_score),
-         is_postponed = VALUES(is_postponed)`,
-      seasonKey, day, m.homeTeam, m.awayTeam, m.date, m.time + ":00", editionDate,
-      m.homeScore, m.awayScore, isPostponed
-    );
-    synced++;
-  }
-
-  console.log(`  J${day}: ${matches.length} matches, ${synced} synced`);
-  return synced;
-}
+import { syncMatchSchedule } from "../src/lib/match-schedule-sync";
 
 async function main() {
-  const args = process.argv.slice(2);
-
-  let startDay = 1, endDay = 38;
-
-  if (args.includes("--all")) {
-    // sync all
-  } else if (args.length >= 2) {
-    startDay = parseInt(args[0]);
-    endDay = parseInt(args[1]);
-  } else if (args.length === 1) {
-    startDay = endDay = parseInt(args[0]);
-  } else {
-    console.log("Usage: npx tsx scripts/sync-match-schedule.ts <matchday> [end_matchday]");
-    console.log("       npx tsx scripts/sync-match-schedule.ts --all");
-    process.exit(0);
-  }
+  const args = process.argv.slice(2).filter((a) => a !== "--all");
+  const focusDay = args.length > 0 ? parseInt(args[0]) : null;
 
   const seasonKey = await resolveSeasonKey(prisma);
-  console.log(`Syncing matchdays ${startDay}-${endDay} (saison ${seasonKey}) from TheSportsDB...\n`);
+  console.log(`Syncing full season ${seasonKey} from football-data.org...\n`);
 
-  let total = 0;
-  for (let day = startDay; day <= endDay; day++) {
-    total += await syncMatchday(day, seasonKey);
-    // Rate limit: TheSportsDB is free, be nice
-    if (endDay - startDay > 2) {
-      await new Promise((r) => setTimeout(r, 500));
-    }
+  const result = await syncMatchSchedule(seasonKey);
+
+  if (result.fetchErrors > 0) {
+    console.error(`ÉCHEC : football-data.org indisponible ou token absent. Rien n'a été modifié.`);
+    process.exit(1);
+  }
+  if (result.purged > 0) {
+    console.log(`${result.purged} ligne(s) héritées de TheSportsDB purgées (tronquées, sans score ni override).`);
+  }
+  console.log(`Done. ${result.synced} matches synced sur ${result.daysWithData} journées.`);
+  if (result.daysEmpty.length > 0) {
+    console.log(`Journées sans données : ${result.daysEmpty.join(", ")}`);
   }
 
-  console.log(`\nDone. ${total} matches synced.`);
-
-  // Show edition dates for the requested matchdays
-  if (endDay === startDay) {
+  // Dates d'édition L'Équipe pour la journée demandée (contrat des crons).
+  if (focusDay && Number.isFinite(focusDay)) {
     const matches = await prisma.$queryRawUnsafe<{ edition_date: string; is_postponed: number; admin_override_date: string | null }[]>(
       "SELECT DISTINCT edition_date, is_postponed, admin_override_date FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ? ORDER BY edition_date",
-      seasonKey, startDay
+      seasonKey, focusDay
     );
-    console.log(`\nEditions to scrape for J${startDay}:`);
+    console.log(`\nEditions to scrape for J${focusDay}:`);
     matches.forEach((m) => {
       const date = m.admin_override_date ?? m.edition_date;
       const note = m.is_postponed ? " (POSTPONED)" : "";
       const override = m.admin_override_date ? " [admin override]" : "";
-      console.log(`  ${String(date).slice(0, 10)}${note}${override}`);
+      console.log(`  ${date}${note}${override}`);
     });
   }
-
-  await prisma.$disconnect();
 }
 
-main().catch(console.error);
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });

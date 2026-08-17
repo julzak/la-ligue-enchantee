@@ -84,9 +84,28 @@ Dans **Saisons existantes**, un bouton fait passer la saison à l'étape suivant
 - **Synchroniser le calendrier** Ligue 1 (dates des matchs, indispensable pour
   les deadlines de compo) : bouton **« Synchroniser le calendrier »** sur la
   ligne de la saison, dans « Saisons existantes ». Rejouable à volonté ; la
-  checklist du lancement rappelle ce point.
+  checklist du lancement rappelle ce point. Source : football-data.org (même
+  clé que les effectifs, déjà en place dans Admin → Configuration). Le compte
+  affiché doit être ~9 matchs par journée : si c'est moins, quelque chose ne
+  va pas, prévenir le support technique.
 - Vérifier dans Admin → Configuration les valeurs reprises de l'an dernier
   (barème, jokers, deadlines). Les dates des jokers sont à re-saisir.
+
+### Logos des clubs (étape annuelle côté technique, pas admin)
+
+Chaque été, après l'import des clubs (étape 2 du stepper), les **promus** n'ont
+pas encore de logo ni de trigramme dans le code. Une seule commande, en dev :
+
+```
+./node_modules/.bin/tsx scripts/import-club-logos.ts
+```
+
+Elle télécharge les blasons officiels manquants (source football-data.org) dans
+`public/clubs/` et affiche la ligne à ajouter dans `CLUB_ASSETS`
+(`src/lib/assets.ts` : trigramme à choisir + alias). Vérification :
+`scripts/diag-logos-saison-courante.ts` doit afficher N/N. Committer les PNG et
+la ligne. Historique : oubli en 2026-2027 → 13 clubs sans logo (alias
+football-data manquants) + 2 promus sans blason, signalé par Laurent en août.
 
 ---
 

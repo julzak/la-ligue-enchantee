@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-export const maxDuration = 120; // 38 appels TheSportsDB séquentiels (~30-60 s)
+export const maxDuration = 120; // 1 appel football-data.org + upserts (~5-15 s)
 
 import { NextResponse } from "next/server";
 import { jsonError500 } from "@/lib/api-error";
@@ -32,13 +32,13 @@ export async function POST(req: Request) {
     const result = await syncMatchSchedule(seasonKey);
 
     const message =
-      result.fetchErrors === 38
-        ? `Échec : TheSportsDB indisponible ou rate-limité (38/38 journées en erreur, saison ${seasonKey}). Aucun calendrier synchronisé, réessayer plus tard.`
+      result.fetchErrors > 0
+        ? `Échec : football-data.org indisponible ou token absent (Admin → Configuration, champ Clé effectifs). Aucun calendrier synchronisé, réessayer plus tard.`
         : result.synced === 0
-          ? `Aucun match trouvé pour ${seasonKey} : le calendrier n'est probablement pas encore publié par TheSportsDB. Réessayer plus tard.`
+          ? `Aucun match trouvé pour ${seasonKey} : le calendrier n'est probablement pas encore publié par football-data.org. Réessayer plus tard.`
           : `${result.synced} matchs synchronisés sur ${result.daysWithData} journées (saison ${seasonKey}).` +
-            (result.daysEmpty.length > 0 ? ` Journées sans données : ${result.daysEmpty.join(", ")}.` : "") +
-            (result.fetchErrors > 0 ? ` ⚠️ ${result.fetchErrors} journée(s) en erreur réseau.` : "");
+            (result.purged > 0 ? ` ${result.purged} ligne(s) tronquées de l'ancienne source purgées.` : "") +
+            (result.daysEmpty.length > 0 ? ` Journées sans données : ${result.daysEmpty.join(", ")}.` : "");
 
     return NextResponse.json({ ok: true, ...result, seasonKey, message });
   } catch (e) {

@@ -650,3 +650,63 @@ pas rattaché au flux L'Équipe). Piste recommandée : découpler "réserver"
 "créer la fiche canonique" (admin dédoublonne/valide/rattache). Conflits tranchés
 à l'horodatage, comme les enchères. Option d'allègement : pré-créer les candidats
 probables avant chaque fenêtre de joker. Ne bloque pas août.
+
+---
+
+## TRAITÉ (2026-08-17) — Logos de clubs manquants + calendrier tronqué à 5 matchs/journée
+
+Signalements : Laurent (« logos aléatoires, il en manque ») + admins (« 5 matchs
+par journée dans le module noté »). UNE SEULE RACINE : la saison 2026-2027 a été
+importée depuis football-data.org, mais logos et calendrier étaient restés calés
+sur les conventions TheSportsDB.
+
+### Diagnostic confirmé (runtime, DB prod en lecture puis écriture contrôlée)
+1. **Logos** : `assets.ts` matchait par nom exact/alias ; les libellés longs
+   football-data (« AS Monaco FC », « Racing Club de Lens ») ne matchaient pas →
+   6 logos résolus sur 19. Troyes et Le Mans (promus) n'avaient de toute façon
+   pas de PNG.
+2. **Calendrier** : `match-schedule-sync` + `scripts/lib/sportsdb.ts` appelaient
+   TheSportsDB `eventsround.php` avec la clé de test publique « 3 », qui TRONQUE
+   chaque round à 5 événements (vérifié sur 2025-2026 ET 2026-2027). Prod :
+   152 lignes au lieu de 306, zéro score, zéro override.
+3. **Effets cachés de la même racine, corrigés au passage** :
+   - la route deadline (`/api/admin/deadline`) calculait l'heure limite sur le
+     même flux tronqué → deadline potentiellement trop tardive si le vrai
+     premier match n'était pas dans les 5 ;
+   - le pipeline de scraping du lundi (`process-matchday`, `scrape-notes-web`)
+     n'aurait vu que 5 matchs de notes dès la J1 du 21 août.
+
+### Livré
+- `src/lib/assets.ts` : alias football-data pour les 19 clubs + repli par mots
+  discriminants (FORM_TOKENS) qui absorbe les variantes d'un futur fournisseur ;
+  ambiguïtés écartées (jamais de mauvais logo). Tests `assets.test.ts` avec les
+  19 noms prod (sanity-check : l'ancienne version échoue sur 7/8 cas).
+- Logos promus : `public/clubs/troyes.png` (crest football-data) et
+  `le-mans.png` (SVG wikipedia converti rsvg-convert 200x200), commités.
+- `scripts/import-club-logos.ts` : étape ANNUELLE automatisée (télécharge les
+  crests manquants, imprime la ligne CLUB_ASSETS à ajouter). Documentée dans
+  `docs/mode-emploi-saisons.md`. Vérif : `scripts/diag-logos-saison-courante.ts`
+  → 19/19.
+- `src/lib/match-schedule-sync.ts` : réécrit sur football-data.org (saison
+  complète en 1 requête, utcDate converti heure de Paris via `paris-time.ts`,
+  source='football-data'). Purge bornée des lignes TheSportsDB tronquées (sans
+  score ni override uniquement). `scripts/sync-match-schedule.ts` = wrapper du
+  même moteur (args des crons conservés).
+- `scripts/lib/sportsdb.ts` : `getMatchday` bascule sur football-data (interface
+  L1MatchInfo intacte, nom de fichier conservé pour les imports).
+- `src/lib/club-scrape-names.ts` : variantes de scraping L'Équipe centralisées,
+  keyées par clé canonique (les ALT_NAMES des scripts étaient keyées par
+  libellé TheSportsDB exact → auraient toutes raté).
+- Route deadline : lit désormais MATCH_SCHEDULE (complet, heure de Paris,
+  reports admin gérés) au lieu d'appeler TheSportsDB à la volée.
+- DONNÉES PROD RÉPARÉES le 2026-08-17 : purge des 152 lignes tronquées + resync
+  → 34 journées x 9 matchs = 306, OM-Strasbourg 21/08 20:45 vérifié.
+
+### Garde-fous pour les étés suivants
+- Kick-off annuel : `scripts/import-club-logos.ts` après l'import des clubs
+  (documenté mode-emploi-saisons.md, section « Logos des clubs »).
+- Ne JAMAIS utiliser TheSportsDB `eventsround.php` avec une clé gratuite
+  (tronque à 5). Toute la chaîne matchs = football-data.org (token en
+  APP_CONFIG, saisi une fois, permanent).
+- `assets.test.ts` fige les 19 noms prod : un changement de fournisseur qui
+  casse la résolution des logos fait échouer la CI.

@@ -17,9 +17,13 @@ import { chromium, type BrowserContext } from "playwright";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import { getMatchday } from "./lib/sportsdb";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+import { prisma } from "../src/lib/prisma";
+import { getMatchday } from "./lib/sportsdb";
+import { resolveSeasonKey } from "./lib/season";
+import { getClubSearchNames, getClubUrlFrags } from "../src/lib/club-scrape-names";
 
 const COOKIES_FILE = path.join(__dirname, "cookies-lequipe.json");
 const BROWSER_PROFILE = path.join(__dirname, "..", "tmp/lequipe-profile");
@@ -123,32 +127,10 @@ async function findNoteArticles(
   const page = await context.newPage();
   const urls: string[] = [];
 
-  // Alternative names for L'Équipe search
-  const ALT_NAMES: Record<string, string[]> = {
-    "Marseille": ["OM", "Marseille", "om"],
-    "Olympique Marseille": ["OM", "Marseille"],
-    "Paris SG": ["PSG", "Paris SG", "paris"],
-    "Paris Saint Germain": ["PSG", "Paris SG"],
-    "Olympique Lyonnais": ["OL", "Lyon", "ol"],
-    "Le Havre": ["HAC", "Le Havre", "le-havre"],
-    "Monaco": ["ASM", "Monaco"],
-    "LOSC Lille": ["Lille", "LOSC"],
-    "Lorient": ["FCL", "Lorient"],
-    "Paris": ["PFC", "Paris FC", "pfc"],
-    "Nantes": ["FCN", "Nantes"],
-    "Strasbourg": ["RCSA", "Strasbourg", "Racing", "RC Strasbourg"],
-    "Rennes": ["SRFC", "Rennes", "Stade Rennais"],
-    "Lens": ["RCL", "Lens", "RC Lens"],
-    "Brest": ["SB29", "Brest", "Stade Brestois"],
-    "Nice": ["OGCN", "Nice", "OGC Nice"],
-    "Angers": ["SCO", "Angers"],
-    "Auxerre": ["AJA", "Auxerre"],
-    "Metz": ["FCM", "Metz", "FC Metz"],
-    "Toulouse": ["TFC", "Toulouse"],
-  };
-
-  const homeNames = ALT_NAMES[homeTeam] ?? [homeTeam];
-  const awayNames = ALT_NAMES[awayTeam] ?? [awayTeam];
+  // Variantes centralisées (src/lib/club-scrape-names.ts), keyées par clé
+  // canonique : insensibles au fournisseur de données de matchs.
+  const homeNames = getClubSearchNames(homeTeam);
+  const awayNames = getClubSearchNames(awayTeam);
 
   try {
     // Search with multiple name variants
@@ -266,21 +248,10 @@ async function browseLigue1Page(
       await page.waitForTimeout(500);
     }
 
-    // Find links containing "note" + team names
-    // Build all possible name fragments to search in URLs
-    const ALT_NAMES: Record<string, string[]> = {
-      "Marseille": ["om", "marseille"], "Olympique Marseille": ["om", "marseille"],
-      "Paris SG": ["psg"], "Paris Saint Germain": ["psg"],
-      "Olympique Lyonnais": ["ol", "lyon"], "Le Havre": ["havre", "hac"],
-      "Monaco": ["monaco"], "LOSC Lille": ["lille"], "Lorient": ["lorient"],
-      "Paris": ["pfc", "paris-fc"], "Nantes": ["nantes"],
-      "Strasbourg": ["strasbourg", "racing"], "Rennes": ["rennes"],
-      "Lens": ["lens"], "Brest": ["brest"], "Nice": ["nice"],
-      "Angers": ["angers"], "Auxerre": ["auxerre"], "Metz": ["metz"],
-      "Toulouse": ["toulouse"],
-    };
-    const homeFrags = ALT_NAMES[homeTeam] ?? [homeTeam.split(" ").pop()!.toLowerCase()];
-    const awayFrags = ALT_NAMES[awayTeam] ?? [awayTeam.split(" ").pop()!.toLowerCase()];
+    // Find links containing "note" + team names. Fragments centralisés
+    // (src/lib/club-scrape-names.ts), keyés par clé canonique.
+    const homeFrags = getClubUrlFrags(homeTeam);
+    const awayFrags = getClubUrlFrags(awayTeam);
 
     const links = await page.evaluate(
       ({ hFrags, aFrags }: { hFrags: string[]; aFrags: string[] }) => {
@@ -319,9 +290,9 @@ async function main() {
 
   console.log(`\nScraping L'Équipe web articles for J${matchday}\n`);
 
-  // 1. Get matches from TheSportsDB
-  const matches = await getMatchday(matchday);
-  console.log(`${matches.length} matches from TheSportsDB:`);
+  // 1. Get matches (football-data.org, saison courante en base)
+  const matches = await getMatchday(matchday, await resolveSeasonKey(prisma));
+  console.log(`${matches.length} matches from football-data.org:`);
   matches.forEach((m) => {
     const score = m.homeScore !== null ? `${m.homeScore}-${m.awayScore}` : "TBD";
     console.log(`  ${m.homeTeam} ${score} ${m.awayTeam}`);

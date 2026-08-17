@@ -1,52 +1,83 @@
 /**
- * TheSportsDB free API — Ligue 1 match data.
- * No API key needed. Used for:
- * 1. Getting match dates → which L'Équipe editions to scrape
- * 2. Double-checking scores from Vision extraction
+ * Données de matchs Ligue 1 pour le pipeline de scraping. Sert à :
+ * 1. connaître les dates des matchs → quelles éditions L'Équipe scraper ;
+ * 2. contre-vérifier les scores extraits par Vision.
+ *
+ * SOURCE : football-data.org depuis le 2026-08-17 (token gratuit saisi dans
+ * Admin → Configuration, fallback env FOOTBALL_DATA_TOKEN). AVANT : TheSportsDB
+ * avec la clé de test publique "3", qui TRONQUE chaque round à 5 matchs sur 9.
+ * Conséquence évitée de justesse : le cron du lundi n'aurait scrapé que 5
+ * matchs de notes par journée dès la J1 du 21 août 2026. Ne JAMAIS revenir à
+ * eventsround.php avec une clé gratuite. Le nom de fichier est conservé pour
+ * ne pas toucher aux imports des 4 scripts consommateurs.
  */
+
+import { getFootballDataToken } from "../../src/lib/football-api";
+import { toParisDateTime, nextDay, seasonStartYear } from "../../src/lib/paris-time";
 
 export interface L1MatchInfo {
   matchday: number;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM
+  date: string; // YYYY-MM-DD (heure de Paris)
+  time: string; // HH:MM (heure de Paris)
   homeTeam: string;
   awayTeam: string;
   homeScore: number | null;
   awayScore: number | null;
-  editionDate: string; // L'Équipe edition = match date + 1 day
+  editionDate: string; // édition L'Équipe = lendemain du match
 }
 
-const LIGUE_1_ID = 4334; // TheSportsDB league ID for Ligue 1
+const FD_BASE = "https://api.football-data.org/v4";
+const FD_COMPETITION = "FL1"; // Ligue 1
+
+interface FdMatch {
+  matchday: number | null;
+  utcDate: string | null;
+  homeTeam?: { name?: string | null };
+  awayTeam?: { name?: string | null };
+  score?: { fullTime?: { home: number | null; away: number | null } };
+}
 
 /**
- * Fetch all matches for a given matchday.
+ * Tous les matchs d'une journée. `season` au format clé "2026-2027".
  */
 export async function getMatchday(
   matchday: number,
   season = "2025-2026"
 ): Promise<L1MatchInfo[]> {
-  const url = `https://www.thesportsdb.com/api/v1/json/3/eventsround.php?id=${LIGUE_1_ID}&r=${matchday}&s=${season}`;
-  const res = await fetch(url);
-  const data = await res.json();
+  const year = seasonStartYear(season);
+  if (!year) throw new Error(`[sportsdb] Clé de saison inexploitable : « ${season} »`);
+  const token = await getFootballDataToken();
+  if (!token) {
+    throw new Error(
+      "[sportsdb] Pas de token football-data.org (Admin → Configuration, champ Clé effectifs, ou env FOOTBALL_DATA_TOKEN)"
+    );
+  }
 
-  if (!data.events) return [];
+  const url = `${FD_BASE}/competitions/${FD_COMPETITION}/matches?matchday=${matchday}&season=${year}`;
+  const res = await fetch(url, { headers: { "X-Auth-Token": token } });
+  if (!res.ok) throw new Error(`[sportsdb] football-data.org HTTP ${res.status} (${url})`);
+  const data = (await res.json()) as { matches?: FdMatch[] };
+  const matches = Array.isArray(data.matches) ? data.matches : [];
 
-  return data.events.map((e: Record<string, string | null>) => {
-    const matchDate = e.dateEvent ?? "";
-    // L'Équipe publishes notes the day AFTER the match
-    const editionDate = nextDay(matchDate);
-
-    return {
+  const out: L1MatchInfo[] = [];
+  for (const m of matches) {
+    const homeTeam = m.homeTeam?.name ?? "";
+    const awayTeam = m.awayTeam?.name ?? "";
+    if (!homeTeam || !awayTeam || !m.utcDate) continue;
+    const local = toParisDateTime(m.utcDate);
+    if (!local) continue;
+    out.push({
       matchday,
-      date: matchDate,
-      time: (e.strTime ?? "").slice(0, 5),
-      homeTeam: e.strHomeTeam ?? "",
-      awayTeam: e.strAwayTeam ?? "",
-      homeScore: e.intHomeScore !== null ? parseInt(e.intHomeScore) : null,
-      awayScore: e.intAwayScore !== null ? parseInt(e.intAwayScore) : null,
-      editionDate,
-    };
-  });
+      date: local.date,
+      time: local.time,
+      homeTeam,
+      awayTeam,
+      homeScore: m.score?.fullTime?.home ?? null,
+      awayScore: m.score?.fullTime?.away ?? null,
+      editionDate: nextDay(local.date),
+    });
+  }
+  return out;
 }
 
 /**
@@ -63,7 +94,7 @@ export async function getEditionDates(
 }
 
 /**
- * Validate scraped scores against TheSportsDB.
+ * Validate scraped scores against the API.
  * Returns warnings for mismatches.
  */
 export function validateScores(
@@ -73,7 +104,6 @@ export function validateScores(
   const warnings: { match: string; warning: string }[] = [];
 
   for (const scraped of scrapedMatches) {
-    // Fuzzy match by team name
     const api = apiMatches.find((m) => {
       const sHome = scraped.homeTeam.toLowerCase();
       const sAway = scraped.awayTeam.toLowerCase();
@@ -97,10 +127,4 @@ export function validateScores(
   }
 
   return warnings;
-}
-
-function nextDay(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00Z");
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
 }

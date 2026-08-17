@@ -1,0 +1,23 @@
+label
+SNAPSHOT FINAL
+ID_SEASON	LABEL	STATUS	IS_CURRENT
+1	2026-2027	AUCTION	1
+label
+CLUB par saison
+ID_SEASON	nb
+NULL	19
+1	6
+label
+PLAYER par saison
+ID_SEASON	nb
+NULL	1032
+1	90
+label
+LEAGUE par saison
+ID_SEASON	nb
+NULL	3
+1	1
+label
+LEAGUE_USER total
+nb
+91

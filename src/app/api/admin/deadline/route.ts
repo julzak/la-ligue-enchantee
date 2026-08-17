@@ -100,17 +100,24 @@ export async function GET(request: Request) {
   // Load deadline config from DB
   const deadlineConfig = await getDeadlineConfig();
 
-  // Auto-calculate: fetch match dates/times from TheSportsDB
+  // Auto-calculate depuis MATCH_SCHEDULE (synchronisé depuis football-data.org,
+  // heure de Paris). AVANT le 2026-08-17 : appel direct TheSportsDB clé "3",
+  // qui tronque chaque journée à 5 matchs sur 9 : si le vrai premier match
+  // n'était pas dans les 5, la deadline calculée était trop tardive. Les matchs
+  // reportés sans nouvelle date sont exclus (leur date d'origine est passée) ;
+  // un report re-daté par l'admin compte à sa nouvelle date.
   try {
-    const res = await fetch(
-      `https://www.thesportsdb.com/api/v1/json/3/eventsround.php?id=4334&r=${currentDay}&s=${await getCurrentSeasonKey()}`,
-      { next: { revalidate: 3600 } } // cache 1h
+    const rows = await prisma.$queryRawUnsafe<{ d: string | Date; t: string | null }[]>(
+      `SELECT COALESCE(admin_override_date, match_date) AS d, match_time AS t
+         FROM MATCH_SCHEDULE
+        WHERE season = ? AND matchday = ?
+          AND NOT (is_postponed = 1 AND admin_override_date IS NULL)`,
+      await getCurrentSeasonKey(), currentDay
     );
-    const data = await res.json();
-    if (data.events?.length > 0) {
-      const matches = data.events.map((e: { dateEvent: string; strTime: string }) => ({
-        date: e.dateEvent,
-        time: e.strTime?.slice(0, 5) || "20:00",
+    if (rows.length > 0) {
+      const matches = rows.map((r) => ({
+        date: String(r.d instanceof Date ? r.d.toISOString().slice(0, 10) : r.d).slice(0, 10),
+        time: (r.t ? String(r.t) : "").slice(0, 5) || "20:00",
       }));
       const lockAt = calcDeadline(matches, deadlineConfig);
       const firstMatch = matches.sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date))[0];
