@@ -265,16 +265,24 @@ export async function POST(request: Request) {
     if (isWinter) {
       return NextResponse.json({ error: "Le brouillon n'est pas disponible au mercato d'hiver." }, { status: 400 });
     }
-    await prisma.$executeRawUnsafe(
-      "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status = 'draft'",
-      a.id, a.current_round, userId
-    );
-    for (const bid of bids) {
-      await prisma.$executeRawUnsafe(
-        "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, ?, 'draft')",
-        a.id, a.current_round, userId, bid.playerId, bid.amount
+    // Transaction + INSERT IGNORE (fix 2026-08-17) : le DELETE+INSERT nu se
+    // faisait percuter par l'autosave suivant (débounce court, requêtes qui se
+    // chevauchent) → 1062 sur unique_bid → 500, brouillon perdu (596 erreurs en
+    // prod pendant les tours 3-4). IGNORE couvre aussi la collision avec une
+    // ligne 'pending' du même joueur : la soumission prime, on ne l'écrase
+    // jamais avec un brouillon.
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status = 'draft'",
+        a.id, a.current_round, userId
       );
-    }
+      for (const bid of bids) {
+        await tx.$executeRawUnsafe(
+          "INSERT IGNORE INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, ?, 'draft')",
+          a.id, a.current_round, userId, bid.playerId, bid.amount
+        );
+      }
+    });
     return NextResponse.json({ ok: true, draft: true, message: "Brouillon enregistré" });
   }
 
@@ -336,25 +344,32 @@ export async function POST(request: Request) {
 
   // Delete existing bids for this round (replace). La soumission finale
   // remplace aussi le brouillon : il est consommé par la soumission.
-  await prisma.$executeRawUnsafe(
-    "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status IN ('pending', 'draft')",
-    a.id, a.current_round, userId
-  );
-
-  // Insert new bids
-  for (const bid of bids) {
-    if (isWinter && bid.playerOutId) {
-      await prisma.$executeRawUnsafe(
-        "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, player_out_id) VALUES (?, ?, ?, ?, ?, 'pending', ?)",
-        a.id, a.current_round, userId, bid.playerId, bid.amount, bid.playerOutId
-      );
-    } else {
-      await prisma.$executeRawUnsafe(
-        "INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, ?, 'pending')",
-        a.id, a.current_round, userId, bid.playerId, bid.amount
-      );
+  // Transaction (fix 2026-08-17) : sans elle, un double-clic ou un autosave de
+  // brouillon concurrent pouvait percuter le DELETE+INSERT (1062 sur
+  // unique_bid) et laisser une soumission partielle. ON DUPLICATE KEY UPDATE
+  // absorbe la course résiduelle : la ligne repasse en 'pending' au montant
+  // soumis (elle ne peut être qu'un draft concurrent du même joueur).
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(
+      "DELETE FROM AUCTION_BID WHERE auction_id = ? AND round = ? AND user_id = ? AND status IN ('pending', 'draft')",
+      a.id, a.current_round, userId
+    );
+    for (const bid of bids) {
+      if (isWinter && bid.playerOutId) {
+        await tx.$executeRawUnsafe(
+          `INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status, player_out_id) VALUES (?, ?, ?, ?, ?, 'pending', ?)
+           ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'pending', player_out_id = VALUES(player_out_id)`,
+          a.id, a.current_round, userId, bid.playerId, bid.amount, bid.playerOutId
+        );
+      } else {
+        await tx.$executeRawUnsafe(
+          `INSERT INTO AUCTION_BID (auction_id, round, user_id, player_id, amount, status) VALUES (?, ?, ?, ?, ?, 'pending')
+           ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'pending'`,
+          a.id, a.current_round, userId, bid.playerId, bid.amount
+        );
+      }
     }
-  }
+  });
 
   return NextResponse.json({ ok: true, message: `${bids.length} enchere(s) placee(s)` });
 }

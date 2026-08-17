@@ -552,6 +552,10 @@ export default function EncheresPage() {
   // mise rechargée) pour que l'autosave ne ré-émette pas ce qu'il vient de
   // recevoir. draftSavedAt alimente l'indicateur "Brouillon enregistré à HH:MM".
   const lastSyncedRef = useRef<string>(serializeBids([]));
+  // Fix 2026-08-17 : annule l'autosave encore en vol avant d'en émettre un
+  // nouveau. Deux autosaves qui se chevauchent se percutaient côté serveur
+  // (1062 sur unique_bid) et le brouillon sautait.
+  const draftAbortRef = useRef<AbortController | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
   // Recherche de joueurs libres
@@ -661,10 +665,14 @@ export default function EncheresPage() {
       // Deadline vérifiée au moment de l'envoi, PAS via secondsLeft dans les
       // deps : le compte à rebours re-rend chaque seconde et casserait le débounce.
       if (auction.roundDeadline && new Date(auction.roundDeadline).getTime() <= Date.now()) return;
+      draftAbortRef.current?.abort();
+      const controller = new AbortController();
+      draftAbortRef.current = controller;
       try {
         const res = await fetch("/api/auction", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             leagueId: leagueDbId,
             draft: true,
@@ -775,6 +783,8 @@ export default function EncheresPage() {
     if (draftBids.length === 0 && wonPlayers.length < 13) return;
     setSubmitting(true);
     setMessage(null);
+    // Un autosave encore en vol ne doit pas courser la soumission.
+    draftAbortRef.current?.abort();
     try {
       const res = await fetch("/api/auction", {
         method: "POST",
