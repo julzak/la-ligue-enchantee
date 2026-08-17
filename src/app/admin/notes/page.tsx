@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, memo } from "react";
 import { Save, Send, Loader2, ChevronDown, Image as ImageIcon, CalendarClock } from "lucide-react";
+import { canonicalClubKey, getClubShortNameByName } from "@/lib/assets";
 
 interface PlayerScore {
   playerId: number;
@@ -42,30 +43,12 @@ const CLUB_LOGOS: Record<number, string> = {
   214: "/clubs/rennes.png", 230: "/clubs/strasbourg.png", 199: "/clubs/toulouse.png",
 };
 
-// Match TheSportsDB team name to DB club name
-function teamToClubName(team: string): string[] {
-  const map: Record<string, string[]> = {
-    "Marseille": ["MARSEILLE (OM)"], "Olympique Marseille": ["MARSEILLE (OM)"],
-    "Lyon": ["LYON (OL)"], "Olympique Lyonnais": ["LYON (OL)"],
-    "Monaco": ["MONACO (ASM)"],
-    "Lille": ["LILLE"], "LOSC Lille": ["LILLE"],
-    "Rennes": ["RENNES"],
-    "Le Havre": ["LE HAVRE"],
-    "Metz": ["METZ"],
-    "Toulouse": ["TOULOUSE"],
-    "Strasbourg": ["STRASBOURG"],
-    "Paris FC": ["PARIS FC"], "Paris": ["PARIS FC"],
-    "Lens": ["LENS"],
-    "Lorient": ["LORIENT"],
-    "Brest": ["BREST"],
-    "Angers": ["ANGERS"], "Angers SCO": ["ANGERS"],
-    "Nice": ["NICE"],
-    "Auxerre": ["AUXERRE"],
-    "Nantes": ["NANTES"],
-    "Paris SG": ["PARIS-SG (PSG)"], "Paris Saint Germain": ["PARIS-SG (PSG)"],
-  };
-  return map[team] ?? [team];
-}
+// L'appariement nom de match (MATCH_SCHEDULE) <-> nom de club (CLUB) passe par
+// la clé canonique d'assets.ts, robuste aux variantes de fournisseur (legacy
+// "MARSEILLE (OM)", TheSportsDB "Marseille", football-data "Olympique de
+// Marseille"). AVANT le 2026-08-17 : table locale figée sur les libellés
+// TheSportsDB, qui rattachait les joueurs aux mauvais noms après le passage du
+// calendrier à football-data (Angers et Paris FC sans joueurs sous leur match).
 
 function getPositionGoalBonus(position: string): number {
   const lower = position.toLowerCase();
@@ -367,12 +350,12 @@ export default function AdminNotesPage() {
 
   // Group players by match
   function getMatchPlayers(match: MatchInfo): { home: PlayerScore[]; away: PlayerScore[] } {
-    const homeClubs = teamToClubName(match.home_team);
-    const awayClubs = teamToClubName(match.away_team);
+    const homeKey = canonicalClubKey(match.home_team);
+    const awayKey = canonicalClubKey(match.away_team);
 
-    function filterPlayers(clubNames: string[]) {
+    function filterPlayers(clubKey: string) {
       return scores.filter((s) => {
-        if (!clubNames.includes(s.clubName)) return false;
+        if (canonicalClubKey(s.clubName) !== clubKey) return false;
         if (filter && !`${s.fname} ${s.lname}`.toLowerCase().includes(filter.toLowerCase())) return false;
         if (showOnlyFilled && s.points === null && s.goals === 0 && s.passes === 0) return false;
         if (showOnlyTaken && !s.isTaken && s.points === null && s.goals === 0) return false;
@@ -381,8 +364,8 @@ export default function AdminNotesPage() {
     }
 
     return {
-      home: filterPlayers(homeClubs),
-      away: filterPlayers(awayClubs),
+      home: filterPlayers(homeKey),
+      away: filterPlayers(awayKey),
     };
   }
 
@@ -520,9 +503,9 @@ export default function AdminNotesPage() {
                 <div key={`${match.home_team}-${match.away_team}`} className="bg-surface rounded-lg border border-white/[0.07]">
                   {/* Match header */}
                   <div className="flex items-center justify-between px-4 py-2 bg-surface-2 border-b border-white/[0.07]">
-                    <span className="text-sm font-medium text-white">{match.home_team.split(" ").pop()}</span>
+                    <span className="text-sm font-medium text-white">{getClubShortNameByName(match.home_team, match.home_team)}</span>
                     <span className="text-sm font-serif font-bold text-gold tabular-nums">{score}</span>
-                    <span className="text-sm font-medium text-white">{match.away_team.split(" ").pop()}</span>
+                    <span className="text-sm font-medium text-white">{getClubShortNameByName(match.away_team, match.away_team)}</span>
                     {match.infographic_url && (
                       <a
                         href={match.infographic_url}
