@@ -1,9 +1,15 @@
-import { cache } from "react";
+import * as React from "react";
 import { prisma } from "./prisma";
 import { LEGACY_SEASON_KEY, seasonKeyFromLabel } from "./season-key";
 
-// ⚠️ Ce module utilise react.cache : ne pas l'importer depuis un script CLI
-// (même contrainte que db.ts). Les scripts utilisent prisma + season-key.ts.
+// react.cache n'existe que dans le runtime React de Next (RSC). Hors RSC
+// (scripts CLI via tsx), on retombe sur l'identité : pas de mémoïsation par
+// requête, mais le module devient importable partout. Avant ce repli
+// (2026-08-17), tout import transitif de season.ts depuis un script CLI
+// plantait en "cache is not a function" (ex : auction-validation.ts, dont les
+// scripts d'administration ont besoin pour partager la validation des mises).
+const cache: <T extends (...args: never[]) => unknown>(fn: T) => T =
+  (React as { cache?: typeof React.cache }).cache ?? ((fn) => fn);
 
 // Saison courante (Season.isCurrent). Null = aucune saison lancée sur la
 // plateforme : tout le runtime retombe sur le comportement legacy
