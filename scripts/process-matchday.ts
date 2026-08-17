@@ -18,6 +18,7 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import { getMatchday } from "./lib/sportsdb";
+import { getClubUrlFrags } from "../src/lib/club-scrape-names";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
@@ -121,8 +122,8 @@ async function findArticleUrls(
     const label = `${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam}`;
     if (matchToUrl.has(label)) continue;
 
-    const homeFrags = [match.homeTeam.split(" ").pop()!.toLowerCase()];
-    const awayFrags = [match.awayTeam.split(" ").pop()!.toLowerCase()];
+    const homeFrags = getClubUrlFrags(match.homeTeam);
+    const awayFrags = getClubUrlFrags(match.awayTeam);
 
     const found = allLinks.find(l =>
       homeFrags.some(h => l.href.toLowerCase().includes(h)) ||

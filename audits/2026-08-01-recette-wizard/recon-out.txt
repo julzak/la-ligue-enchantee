@@ -1,0 +1,1517 @@
+URL après login: http://localhost:3100/login
+SHOT 00-recon-apres-login.png
+=== NOUVELLE-SAISON TEXT ===
+← Retour au site
+Administration
+Notes
+Jokers
+Équipes
+Coupe
+
+FOIRE À LA SAUCISSE
+
+Mercato d'été
+Mercato d'hiver
+Joueurs
+Mouvements
+Paiements
+Admins
+Nouvelle saison
+Configuration
+
+GUIDES & AIDE
+
+Kick-off saison
+Guide admin
+Aide Mercato
+Démarrer une nouvelle saison
+
+Crée la saison, importe clubs et joueurs, puis configure les divisions.
+
+Saisons existantes
+TEST-SETUP-2027
+SETUP
+3 ligues · 2 clubs · 5 joueurs
+Reprendre cette saison
+Ouvrir les enchères
+Synchroniser le calendrier
+Clôturer la saison TEST-SETUP-2027
+PRÉPARATION :
+Renommer
+Réinitialiser
+Supprimer
+TEST-CLOSED-2025
+CLOSED
+2 ligues · 0 clubs · 0 joueurs
+Saison TEST-CLOSED-2025 clôturée
+2026-2027
+AUCTION
+● courante
+1 ligues · 6 clubs · 90 joueurs
+Revenir en préparation
+Démarrer la saison
+Synchroniser le calendrier
+Clôturer la saison 2026-2027
+Effectifs & photos — saison 2026-2027
+
+Photos : après les enchères, équipes constituées (phase 6bis du guide). Recrues : pendant le mercato (phase 8). Clés API dans Admin → Configuration.
+
+Récupérer les photos des équipes
+Tous les joueurs (recette)
+Rafraîchir l'effectif d'un club (recrues)...
+Demo Athletic
+Fictif Paris
+Mock United
+Recette FC
+Sandbox City
+Test Olympique
+Rafraîchir
+Ajoute uniquement les nouveaux joueurs, ne touche à rien d'existant.
+Créer une nouvelle saison
+1
+Création
+→
+2
+Clubs & joueurs
+→
+3
+Ligues
+→
+4
+Participants
+→
+5
+Enchères ouvertes
+
+Inscris les participants dans chaque ligue de la saison TEST-SETUP-2027. Les ligues sont par affinité : pars des participants de la saison précédente puis ajuste.
+
+Reprendre les participants de TEST-CLOSED-2025
+Actualiser la liste des comptes
+
+Un participant absent de la liste n'a pas encore de compte : crée-le dans Admin → Utilisateurs (mot de passe initial "ligue"), puis actualise ici.
+
+TEST Ligue A
+1 participants
+Joueur1
+✕
++ Ajouter un participant...
+Açaõ (alexisauzeau@hotmail.com)
+Adrien (arivaton@offratel.nc)
+Aelle (zenigataligueenchantee@gmail.com)
+AJamaisLesPremiers (lle@gmail.com)
+Alban (alwatre@yahoo.fr)
+Amar (amar.nouri@orange.fr)
+Ampoulito (Jack_mic_mac@hotmail.fr )
+Arnoldo (arn.bourdon@gmail.com)
+Arnolg (arnaudpierrard@laposte.net)
+Arsene W (deneuxmickael@free.fr)
+Asudax (cyril.gisbert@gmail.com)
+Aulasinho (Aulasinho)
+Aurélien (aurelien.leguay@gmail.com)
+Awax (alexandre.plard@yahoo.com )
+B0n0m (sidris09@gmail.com)
+Baglaoui (alexandre.babic@gmail.com)
+Baky (juliensimon21@hotmail.com)
+Batigol75 (n.dumarcet@gmail.com)
+Batistuta (lle@gmail.com)
+Baud (baudouin.delaporte@ingrealestate.com)
+Bella (obellavoine@gmail.com)
+Ben (benoitduchayla@gmail.com)
+Ben Zak (jonbenzak@hotmail.com)
+Benhijk (benoit.haiblet@yahoo.fr)
+Benzak (jonbenzak@hotmail.com)
+Bernard Lada (alexandre.boublil@edhec.com)
+Bernie (b.raffegeau@dbmail.com)
+Bernie78 (b.raffegeau@dbmail.com)
+Bielsa98 (cyril.picard97@gmail.com)
+Big Nick (BigNick@gmail.com)
+Bilessien (saidbillel@gmail.com)
+Blek le Roc (denis.berthet@hotmail.fr)
+Bobijoflanagan (laurentchambrial@gmail.com )
+Boca (lle@gmail.com)
+Bodymax (arf)
+bolivia (stan.mazaleyrat@gmail.com)
+Bruce Ho (nicolas.brousseau@amundi.com )
+Busquets05 (ibnlkhayat,otman@gmail,com)
+Byrensrandup (lle@gmail.com)
+Cabu (laurent.cabu@gmail.com)
+Canard Pouce (Canard Pouce)
+Candela (lle@gmail.com)
+Cap Vert (thomas.babic7@gmail.com)
+Capra (soniabarral@yahoo.fr)
+Captain Farakas (gfarkas@wildbunch.eu)
+Carlos (lle)
+Chancari (Chancari@hotmail.com)
+Charles Al-khelaifi (frederic-charles.bois@socgen.com)
+Chauve Kipeu (lle)
+Cheud (bchedeau@wildbunch.eu)
+Chronos (mathieuducrocq@hotmail.com)
+Claquos (jeanfrancoisfromage@gmail.com)
+Claude Poêle (lle@gmail.com)
+Coco (nbiancofr@yahoo.fr )
+Cocomax (lle)
+Commandant de Bord (bacquetpf@hotmail.com)
+Corsica Nazional (lle@gmail.com)
+Cristiano Malongo (hmalongo7@gmail.com)
+Cyrille (Cyrille.Gerard@fagron.fr)
+Cyrille / Yoshi (cyrillegerard@hotmail.com)
+Damoki Sakai (damien.tixier@petits-fils.com)
+Dave (vessaud.david@orange.fr)
+David A (datjack@backupfilms.com)
+David Ginolo (laurent@fullhouse-films.com)
+Denis (denisletessier@yahoo.com)
+Denis C (arf)
+Diamantinho (ferreira-ludovic@hotmail.fr)
+Dimitri S (dimitri.stephanides@gmail.com)
+Don Diego (jean.bebing@wanadoo.fr)
+Douggy (arnaud_million@hotmail.com)
+Duc (Duc)
+Duch (educhayla@gmail.com)
+El Rabbino (vincent.schrapff@gmail.com)
+ElioMM (eliomuzy@gmail.com)
+Emil (emilnator@neuf.fr)
+Estacos (Estacos)
+Fafe (.)
+FC Eden (francoisguittard07@gmail.com)
+FC Gwada (martialguermonprez@gmail.com)
+FC Puteaux (olivier_monnier@hotmail.com)
+FC Terrich (FC Terrich)
+Fidolinho (arf)
+Flavien (docflav@hotmail.com)
+Flavor Flav (lle)
+Flobb (florian.buguet@gmail.com)
+Fox (area@lagoon.nc)
+Franchess (fmuzy@publicat.fr)
+Francis Llacer (tpinson@actualys.com)
+Frankus (fmaratray@technip.com)
+Fred S (fred.s.06@hotmail.fr)
+Frederic (frederic.lavaud@kalexia.net)
+Gabriel M (gmoussin@angie.fr)
+Gael (gael.caselli@sportfive.com)
+GeLo 59 (ligueencahntee@gmail.com)
+GeLo 59 (ligueencahntee@gmail.com)
+GF38 (jean-christophe.miege@mailhec.com )
+Gigi Akoumator (Gigi Akoumator)
+Girondinho (ndinho@sfr.fr)
+Gonz (gonzagdemarquois@gmail.com)
+Gparp (gregoireparpoil@hotmail.fr)
+Gregoose75 (saey.gregory@gmail.com)
+Gudjohnsen (.)
+Guillaume Cach (guillaumecach@hotmail.com)
+Habib ( )
+Happy the man (lle@gmail.com)
+Hippolyte (hippomesnard@gmail.com)
+HL Crew (mml45@live)
+Humus (l.delamorinerie@gmail.com)
+IssaNissa (bernard.ruyssen@axa.com)
+J-Marc (jmc@magicmaman.com)
+Japin (arf)
+Jarno (jeremysilber@gmail.com)
+Java Crisp (ligue@hotmail.com)
+Javier (xavier.deruffray@gmail.com)
+Jean Marie (jeanmarie.debeaumarche@wanadoo.fr)
+Jean Philippe Truand (thierrybrot@hotmail.com)
+Jean-Luc Sassusgrave (psimao@wildbunch.eu)
+Jim trampoline Bilbao (julien_colombani@yahoo.fr)
+JMA (jmantuszewicz@equancy.com)
+Jo la Skeez (arf)
+Joh (arf)
+Johnjohn (jonbenzak@hotmail.com)
+Johpag (johan.pages@gmail.com)
+Joueur4 (joueur4@recette.test)
+Judas (hocine92003@hotmail.fr)
+Julien B (Juby) (juju-italia06@hotmail.fr )
+Julien H (jhaddad01@aol.com)
+JulienASM (Julien_bonnin@hotmail.com)
+Jun (jun_deuf@hotmail.com)
+Jun (jun_deuf@hotmail.com)
+Jun/Kazu (jun_deuf@hotmail.com)
+Kazu (patviolet@voila.fr)
+Kazu (patviolet@voila.fr)
+Kazu Miura (lle)
+Keyser (frederic_leblond@hotmail.com)
+Kidicarus (simonnicolas@hotmail.com)
+Kris (chris.leviathan@laposte.net)
+Kuerten26 (titiswed@hotmail.com)
+L Alvariste (rousset.guillaume@gmail.com)
+La Brevinade (ligueencahntee@gmail.com)
+La Fripouille (jeanfrancoisfromage@gmail.com)
+La Wish (benjamin.thomas56@gmail.com)
+Lagolese (denise.bebing@wanadoo.fr)
+Laplante (lateplan@yahoo.fr)
+Laurent C (laurentchambrial@gmail.com)
+Laurent Ch (laurentchambrial@gmail.com)
+Le Barbier de Séville (pierre_bebing@hotmail.com)
+Le Breton (gregory.derrien.11@gmail.com)
+Le Général (lle@gmail.com)
+Leib (lle)
+LeMars (mars_contre_attacks@hotmail.com)
+Lorenzo (laurent@fullhouse-films.com)
+Lorenzo / Tom (laurent@fullhouse-films.com)
+LST (ligue)
+Lucatastrophe (lucas.lachegar@gmail.com)
+LuckyChris (luckychris2@hotmail.com)
+Luigi (lgbeauchef@gmail.com)
+MadMax (lle)
+Magic Chris (lle@gmail.com)
+MagicPanther (biberbeb@yahoo.fr)
+Mamex (a.reybetdegat@gmail.com)
+Marco Reus (laurentchambrial@gmail.com )
+Mars (mars-contre-attacks@hotmail.com)
+Martial (martialfern@netcourrier.com)
+Martialito (martial.fernandez@yahoo.fr)
+Massi (lle@gmail.com)
+Mathieu F (mathieu.ficot@sportfive.com)
+Mathieu L. (m.lartot@france2.fr)
+Médée (edouardducrocq@hotmail.fr)
+Mentor (pcalmette@hotmail.fr)
+Meve (arthurdeneuville@hotmail.fr)
+Mexma (a.reybetdegat@gmail.com)
+Michele69 (lle@gmail.com)
+Mil (nicolasmillion@voila.fr)
+Mister Georges W (pierre_bebing@hotmail.com)
+Mkpilou (lle)
+Mocambo (arf)
+Moktar (lle@gmail.com)
+Monkey Kong (raphael-speich.esc@em-lyon.com)
+Moutarde Boy (thomas.babic7@gmail.com)
+Muscadet (lle@gmail.com)
+Naudar (arnaudvergonjeanne@yahoo.fr)
+Nénéfin (mficot@gmail.com)
+Nic le Doc (jubinnicolas@gmail.com)
+Nico B (ligue@gmail.com)
+Nico C (nicolaschetrit@hotmail.com)
+Nicolas C (famillechambrial@hotmail.com)
+Nobru (ligueencahntee@gmail.com)
+Nono Masta (ligueencahntee@gmail.com)
+NonoV (arnaudvergonjeanne@yahoo.fr)
+Nums (chaussmanu@yahoo.fr)
+Okocha76 (jeremie.howlett@free.fr)
+Olivier (olivier@gmail.com)
+Olivier Belavoine (Olivier@lle.fr)
+Olivier L (olivier_lesollier@hotmail.com)
+Pahibon (pahibon@hotmail.fr)
+Pancev (david.djuric@paris.fr )
+Panurge (aurelien.chassard@gmail.com)
+Panzer Dom (dominic.krist@gmail.com)
+Pat (patdelay@quintacommunications.com)
+Pef (pef@maharani.fr)
+Pertoldinho (Pertoldinho)
+Peupeu (ppenel@yahoo.fr)
+Pierre O (pierre.oby@bbraun.com)
+Pierrot la bourre (Pierre.bourlier@avivainvestors.com)
+PifSG (pierrefrancois.marty@yahoo.fr)
+Pili (pilikun1979@gmail.com)
+Pili / Joh (pilikun1979@gmail.com)
+Pinson II (lle)
+Pixy (michelstojkovic@yahoo.fr)
+PompeAVelo (Eeychenne@hotmail.fr)
+Pompix (ligue@gmail.com)
+Pouet pouet (subirada@gmail.com )
+PoussMouss (gmoussin@gmail.com)
+Qifran (franck@valadier.fr)
+Ranty (lle)
+Raymond la Science (f.sacouman@gmail.com)
+RecetteAdmin (admin@recette.test)
+Recrutimmo (Ligue@gmail.com)
+Regis (regisrain@gmail.com)
+Reivax (xavier.deheul@laposte.net)
+Remy / Raf (remylacombe@gmail.com)
+Repi (.)
+Rid (ridhnat@gmail.com)
+RobertaFlamengo (lle@gmail.com)
+RogerS (denise.bebing@wanadoo.fr)
+Rom Aulas (romain.petit@edhec.com)
+RR (rachidrasmouki@hotmail.com)
+Sam/Tom (ligue@gmail.com)
+Sam49 (samuel.loiseau@cegetel.net)
+Sara Baudens (laurent@fullhouse-films.com)
+SebM (thefeuille@yahoo.fr)
+Sergent Garcia (jean.bebing@wanadoo.fr)
+Sergio Schramos (Sergio Schramos)
+Shima / Jay (shima.bernard@gmail.com)
+Shoreditch FC (gaetanengland@hotmail.com)
+Simowydad (Simowydad)
+Sir Nitrus (cocopistache@hotmail.fr)
+Skaybi (b_aouni@hotmail.com )
+Skippy (skippyjoss@gmail.com)
+Snake (blancharderwan@hotmail.com)
+Snake (blancharderwan@hotmail.com)
+Solo (Capra) (soniabarral@yahoo.fr)
+Stivostine (phbesson76@gmail.com)
+Tang (tanguy_janiere@hotmail.com)
+TarzanFC (jonbenzak@hotmail.com)
+Tatouf Mestouf (tompinguet@hotmail.com)
+Teddy (minoenyl@hotmail.fr)
+Thib (educhayla@gmail.com)
+Thomas P (thomas_pinson@dell.com)
+Thomas V (thomas_2554@hotmail.com)
+Titoch (malodekertanguy@gmail.com)
+Tom (thobernard@yahoo.fr)
+Tom / Lorenzo (thobernard@yahoo.fr)
+Tom D (t.delasalle@vivarte.fr)
+Tom24 (thomas.babic7@gmail.com)
+Tomahawk (thomas.p.dubois@gmail.com)
+Totor (victor.debains@gmail.com)
+Toubio (toubionissa@hotmail.com)
+TP2K (tpinson@hubside.com)
+Trambi (tramb2000@hotmail.com)
+Tritri (tristan.watremez@gmail.com)
+Troy (lle@gmail.com)
+Troyan (trojan_paillot@discovery.com)
+Twingo (renaud.bargellini@yahoo.fr)
+User6663 (florentplddj+ligueenchant841@gmail.com)
+USO45 (chaussmanu@yahoo.fr)
+Vestea (steeverobin@hotmail.com)
+Vince B (vbourdon@yahoo.fr)
+Vince77 (ligue)
+Vincent L (vincent.levert@saint-gobain.com)
+Voyou (thomas.voyer@prevoir.com)
+Wicket (thomas.pagelecuyer@gmail.com)
+Wino (antoinechines@yahoo.fr)
+Winogradsky (antoinechines@yahoo.fr)
+Xelon (tyrexander@gmx.com)
+Yaya (.)
+Yoshi (.)
+Yoshi / Cyrille (amesnard@me.com)
+Youss (ydjezzez@yahoo.com)
+Youssouf Foufouna (lle)
+Yoyo (lio.boulanger@gmail.com)
+Zenigata (lle)
+Zizou89 (paul.doreau@gmail.com)
+Zorba (dimitri.stephanides@gmail.com)
+TEST Ligue B
+1 participants
+Joueur2
+✕
++ Ajouter un participant...
+Açaõ (alexisauzeau@hotmail.com)
+Adrien (arivaton@offratel.nc)
+Aelle (zenigataligueenchantee@gmail.com)
+AJamaisLesPremiers (lle@gmail.com)
+Alban (alwatre@yahoo.fr)
+Amar (amar.nouri@orange.fr)
+Ampoulito (Jack_mic_mac@hotmail.fr )
+Arnoldo (arn.bourdon@gmail.com)
+Arnolg (arnaudpierrard@laposte.net)
+Arsene W (deneuxmickael@free.fr)
+Asudax (cyril.gisbert@gmail.com)
+Aulasinho (Aulasinho)
+Aurélien (aurelien.leguay@gmail.com)
+Awax (alexandre.plard@yahoo.com )
+B0n0m (sidris09@gmail.com)
+Baglaoui (alexandre.babic@gmail.com)
+Baky (juliensimon21@hotmail.com)
+Batigol75 (n.dumarcet@gmail.com)
+Batistuta (lle@gmail.com)
+Baud (baudouin.delaporte@ingrealestate.com)
+Bella (obellavoine@gmail.com)
+Ben (benoitduchayla@gmail.com)
+Ben Zak (jonbenzak@hotmail.com)
+Benhijk (benoit.haiblet@yahoo.fr)
+Benzak (jonbenzak@hotmail.com)
+Bernard Lada (alexandre.boublil@edhec.com)
+Bernie (b.raffegeau@dbmail.com)
+Bernie78 (b.raffegeau@dbmail.com)
+Bielsa98 (cyril.picard97@gmail.com)
+Big Nick (BigNick@gmail.com)
+Bilessien (saidbillel@gmail.com)
+Blek le Roc (denis.berthet@hotmail.fr)
+Bobijoflanagan (laurentchambrial@gmail.com )
+Boca (lle@gmail.com)
+Bodymax (arf)
+bolivia (stan.mazaleyrat@gmail.com)
+Bruce Ho (nicolas.brousseau@amundi.com )
+Busquets05 (ibnlkhayat,otman@gmail,com)
+Byrensrandup (lle@gmail.com)
+Cabu (laurent.cabu@gmail.com)
+Canard Pouce (Canard Pouce)
+Candela (lle@gmail.com)
+Cap Vert (thomas.babic7@gmail.com)
+Capra (soniabarral@yahoo.fr)
+Captain Farakas (gfarkas@wildbunch.eu)
+Carlos (lle)
+Chancari (Chancari@hotmail.com)
+Charles Al-khelaifi (frederic-charles.bois@socgen.com)
+Chauve Kipeu (lle)
+Cheud (bchedeau@wildbunch.eu)
+Chronos (mathieuducrocq@hotmail.com)
+Claquos (jeanfrancoisfromage@gmail.com)
+Claude Poêle (lle@gmail.com)
+Coco (nbiancofr@yahoo.fr )
+Cocomax (lle)
+Commandant de Bord (bacquetpf@hotmail.com)
+Corsica Nazional (lle@gmail.com)
+Cristiano Malongo (hmalongo7@gmail.com)
+Cyrille (Cyrille.Gerard@fagron.fr)
+Cyrille / Yoshi (cyrillegerard@hotmail.com)
+Damoki Sakai (damien.tixier@petits-fils.com)
+Dave (vessaud.david@orange.fr)
+David A (datjack@backupfilms.com)
+David Ginolo (laurent@fullhouse-films.com)
+Denis (denisletessier@yahoo.com)
+Denis C (arf)
+Diamantinho (ferreira-ludovic@hotmail.fr)
+Dimitri S (dimitri.stephanides@gmail.com)
+Don Diego (jean.bebing@wanadoo.fr)
+Douggy (arnaud_million@hotmail.com)
+Duc (Duc)
+Duch (educhayla@gmail.com)
+El Rabbino (vincent.schrapff@gmail.com)
+ElioMM (eliomuzy@gmail.com)
+Emil (emilnator@neuf.fr)
+Estacos (Estacos)
+Fafe (.)
+FC Eden (francoisguittard07@gmail.com)
+FC Gwada (martialguermonprez@gmail.com)
+FC Puteaux (olivier_monnier@hotmail.com)
+FC Terrich (FC Terrich)
+Fidolinho (arf)
+Flavien (docflav@hotmail.com)
+Flavor Flav (lle)
+Flobb (florian.buguet@gmail.com)
+Fox (area@lagoon.nc)
+Franchess (fmuzy@publicat.fr)
+Francis Llacer (tpinson@actualys.com)
+Frankus (fmaratray@technip.com)
+Fred S (fred.s.06@hotmail.fr)
+Frederic (frederic.lavaud@kalexia.net)
+Gabriel M (gmoussin@angie.fr)
+Gael (gael.caselli@sportfive.com)
+GeLo 59 (ligueencahntee@gmail.com)
+GeLo 59 (ligueencahntee@gmail.com)
+GF38 (jean-christophe.miege@mailhec.com )
+Gigi Akoumator (Gigi Akoumator)
+Girondinho (ndinho@sfr.fr)
+Gonz (gonzagdemarquois@gmail.com)
+Gparp (gregoireparpoil@hotmail.fr)
+Gregoose75 (saey.gregory@gmail.com)
+Gudjohnsen (.)
+Guillaume Cach (guillaumecach@hotmail.com)
+Habib ( )
+Happy the man (lle@gmail.com)
+Hippolyte (hippomesnard@gmail.com)
+HL Crew (mml45@live)
+Humus (l.delamorinerie@gmail.com)
+IssaNissa (bernard.ruyssen@axa.com)
+J-Marc (jmc@magicmaman.com)
+Japin (arf)
+Jarno (jeremysilber@gmail.com)
+Java Crisp (ligue@hotmail.com)
+Javier (xavier.deruffray@gmail.com)
+Jean Marie (jeanmarie.debeaumarche@wanadoo.fr)
+Jean Philippe Truand (thierrybrot@hotmail.com)
+Jean-Luc Sassusgrave (psimao@wildbunch.eu)
+Jim trampoline Bilbao (julien_colombani@yahoo.fr)
+JMA (jmantuszewicz@equancy.com)
+Jo la Skeez (arf)
+Joh (arf)
+Johnjohn (jonbenzak@hotmail.com)
+Johpag (johan.pages@gmail.com)
+Joueur4 (joueur4@recette.test)
+Judas (hocine92003@hotmail.fr)
+Julien B (Juby) (juju-italia06@hotmail.fr )
+Julien H (jhaddad01@aol.com)
+JulienASM (Julien_bonnin@hotmail.com)
+Jun (jun_deuf@hotmail.com)
+Jun (jun_deuf@hotmail.com)
+Jun/Kazu (jun_deuf@hotmail.com)
+Kazu (patviolet@voila.fr)
+Kazu (patviolet@voila.fr)
+Kazu Miura (lle)
+Keyser (frederic_leblond@hotmail.com)
+Kidicarus (simonnicolas@hotmail.com)
+Kris (chris.leviathan@laposte.net)
+Kuerten26 (titiswed@hotmail.com)
+L Alvariste (rousset.guillaume@gmail.com)
+La Brevinade (ligueencahntee@gmail.com)
+La Fripouille (jeanfrancoisfromage@gmail.com)
+La Wish (benjamin.thomas56@gmail.com)
+Lagolese (denise.bebing@wanadoo.fr)
+Laplante (lateplan@yahoo.fr)
+Laurent C (laurentchambrial@gmail.com)
+Laurent Ch (laurentchambrial@gmail.com)
+Le Barbier de Séville (pierre_bebing@hotmail.com)
+Le Breton (gregory.derrien.11@gmail.com)
+Le Général (lle@gmail.com)
+Leib (lle)
+LeMars (mars_contre_attacks@hotmail.com)
+Lorenzo (laurent@fullhouse-films.com)
+Lorenzo / Tom (laurent@fullhouse-films.com)
+LST (ligue)
+Lucatastrophe (lucas.lachegar@gmail.com)
+LuckyChris (luckychris2@hotmail.com)
+Luigi (lgbeauchef@gmail.com)
+MadMax (lle)
+Magic Chris (lle@gmail.com)
+MagicPanther (biberbeb@yahoo.fr)
+Mamex (a.reybetdegat@gmail.com)
+Marco Reus (laurentchambrial@gmail.com )
+Mars (mars-contre-attacks@hotmail.com)
+Martial (martialfern@netcourrier.com)
+Martialito (martial.fernandez@yahoo.fr)
+Massi (lle@gmail.com)
+Mathieu F (mathieu.ficot@sportfive.com)
+Mathieu L. (m.lartot@france2.fr)
+Médée (edouardducrocq@hotmail.fr)
+Mentor (pcalmette@hotmail.fr)
+Meve (arthurdeneuville@hotmail.fr)
+Mexma (a.reybetdegat@gmail.com)
+Michele69 (lle@gmail.com)
+Mil (nicolasmillion@voila.fr)
+Mister Georges W (pierre_bebing@hotmail.com)
+Mkpilou (lle)
+Mocambo (arf)
+Moktar (lle@gmail.com)
+Monkey Kong (raphael-speich.esc@em-lyon.com)
+Moutarde Boy (thomas.babic7@gmail.com)
+Muscadet (lle@gmail.com)
+Naudar (arnaudvergonjeanne@yahoo.fr)
+Nénéfin (mficot@gmail.com)
+Nic le Doc (jubinnicolas@gmail.com)
+Nico B (ligue@gmail.com)
+Nico C (nicolaschetrit@hotmail.com)
+Nicolas C (famillechambrial@hotmail.com)
+Nobru (ligueencahntee@gmail.com)
+Nono Masta (ligueencahntee@gmail.com)
+NonoV (arnaudvergonjeanne@yahoo.fr)
+Nums (chaussmanu@yahoo.fr)
+Okocha76 (jeremie.howlett@free.fr)
+Olivier (olivier@gmail.com)
+Olivier Belavoine (Olivier@lle.fr)
+Olivier L (olivier_lesollier@hotmail.com)
+Pahibon (pahibon@hotmail.fr)
+Pancev (david.djuric@paris.fr )
+Panurge (aurelien.chassard@gmail.com)
+Panzer Dom (dominic.krist@gmail.com)
+Pat (patdelay@quintacommunications.com)
+Pef (pef@maharani.fr)
+Pertoldinho (Pertoldinho)
+Peupeu (ppenel@yahoo.fr)
+Pierre O (pierre.oby@bbraun.com)
+Pierrot la bourre (Pierre.bourlier@avivainvestors.com)
+PifSG (pierrefrancois.marty@yahoo.fr)
+Pili (pilikun1979@gmail.com)
+Pili / Joh (pilikun1979@gmail.com)
+Pinson II (lle)
+Pixy (michelstojkovic@yahoo.fr)
+PompeAVelo (Eeychenne@hotmail.fr)
+Pompix (ligue@gmail.com)
+Pouet pouet (subirada@gmail.com )
+PoussMouss (gmoussin@gmail.com)
+Qifran (franck@valadier.fr)
+Ranty (lle)
+Raymond la Science (f.sacouman@gmail.com)
+RecetteAdmin (admin@recette.test)
+Recrutimmo (Ligue@gmail.com)
+Regis (regisrain@gmail.com)
+Reivax (xavier.deheul@laposte.net)
+Remy / Raf (remylacombe@gmail.com)
+Repi (.)
+Rid (ridhnat@gmail.com)
+RobertaFlamengo (lle@gmail.com)
+RogerS (denise.bebing@wanadoo.fr)
+Rom Aulas (romain.petit@edhec.com)
+RR (rachidrasmouki@hotmail.com)
+Sam/Tom (ligue@gmail.com)
+Sam49 (samuel.loiseau@cegetel.net)
+Sara Baudens (laurent@fullhouse-films.com)
+SebM (thefeuille@yahoo.fr)
+Sergent Garcia (jean.bebing@wanadoo.fr)
+Sergio Schramos (Sergio Schramos)
+Shima / Jay (shima.bernard@gmail.com)
+Shoreditch FC (gaetanengland@hotmail.com)
+Simowydad (Simowydad)
+Sir Nitrus (cocopistache@hotmail.fr)
+Skaybi (b_aouni@hotmail.com )
+Skippy (skippyjoss@gmail.com)
+Snake (blancharderwan@hotmail.com)
+Snake (blancharderwan@hotmail.com)
+Solo (Capra) (soniabarral@yahoo.fr)
+Stivostine (phbesson76@gmail.com)
+Tang (tanguy_janiere@hotmail.com)
+TarzanFC (jonbenzak@hotmail.com)
+Tatouf Mestouf (tompinguet@hotmail.com)
+Teddy (minoenyl@hotmail.fr)
+Thib (educhayla@gmail.com)
+Thomas P (thomas_pinson@dell.com)
+Thomas V (thomas_2554@hotmail.com)
+Titoch (malodekertanguy@gmail.com)
+Tom (thobernard@yahoo.fr)
+Tom / Lorenzo (thobernard@yahoo.fr)
+Tom D (t.delasalle@vivarte.fr)
+Tom24 (thomas.babic7@gmail.com)
+Tomahawk (thomas.p.dubois@gmail.com)
+Totor (victor.debains@gmail.com)
+Toubio (toubionissa@hotmail.com)
+TP2K (tpinson@hubside.com)
+Trambi (tramb2000@hotmail.com)
+Tritri (tristan.watremez@gmail.com)
+Troy (lle@gmail.com)
+Troyan (trojan_paillot@discovery.com)
+Twingo (renaud.bargellini@yahoo.fr)
+User6663 (florentplddj+ligueenchant841@gmail.com)
+USO45 (chaussmanu@yahoo.fr)
+Vestea (steeverobin@hotmail.com)
+Vince B (vbourdon@yahoo.fr)
+Vince77 (ligue)
+Vincent L (vincent.levert@saint-gobain.com)
+Voyou (thomas.voyer@prevoir.com)
+Wicket (thomas.pagelecuyer@gmail.com)
+Wino (antoinechines@yahoo.fr)
+Winogradsky (antoinechines@yahoo.fr)
+Xelon (tyrexander@gmx.com)
+Yaya (.)
+Yoshi (.)
+Yoshi / Cyrille (amesnard@me.com)
+Youss (ydjezzez@yahoo.com)
+Youssouf Foufouna (lle)
+Yoyo (lio.boulanger@gmail.com)
+Zenigata (lle)
+Zizou89 (paul.doreau@gmail.com)
+Zorba (dimitri.stephanides@gmail.com)
+TEST Ligue C
+1 participants
+Joueur3
+✕
++ Ajouter un participant...
+Açaõ (alexisauzeau@hotmail.com)
+Adrien (arivaton@offratel.nc)
+Aelle (zenigataligueenchantee@gmail.com)
+AJamaisLesPremiers (lle@gmail.com)
+Alban (alwatre@yahoo.fr)
+Amar (amar.nouri@orange.fr)
+Ampoulito (Jack_mic_mac@hotmail.fr )
+Arnoldo (arn.bourdon@gmail.com)
+Arnolg (arnaudpierrard@laposte.net)
+Arsene W (deneuxmickael@free.fr)
+Asudax (cyril.gisbert@gmail.com)
+Aulasinho (Aulasinho)
+Aurélien (aurelien.leguay@gmail.com)
+Awax (alexandre.plard@yahoo.com )
+B0n0m (sidris09@gmail.com)
+Baglaoui (alexandre.babic@gmail.com)
+Baky (juliensimon21@hotmail.com)
+Batigol75 (n.dumarcet@gmail.com)
+Batistuta (lle@gmail.com)
+Baud (baudouin.delaporte@ingrealestate.com)
+Bella (obellavoine@gmail.com)
+Ben (benoitduchayla@gmail.com)
+Ben Zak (jonbenzak@hotmail.com)
+Benhijk (benoit.haiblet@yahoo.fr)
+Benzak (jonbenzak@hotmail.com)
+Bernard Lada (alexandre.boublil@edhec.com)
+Bernie (b.raffegeau@dbmail.com)
+Bernie78 (b.raffegeau@dbmail.com)
+Bielsa98 (cyril.picard97@gmail.com)
+Big Nick (BigNick@gmail.com)
+Bilessien (saidbillel@gmail.com)
+Blek le Roc (denis.berthet@hotmail.fr)
+Bobijoflanagan (laurentchambrial@gmail.com )
+Boca (lle@gmail.com)
+Bodymax (arf)
+bolivia (stan.mazaleyrat@gmail.com)
+Bruce Ho (nicolas.brousseau@amundi.com )
+Busquets05 (ibnlkhayat,otman@gmail,com)
+Byrensrandup (lle@gmail.com)
+Cabu (laurent.cabu@gmail.com)
+Canard Pouce (Canard Pouce)
+Candela (lle@gmail.com)
+Cap Vert (thomas.babic7@gmail.com)
+Capra (soniabarral@yahoo.fr)
+Captain Farakas (gfarkas@wildbunch.eu)
+Carlos (lle)
+Chancari (Chancari@hotmail.com)
+Charles Al-khelaifi (frederic-charles.bois@socgen.com)
+Chauve Kipeu (lle)
+Cheud (bchedeau@wildbunch.eu)
+Chronos (mathieuducrocq@hotmail.com)
+Claquos (jeanfrancoisfromage@gmail.com)
+Claude Poêle (lle@gmail.com)
+Coco (nbiancofr@yahoo.fr )
+Cocomax (lle)
+Commandant de Bord (bacquetpf@hotmail.com)
+Corsica Nazional (lle@gmail.com)
+Cristiano Malongo (hmalongo7@gmail.com)
+Cyrille (Cyrille.Gerard@fagron.fr)
+Cyrille / Yoshi (cyrillegerard@hotmail.com)
+Damoki Sakai (damien.tixier@petits-fils.com)
+Dave (vessaud.david@orange.fr)
+David A (datjack@backupfilms.com)
+David Ginolo (laurent@fullhouse-films.com)
+Denis (denisletessier@yahoo.com)
+Denis C (arf)
+Diamantinho (ferreira-ludovic@hotmail.fr)
+Dimitri S (dimitri.stephanides@gmail.com)
+Don Diego (jean.bebing@wanadoo.fr)
+Douggy (arnaud_million@hotmail.com)
+Duc (Duc)
+Duch (educhayla@gmail.com)
+El Rabbino (vincent.schrapff@gmail.com)
+ElioMM (eliomuzy@gmail.com)
+Emil (emilnator@neuf.fr)
+Estacos (Estacos)
+Fafe (.)
+FC Eden (francoisguittard07@gmail.com)
+FC Gwada (martialguermonprez@gmail.com)
+FC Puteaux (olivier_monnier@hotmail.com)
+FC Terrich (FC Terrich)
+Fidolinho (arf)
+Flavien (docflav@hotmail.com)
+Flavor Flav (lle)
+Flobb (florian.buguet@gmail.com)
+Fox (area@lagoon.nc)
+Franchess (fmuzy@publicat.fr)
+Francis Llacer (tpinson@actualys.com)
+Frankus (fmaratray@technip.com)
+Fred S (fred.s.06@hotmail.fr)
+Frederic (frederic.lavaud@kalexia.net)
+Gabriel M (gmoussin@angie.fr)
+Gael (gael.caselli@sportfive.com)
+GeLo 59 (ligueencahntee@gmail.com)
+GeLo 59 (ligueencahntee@gmail.com)
+GF38 (jean-christophe.miege@mailhec.com )
+Gigi Akoumator (Gigi Akoumator)
+Girondinho (ndinho@sfr.fr)
+Gonz (gonzagdemarquois@gmail.com)
+Gparp (gregoireparpoil@hotmail.fr)
+Gregoose75 (saey.gregory@gmail.com)
+Gudjohnsen (.)
+Guillaume Cach (guillaumecach@hotmail.com)
+Habib ( )
+Happy the man (lle@gmail.com)
+Hippolyte (hippomesnard@gmail.com)
+HL Crew (mml45@live)
+Humus (l.delamorinerie@gmail.com)
+IssaNissa (bernard.ruyssen@axa.com)
+J-Marc (jmc@magicmaman.com)
+Japin (arf)
+Jarno (jeremysilber@gmail.com)
+Java Crisp (ligue@hotmail.com)
+Javier (xavier.deruffray@gmail.com)
+Jean Marie (jeanmarie.debeaumarche@wanadoo.fr)
+Jean Philippe Truand (thierrybrot@hotmail.com)
+Jean-Luc Sassusgrave (psimao@wildbunch.eu)
+Jim trampoline Bilbao (julien_colombani@yahoo.fr)
+JMA (jmantuszewicz@equancy.com)
+Jo la Skeez (arf)
+Joh (arf)
+Johnjohn (jonbenzak@hotmail.com)
+Johpag (johan.pages@gmail.com)
+Joueur4 (joueur4@recette.test)
+Judas (hocine92003@hotmail.fr)
+Julien B (Juby) (juju-italia06@hotmail.fr )
+Julien H (jhaddad01@aol.com)
+JulienASM (Julien_bonnin@hotmail.com)
+Jun (jun_deuf@hotmail.com)
+Jun (jun_deuf@hotmail.com)
+Jun/Kazu (jun_deuf@hotmail.com)
+Kazu (patviolet@voila.fr)
+Kazu (patviolet@voila.fr)
+Kazu Miura (lle)
+Keyser (frederic_leblond@hotmail.com)
+Kidicarus (simonnicolas@hotmail.com)
+Kris (chris.leviathan@laposte.net)
+Kuerten26 (titiswed@hotmail.com)
+L Alvariste (rousset.guillaume@gmail.com)
+La Brevinade (ligueencahntee@gmail.com)
+La Fripouille (jeanfrancoisfromage@gmail.com)
+La Wish (benjamin.thomas56@gmail.com)
+Lagolese (denise.bebing@wanadoo.fr)
+Laplante (lateplan@yahoo.fr)
+Laurent C (laurentchambrial@gmail.com)
+Laurent Ch (laurentchambrial@gmail.com)
+Le Barbier de Séville (pierre_bebing@hotmail.com)
+Le Breton (gregory.derrien.11@gmail.com)
+Le Général (lle@gmail.com)
+Leib (lle)
+LeMars (mars_contre_attacks@hotmail.com)
+Lorenzo (laurent@fullhouse-films.com)
+Lorenzo / Tom (laurent@fullhouse-films.com)
+LST (ligue)
+Lucatastrophe (lucas.lachegar@gmail.com)
+LuckyChris (luckychris2@hotmail.com)
+Luigi (lgbeauchef@gmail.com)
+MadMax (lle)
+Magic Chris (lle@gmail.com)
+MagicPanther (biberbeb@yahoo.fr)
+Mamex (a.reybetdegat@gmail.com)
+Marco Reus (laurentchambrial@gmail.com )
+Mars (mars-contre-attacks@hotmail.com)
+Martial (martialfern@netcourrier.com)
+Martialito (martial.fernandez@yahoo.fr)
+Massi (lle@gmail.com)
+Mathieu F (mathieu.ficot@sportfive.com)
+Mathieu L. (m.lartot@france2.fr)
+Médée (edouardducrocq@hotmail.fr)
+Mentor (pcalmette@hotmail.fr)
+Meve (arthurdeneuville@hotmail.fr)
+Mexma (a.reybetdegat@gmail.com)
+Michele69 (lle@gmail.com)
+Mil (nicolasmillion@voila.fr)
+Mister Georges W (pierre_bebing@hotmail.com)
+Mkpilou (lle)
+Mocambo (arf)
+Moktar (lle@gmail.com)
+Monkey Kong (raphael-speich.esc@em-lyon.com)
+Moutarde Boy (thomas.babic7@gmail.com)
+Muscadet (lle@gmail.com)
+Naudar (arnaudvergonjeanne@yahoo.fr)
+Nénéfin (mficot@gmail.com)
+Nic le Doc (jubinnicolas@gmail.com)
+Nico B (ligue@gmail.com)
+Nico C (nicolaschetrit@hotmail.com)
+Nicolas C (famillechambrial@hotmail.com)
+Nobru (ligueencahntee@gmail.com)
+Nono Masta (ligueencahntee@gmail.com)
+NonoV (arnaudvergonjeanne@yahoo.fr)
+Nums (chaussmanu@yahoo.fr)
+Okocha76 (jeremie.howlett@free.fr)
+Olivier (olivier@gmail.com)
+Olivier Belavoine (Olivier@lle.fr)
+Olivier L (olivier_lesollier@hotmail.com)
+Pahibon (pahibon@hotmail.fr)
+Pancev (david.djuric@paris.fr )
+Panurge (aurelien.chassard@gmail.com)
+Panzer Dom (dominic.krist@gmail.com)
+Pat (patdelay@quintacommunications.com)
+Pef (pef@maharani.fr)
+Pertoldinho (Pertoldinho)
+Peupeu (ppenel@yahoo.fr)
+Pierre O (pierre.oby@bbraun.com)
+Pierrot la bourre (Pierre.bourlier@avivainvestors.com)
+PifSG (pierrefrancois.marty@yahoo.fr)
+Pili (pilikun1979@gmail.com)
+Pili / Joh (pilikun1979@gmail.com)
+Pinson II (lle)
+Pixy (michelstojkovic@yahoo.fr)
+PompeAVelo (Eeychenne@hotmail.fr)
+Pompix (ligue@gmail.com)
+Pouet pouet (subirada@gmail.com )
+PoussMouss (gmoussin@gmail.com)
+Qifran (franck@valadier.fr)
+Ranty (lle)
+Raymond la Science (f.sacouman@gmail.com)
+RecetteAdmin (admin@recette.test)
+Recrutimmo (Ligue@gmail.com)
+Regis (regisrain@gmail.com)
+Reivax (xavier.deheul@laposte.net)
+Remy / Raf (remylacombe@gmail.com)
+Repi (.)
+Rid (ridhnat@gmail.com)
+RobertaFlamengo (lle@gmail.com)
+RogerS (denise.bebing@wanadoo.fr)
+Rom Aulas (romain.petit@edhec.com)
+RR (rachidrasmouki@hotmail.com)
+Sam/Tom (ligue@gmail.com)
+Sam49 (samuel.loiseau@cegetel.net)
+Sara Baudens (laurent@fullhouse-films.com)
+SebM (thefeuille@yahoo.fr)
+Sergent Garcia (jean.bebing@wanadoo.fr)
+Sergio Schramos (Sergio Schramos)
+Shima / Jay (shima.bernard@gmail.com)
+Shoreditch FC (gaetanengland@hotmail.com)
+Simowydad (Simowydad)
+Sir Nitrus (cocopistache@hotmail.fr)
+Skaybi (b_aouni@hotmail.com )
+Skippy (skippyjoss@gmail.com)
+Snake (blancharderwan@hotmail.com)
+Snake (blancharderwan@hotmail.com)
+Solo (Capra) (soniabarral@yahoo.fr)
+Stivostine (phbesson76@gmail.com)
+Tang (tanguy_janiere@hotmail.com)
+TarzanFC (jonbenzak@hotmail.com)
+Tatouf Mestouf (tompinguet@hotmail.com)
+Teddy (minoenyl@hotmail.fr)
+Thib (educhayla@gmail.com)
+Thomas P (thomas_pinson@dell.com)
+Thomas V (thomas_2554@hotmail.com)
+Titoch (malodekertanguy@gmail.com)
+Tom (thobernard@yahoo.fr)
+Tom / Lorenzo (thobernard@yahoo.fr)
+Tom D (t.delasalle@vivarte.fr)
+Tom24 (thomas.babic7@gmail.com)
+Tomahawk (thomas.p.dubois@gmail.com)
+Totor (victor.debains@gmail.com)
+Toubio (toubionissa@hotmail.com)
+TP2K (tpinson@hubside.com)
+Trambi (tramb2000@hotmail.com)
+Tritri (tristan.watremez@gmail.com)
+Troy (lle@gmail.com)
+Troyan (trojan_paillot@discovery.com)
+Twingo (renaud.bargellini@yahoo.fr)
+User6663 (florentplddj+ligueenchant841@gmail.com)
+USO45 (chaussmanu@yahoo.fr)
+Vestea (steeverobin@hotmail.com)
+Vince B (vbourdon@yahoo.fr)
+Vince77 (ligue)
+Vincent L (vincent.levert@saint-gobain.com)
+Voyou (thomas.voyer@prevoir.com)
+Wicket (thomas.pagelecuyer@gmail.com)
+Wino (antoinechines@yahoo.fr)
+Winogradsky (antoinechines@yahoo.fr)
+Xelon (tyrexander@gmx.com)
+Yaya (.)
+Yoshi (.)
+Yoshi / Cyrille (amesnard@me.com)
+Youss (ydjezzez@yahoo.com)
+Youssouf Foufouna (lle)
+Yoyo (lio.boulanger@gmail.com)
+Zenigata (lle)
+Zizou89 (paul.doreau@gmail.com)
+Zorba (dimitri.stephanides@gmail.com)
+← Étape 3 (ligues)
+Enregistrer les participants
+SHOT 00-recon-nouvelle-saison.png
+=== BUTTONS ===
+BTN: Reprendre cette saison
+BTN: Ouvrir les enchères
+BTN: Synchroniser le calendrier
+BTN: Clôturer la saison TEST-SETUP-2027
+BTN: Renommer
+BTN: Réinitialiser
+BTN: Supprimer
+BTN: Saison TEST-CLOSED-2025 clôturée
+BTN: Revenir en préparation
+BTN: Démarrer la saison
+BTN: Synchroniser le calendrier
+BTN: Clôturer la saison 2026-2027
+BTN: Récupérer les photos des équipes
+BTN: Tous les joueurs (recette)
+BTN: Rafraîchir
+BTN: Reprendre les participants de TEST-CLOSED-2025
+BTN: Actualiser la liste des comptes
+BTN: ✕
+BTN: ✕
+BTN: ✕
+BTN: ← Étape 3 (ligues)
+BTN: Enregistrer les participants
+=== PROMOTIONS TEXT ===
+← Retour au site
+Administration
+Notes
+Jokers
+Équipes
+Coupe
+
+FOIRE À LA SAUCISSE
+
+Mercato d'été
+Mercato d'hiver
+Joueurs
+Mouvements
+Paiements
+Admins
+Nouvelle saison
+Configuration
+
+GUIDES & AIDE
+
+Kick-off saison
+Guide admin
+Aide Mercato
+Mouvements Equipes
+
+Déplacer, renommer des participants entre les ligues
+
+Ligue 1 (Baudens League)(18)
+Blek le Roc
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Capra
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+David A
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Dimitri S
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Duch
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Jun
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Kazu
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+LST
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Martial
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Mathieu L.
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Nénéfin
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Nico B
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Nico C
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Nums
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Shima / Jay
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Thib
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Thomas P
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Zenigata
+Déplacer...
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Ligue 2(18)
+Arnoldo
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Benhijk
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Bernard Lada
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Commandant de Bord
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Denis
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Francis Llacer
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Gonz
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Kuerten26
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+La Wish
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Le Général
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Magic Chris
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Michele69
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Qifran
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Sergio Schramos
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Skippy
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Troy
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Vestea
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Xelon
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Ligue Recette Enchères(4)
+Joueur1
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Joueur2
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Joueur3
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Joueur4
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+National 1
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+National 1(18)
+AJamaisLesPremiers
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Batistuta
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Byrensrandup
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Candela
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Charles Al-khelaifi
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Claude Poêle
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Corsica Nazional
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Damoki Sakai
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+FC Terrich
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Fox
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+GeLo 59
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Moktar
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Muscadet
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Pompix
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+RobertaFlamengo
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Rom Aulas
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Troyan
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+Vince77
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+TEST Ligue A
+TEST Ligue B
+TEST Ligue C
+TEST Ligue A(1)
+Joueur1
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue B
+TEST Ligue C
+TEST Ligue B(1)
+Joueur2
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue C
+TEST Ligue C(1)
+Joueur3
+Déplacer...
+Ligue 1 (Baudens League)
+Ligue 2
+Ligue Recette Enchères
+National 1
+TEST Ligue A
+TEST Ligue B
+SHOT 00-recon-promotions.png
+--- recon ---
+CONSOLE_ERRORS: [
+ "[next-auth][error][CLIENT_FETCH_ERROR] \nhttps://next-auth.js.org/errors#client_fetch_error Failed to fetch {error: Object, url: /api/auth/session, message: Failed to fetch}"
+]
+HTTP_ERRORS: []

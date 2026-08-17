@@ -88,7 +88,9 @@ interface FdTeam {
 let fdCache: { at: number; teams: FdTeam[] } | null = null;
 const FD_CACHE_TTL_MS = 10 * 60 * 1000;
 
-async function getFootballDataToken(): Promise<string | null> {
+// Exporté : aussi utilisé par le sync calendrier (match-schedule-sync.ts) et
+// les scripts CLI de scraping (scripts/lib/sportsdb.ts).
+export async function getFootballDataToken(): Promise<string | null> {
   try {
     const fromDb = await getAppConfig(CONFIG_KEYS.FOOTBALL_DATA_TOKEN);
     if (fromDb) return fromDb;

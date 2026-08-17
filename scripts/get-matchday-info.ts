@@ -1,15 +1,22 @@
 /**
- * Get matchday info from TheSportsDB.
- * Usage: npx tsx scripts/get-matchday-info.ts 26
+ * Get matchday info from football-data.org (saison courante en base).
+ * Usage: ./node_modules/.bin/tsx scripts/get-matchday-info.ts 26
  */
 
+import dotenv from "dotenv";
+import path from "path";
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+import { prisma } from "../src/lib/prisma";
 import { getMatchday, getEditionDates } from "./lib/sportsdb";
+import { resolveSeasonKey } from "./lib/season";
 
 async function main() {
   const matchday = parseInt(process.argv[2] ?? "26");
-  console.log(`\n=== Ligue 1 — Journée ${matchday} ===\n`);
+  const seasonKey = await resolveSeasonKey(prisma);
+  console.log(`\n=== Ligue 1 — Journée ${matchday} (${seasonKey}) ===\n`);
 
-  const matches = await getMatchday(matchday);
+  const matches = await getMatchday(matchday, seasonKey);
 
   if (matches.length === 0) {
     console.log("Aucun match trouvé.");
@@ -27,7 +34,7 @@ async function main() {
     );
   }
 
-  const editions = await getEditionDates(matchday);
+  const editions = await getEditionDates(matchday, seasonKey);
   console.log(`\n=== Éditions L'Équipe à scraper ===`);
   editions.forEach((d) => console.log(`  ${d}`));
   console.log(
