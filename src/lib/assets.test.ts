@@ -88,6 +88,20 @@ describe("assets — pièges d'identification", () => {
     expect(getClubLogoUrlByName("FC Nantes")).toBe("/clubs/nantes.png");
   });
 
+  it("apparie les noms legacy à parenthèses de la table CLUB (écran notes)", () => {
+    // Les fiches CLUB des saisons passées portent ces formes : l'écran de
+    // saisie des notes rattache les joueurs aux matchs via la clé canonique.
+    const paires: [string, string][] = [
+      ["MARSEILLE (OM)", "Olympique de Marseille"],
+      ["PARIS-SG (PSG)", "Paris Saint-Germain FC"],
+      ["LYON (OL)", "Olympique Lyonnais"],
+      ["MONACO (ASM)", "AS Monaco FC"],
+    ];
+    for (const [legacy, fd] of paires) {
+      expect(canonicalClubKey(legacy), `${legacy} vs ${fd}`).toBe(canonicalClubKey(fd));
+    }
+  });
+
   it("un club inconnu ne reçoit pas le logo d'un autre", () => {
     expect(getClubLogoUrlByName("Clermont Foot 63")).toBeNull();
     expect(getClubShortNameByName("Clermont Foot 63", "CF63")).toBe("CF63");
