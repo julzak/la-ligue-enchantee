@@ -13,7 +13,9 @@ import {
   getMatchPlayerRatings,
   getCupContextForDay,
   getCupChampion,
+  getRecentJokers,
 } from "@/lib/db";
+import { RecentJokersCard } from "@/components/jokers/RecentJokersCard";
 import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "@/lib/assets";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
@@ -113,6 +115,12 @@ async function CupBadgesSection() {
       )}
     </div>
   );
+}
+
+async function RecentJokersSection() {
+  const jokers = await getRecentJokers({ limit: 5, sinceDays: 7 });
+  if (jokers.length === 0) return null;
+  return <RecentJokersCard jokers={jokers} variant="home" />;
 }
 
 async function DayStatsSection() {
@@ -487,6 +495,10 @@ export default async function HomePage() {
 
           <Suspense fallback={null}>
             <CupBadgesSection />
+          </Suspense>
+
+          <Suspense fallback={null}>
+            <RecentJokersSection />
           </Suspense>
 
           <Suspense fallback={<CardSkeleton cols={3} />}>

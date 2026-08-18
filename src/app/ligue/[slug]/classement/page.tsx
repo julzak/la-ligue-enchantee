@@ -1,5 +1,6 @@
 import { ClassementTable } from "@/components/classement/ClassementTable";
-import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments, getCupContextForDay, getCupChampion, getCurrentMatchday } from "@/lib/db";
+import { getLeagueBySlug, getLeagueStandings, getLeagueJokersRemaining, getLeaguePayments, getCupContextForDay, getCupChampion, getCurrentMatchday, getRecentJokers } from "@/lib/db";
+import { RecentJokersCard } from "@/components/jokers/RecentJokersCard";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { Crown, TrendingUp, TrendingDown, Target, Zap, CreditCard, Trophy } from "lucide-react";
 import Link from "next/link";
@@ -30,10 +31,11 @@ export default async function ClassementPage({
   const maxDay = await getCurrentMatchday();
   const selectedDay = dayParam ? Math.max(1, Math.min(maxDay, Number(dayParam))) : undefined;
 
-  const [standings, jokersMap, paymentsMap] = await Promise.all([
+  const [standings, jokersMap, paymentsMap, recentJokers] = await Promise.all([
     getLeagueStandings(league.dbId, selectedDay),
     getLeagueJokersRemaining(league.dbId),
     getLeaguePayments(league.dbId),
+    getRecentJokers({ leagueDbId: league.dbId, limit: 5 }),
   ]);
   const currentMatchday = standings.currentDay;
   const dayOptions = Array.from({ length: maxDay }, (_, i) => maxDay - i);
@@ -70,7 +72,17 @@ export default async function ClassementPage({
 
   const leader = standings.standings[0];
   if (!leader) {
-    return <div className="text-muted p-8">Aucun classement disponible</div>;
+    // Avant-saison : pas de classement, mais les jokers tombent déjà.
+    return (
+      <div className="p-8 space-y-6">
+        <p className="text-muted">Aucun classement disponible</p>
+        {recentJokers.length > 0 && (
+          <div className="max-w-sm">
+            <RecentJokersCard jokers={recentJokers} variant="league" />
+          </div>
+        )}
+      </div>
+    );
   }
 
   // Top progressions and biggest drops
@@ -295,6 +307,11 @@ export default async function ClassementPage({
             ))}
           </div>
         </div>
+
+        {/* Derniers jokers de la ligue */}
+        {recentJokers.length > 0 && (
+          <RecentJokersCard jokers={recentJokers} variant="league" />
+        )}
 
         {/* Jokers restants */}
         <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">

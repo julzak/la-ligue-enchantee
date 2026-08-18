@@ -1286,6 +1286,100 @@ export async function getLeagueJokersRemaining(leagueDbId: number): Promise<Map<
   return result;
 }
 
+// ── Recent jokers (news accueil + page ligue) ───────────
+export type RecentJoker = {
+  id: number;
+  leagueSlug: string;
+  leagueName: string;
+  userName: string;
+  playerOutName: string;
+  playerOutClub: string;
+  playerInName: string;
+  playerInClub: string;
+  effectDay: number;
+  createdAt: Date | null;
+  topicId: number | null;
+};
+
+export async function getRecentJokers(opts: {
+  leagueDbId?: number;
+  limit?: number;
+  sinceDays?: number;
+} = {}): Promise<RecentJoker[]> {
+  const { leagueDbId, limit = 5, sinceDays } = opts;
+  // Scope saison implicite : JOKER_LOG n'a pas de colonne saison, mais les
+  // ligues sont recréées à chaque saison, donc filtrer sur les league_id
+  // courants suffit.
+  const leagues = await getLeagues();
+  const scoped = leagueDbId
+    ? leagues.filter((l) => l.dbId === leagueDbId)
+    : leagues;
+  if (scoped.length === 0) return [];
+  const leagueMap = new Map(scoped.map((l) => [l.dbId, l]));
+
+  const conditions = [
+    `league_id IN (${scoped.map(() => "?").join(",")})`,
+  ];
+  const params: unknown[] = scoped.map((l) => l.dbId);
+  if (sinceDays) {
+    conditions.push("created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)");
+    params.push(sinceDays);
+  }
+  const rows = await prisma.$queryRawUnsafe<{
+    id: bigint; league_id: bigint; user_id: bigint;
+    player_out_id: bigint; player_in_id: bigint; day: bigint;
+    created_at: Date | null;
+  }[]>(
+    `SELECT id, league_id, user_id, player_out_id, player_in_id, day, created_at
+     FROM JOKER_LOG WHERE ${conditions.join(" AND ")}
+     ORDER BY id DESC LIMIT ${Math.max(1, Math.min(20, limit))}`,
+    ...params
+  );
+  if (rows.length === 0) return [];
+
+  const playerIds = Array.from(new Set(rows.flatMap((r) => [Number(r.player_out_id), Number(r.player_in_id)])));
+  const userIds = Array.from(new Set(rows.map((r) => Number(r.user_id))));
+  const [players, users, topics] = await Promise.all([
+    prisma.player.findMany({ where: { id: { in: playerIds } } }),
+    prisma.user.findMany({ where: { id: { in: userIds } } }),
+    // Fil forum "Jokers <saison>" de chaque ligue (catégorie = slug), là où
+    // postJokerToForum a posté l'annonce détaillée.
+    getCurrentSeasonKey().then((season) =>
+      prisma.$queryRawUnsafe<{ id: bigint; category: string }[]>(
+        "SELECT id, category FROM FORUM_TOPIC WHERE title = ?",
+        `Jokers ${season}`
+      )
+    ),
+  ]);
+  const clubs = await prisma.club.findMany({
+    where: { id: { in: Array.from(new Set(players.map((p) => p.clubId))) } },
+  });
+  const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
+  const playerMap = new Map(players.map((p) => [p.id, p]));
+  const userMap = new Map(users.map((u) => [u.id, parseUserName(u.name).cleanName]));
+  const topicMap = new Map(topics.map((t) => [t.category, Number(t.id)]));
+
+  return rows.map((r) => {
+    const league = leagueMap.get(Number(r.league_id))!;
+    const pOut = playerMap.get(Number(r.player_out_id));
+    const pIn = playerMap.get(Number(r.player_in_id));
+    return {
+      id: Number(r.id),
+      leagueSlug: league.slug,
+      leagueName: league.name,
+      userName: userMap.get(Number(r.user_id)) ?? `#${r.user_id}`,
+      playerOutName: pOut ? `${pOut.fname} ${pOut.lname}`.trim() : `#${r.player_out_id}`,
+      playerOutClub: pOut ? clubMap.get(pOut.clubId) ?? "" : "",
+      playerInName: pIn ? `${pIn.fname} ${pIn.lname}`.trim() : `#${r.player_in_id}`,
+      playerInClub: pIn ? clubMap.get(pIn.clubId) ?? "" : "",
+      // JOKER_LOG.day = journée de décision ; le joker agit à J+1.
+      effectDay: Number(r.day) + 1,
+      createdAt: r.created_at,
+      topicId: topicMap.get(league.slug) ?? null,
+    };
+  });
+}
+
 // ── Payment status per user in a league ─────────────────
 export async function getLeaguePayments(leagueDbId: number): Promise<Map<number, boolean>> {
   const rows = await prisma.$queryRawUnsafe<{ user_id: number; paid: number }[]>(
