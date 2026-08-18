@@ -1137,6 +1137,60 @@ export default function AdminEncheresPage() {
                     })}
                   </div>
 
+                  {/* Récap des équipes, tous tours confondus (demande Pierre 2026-08-18) :
+                      vérifier que tous les effectifs sont complets après le dépouillement,
+                      avant de clore la phase. Même source que la vue « Acquisitions des
+                      tours précédents » (allWonBids), avec quotas par ligne et statut. */}
+                  <div className="bg-surface border border-white/[0.07] rounded-lg overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07] flex-wrap gap-2">
+                      <span className="text-[15px] font-bold text-paper">Récap des équipes · tous tours confondus</span>
+                      <span className="text-[11px] text-muted tabular-nums">
+                        {participants.filter((p) => p.rosterValid).length} / {participants.length} effectifs complets
+                      </span>
+                    </div>
+                    {participants.map((p) => {
+                      const lineOrder = ["GK", "DEF", "MID", "ATT"];
+                      const acqs = [...(allAcquisitionsByUser.get(p.userId) ?? [])].sort((a, b) => {
+                        const d = lineOrder.indexOf(positionToLine(a.position)) - lineOrder.indexOf(positionToLine(b.position));
+                        return d !== 0 ? d : a.playerName.localeCompare(b.playerName, "fr");
+                      });
+                      const counts: Record<string, number> = { GK: 0, DEF: 0, MID: 0, ATT: 0 };
+                      for (const a of acqs) counts[positionToLine(a.position)] = (counts[positionToLine(a.position)] ?? 0) + 1;
+                      return (
+                        <div key={p.userId} className="px-5 py-3 border-b border-white/[0.04]">
+                          <div className="flex items-center gap-2.5 flex-wrap mb-2">
+                            <span className="text-[13px] font-bold text-paper-dim">{p.userName}</span>
+                            {p.rosterValid ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-vert/10 border border-vert/40 rounded px-2 py-0.5 tabular-nums">
+                                <Check className="w-3 h-3" /> {p.playersWon} / {playersPerUser}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-bold text-rouge bg-rouge/10 border border-rouge/35 rounded px-2 py-0.5 tabular-nums">
+                                {p.playersWon} / {playersPerUser}
+                              </span>
+                            )}
+                            <span className="text-[11px] text-muted tabular-nums">
+                              {counts.GK} G · {counts.DEF} DEF · {counts.MID} MIL · {counts.ATT} ATT
+                            </span>
+                            {!p.rosterValid && p.rosterErrors.length > 0 && (
+                              <span className="text-[11px] text-rouge">{p.rosterErrors.join(" ; ")}</span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {acqs.map((a) => (
+                              <span key={a.bidId} className="inline-flex items-center gap-1.5 text-[11px] text-paper-dim bg-gold/[0.08] border border-gold/25 rounded px-2 py-0.5">
+                                <span className="text-[9.5px] text-muted">{LINE_LABEL[positionToLine(a.position)] ?? ""}</span>
+                                {a.playerName} <span className="text-gold font-bold">{a.amount}</span>
+                                <span className="text-[9.5px] text-muted">T{a.round}</span>
+                              </span>
+                            ))}
+                            {acqs.length === 0 && <span className="text-[11.5px] text-muted italic">aucun joueur</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
                   {/* Zone récap copiable (BRIEF-06) */}
                   {(() => {
                     const recaps = buildRecaps();
