@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getLeagues, getCurrentMatchday } from "@/lib/db";
+import { postJokerToForum } from "@/lib/joker-forum";
 
 // GET: get squad + joker usage for a participant
 export async function GET(request: Request) {
@@ -278,37 +279,7 @@ export async function POST(request: Request) {
       const leagues = await getLeagues();
       const category = leagues.find((l) => l.dbId === leagueId)?.slug ?? "general";
       const content = `**${userName}** utilise un joker :\n\nSortie : **${outName}** (${outClub})\nEntree : **${inName}** (${inClub})\n\nEffectif a partir de la J${nextDay}.`;
-
-      const existingTopics = await prisma.$queryRawUnsafe<{ id: number }[]>(
-        "SELECT id FROM FORUM_TOPIC WHERE category = ? AND title LIKE 'Jokers%' ORDER BY id DESC LIMIT 1",
-        category
-      );
-
-      if (existingTopics.length > 0) {
-        const topicId = Number(existingTopics[0].id);
-        await prisma.$executeRawUnsafe(
-          "INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())",
-          topicId, userId, content
-        );
-        await prisma.$executeRawUnsafe(
-          "UPDATE FORUM_TOPIC SET post_count = post_count + 1, last_post_at = NOW(), last_post_by = ? WHERE id = ?",
-          userId, topicId
-        );
-      } else {
-        const now = new Date();
-        const seasonYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-        const seasonTitle = `Jokers ${seasonYear}-${seasonYear + 1}`;
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO FORUM_TOPIC (league_id, category, author_id, title, post_count, last_post_at, last_post_by, created_at)
-           VALUES (?, ?, ?, ?, 1, NOW(), ?, NOW())`,
-          leagueId, category, userId, seasonTitle, userId
-        );
-        const [row] = await prisma.$queryRawUnsafe<{ id: number }[]>("SELECT LAST_INSERT_ID() as id");
-        await prisma.$executeRawUnsafe(
-          "INSERT INTO FORUM_POST (topic_id, author_id, content, created_at) VALUES (?, ?, ?, NOW())",
-          Number(row.id), userId, content
-        );
-      }
+      await postJokerToForum({ leagueId, category, userId, content });
     } catch {
       // Forum post failed — don't block the joker
     }

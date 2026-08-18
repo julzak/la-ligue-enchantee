@@ -887,7 +887,13 @@ async function getActiveAuctionWonOwners(leagueDbId: number): Promise<WonOwnerRo
 }
 
 export async function getClubsWithStats(leagueDbId: number, day?: number) {
-  const currentDay = day ?? await getCurrentMatchday();
+  // Propriété évaluée à la PROCHAINE journée composable (rosterDay), comme
+  // /api/admin/jokers/free et POST /api/jokers : en avant-saison (journée
+  // courante 0), l'effectif issu de la clôture des enchères (DAY_FIRST=1)
+  // est bien vu comme pris ; en saison, un joker posé pour J+1 est reflété
+  // immédiatement. Évaluer au jour courant affichait tous les joueurs
+  // libres après la clôture de phase (constaté le 2026-08-18).
+  const rosterDay = day ?? (await getCurrentMatchday()) + 1;
   const allClubs = await getCachedClubs();
   const clubs = Array.from(allClubs.values()).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -905,8 +911,8 @@ export async function getClubsWithStats(leagueDbId: number, day?: number) {
   const takenTeams = await prisma.team.findMany({
     where: {
       leagueId: leagueDbId,
-      dayFirst: { lte: currentDay },
-      dayLast: { gte: currentDay },
+      dayFirst: { lte: rosterDay },
+      dayLast: { gte: rosterDay },
     },
   });
   const takenPlayerIds = new Set(takenTeams.map((t) => t.playerId));
