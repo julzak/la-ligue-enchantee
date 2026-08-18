@@ -9,6 +9,11 @@
  * visibilité. Cette route n'expose rien qui ne soit pas déjà visible dans
  * le "dépouillement de tous".
  *
+ * Accessible à tout utilisateur authentifié, y compris hors de sa ligue
+ * (consultation inter-ligues des récaps mercato, demande Pierre 2026-08-18) :
+ * pas de contrôle B1 ici, contrairement à /api/auction/results qui reste
+ * réservé aux membres de la ligue.
+ *
  * Paramètres :
  *   leagueId : number (requis)
  *
@@ -21,7 +26,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isMember } from "@/lib/auction-membership";
 import { buildMercatoRecap } from "@/lib/auction-mercato-recap";
 
 export async function GET(request: Request) {
@@ -34,15 +38,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const leagueId = Number(searchParams.get("leagueId") ?? 0);
   if (!leagueId) return NextResponse.json({ error: "leagueId requis" }, { status: 400 });
-
-  // B1 : le user doit être membre de la ligue demandée (anti fuite inter-ligues).
-  const memberRows = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-    "SELECT COUNT(*) as cnt FROM LEAGUE_USER WHERE ID_LEAGUE = ? AND ID_USER = ?",
-    leagueId, userId
-  );
-  if (!isMember(Number(memberRows[0]?.cnt ?? 0))) {
-    return NextResponse.json({ error: "Accès refusé : vous n'êtes pas membre de cette ligue" }, { status: 403 });
-  }
 
   // Toutes les phases d'enchères de la ligue (été puis hiver, chronologique).
   const auctionRows = await prisma.$queryRawUnsafe<{
