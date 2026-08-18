@@ -1,9 +1,49 @@
-"use client";
+export const revalidate = 3600; // Config de saison lue en base, refresh horaire
 
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
+import { prisma } from "@/lib/prisma";
+import { getCurrentSeasonKey } from "@/lib/season";
+import { getScoringConfig } from "@/lib/scoring-config";
 
-export default function ReglementPage() {
+// Demande Benjamin (2026-08-18) : les participants doivent pouvoir visualiser
+// les règles chiffrées de l'année (jokers par type, barème, deadlines) en
+// lecture, sans accès admin. Les valeurs viennent de JOKER_CONFIG et
+// SCORING_CONFIG, les mêmes que celles éditées dans Admin → Configuration.
+interface JokerConfigRow {
+  type: string;
+  max_count: number;
+  deadline: Date | null;
+}
+
+const JOKER_TYPE_LABELS: Record<string, string> = {
+  summer: "Jokers mercato d'été",
+  winter: "Jokers mercato d'hiver",
+  regular: "Jokers saison",
+};
+
+function frDate(d: Date): string {
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
+}
+
+export default async function ReglementPage() {
+  const seasonKey = await getCurrentSeasonKey();
+  const cfg = await getScoringConfig();
+
+  const jokerRows = await prisma.$queryRawUnsafe<JokerConfigRow[]>(
+    "SELECT type, max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1 ORDER BY FIELD(type, 'summer', 'winter', 'regular')",
+    seasonKey
+  );
+  const jokerTotal = jokerRows.reduce((sum, r) => sum + Number(r.max_count), 0);
+
+  const deadlineRows = await prisma.$queryRawUnsafe<{
+    deadline_hour: number; early_match_hour: number; early_match_offset_hours: number;
+  }[]>(
+    "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = ? LIMIT 1",
+    seasonKey
+  );
+  const dl = deadlineRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
+
   return (
     <>
       <Navbar />
@@ -12,9 +52,40 @@ export default function ReglementPage() {
           <h1 className="font-serif text-2xl sm:text-3xl text-gold mb-2">
             Règlement
           </h1>
-          <p className="text-xs text-muted mb-8">La Ligue Enchantée - Saison 2025-2026</p>
+          <p className="text-xs text-muted mb-8">La Ligue Enchantée - Saison {seasonKey}</p>
 
           <div className="space-y-8 text-sm text-white/80 leading-relaxed">
+            {/* Configuration de la saison (valeurs vivantes, lecture seule) */}
+            <Section title={`La saison ${seasonKey} en chiffres`}>
+              <p className="text-xs text-muted">
+                Valeurs officielles configurées par les admins pour cette saison. Le reste de la
+                page décrit les règles générales du jeu.
+              </p>
+              <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
+                <div className="divide-y divide-white/[0.05]">
+                  {jokerRows.map((r) => (
+                    <PointRule
+                      key={r.type}
+                      label={JOKER_TYPE_LABELS[r.type] ?? `Jokers ${r.type}`}
+                      desc={`${Number(r.max_count)}${r.deadline ? ` (avant le ${frDate(r.deadline)})` : ""}`}
+                    />
+                  ))}
+                  {jokerRows.length > 0 && (
+                    <PointRule label="Total jokers en début de saison" desc={String(jokerTotal)} />
+                  )}
+                  <PointRule
+                    label="Deadline des compositions"
+                    desc={`Jour du match, ${Number(dl.deadline_hour)}h (Paris)`}
+                  />
+                  <PointRule
+                    label="Match avant"
+                    desc={`${Number(dl.early_match_hour)}h : deadline avancée à ${Number(dl.early_match_offset_hours)}h avant le coup d'envoi`}
+                  />
+                  <PointRule label="Mercato d'hiver" desc="Dates communiquées en cours de saison" />
+                </div>
+              </div>
+            </Section>
+
             {/* Introduction */}
             <Section title="Le concept">
               <p>
@@ -84,12 +155,10 @@ export default function ReglementPage() {
             <Section title="3. Choix des titulaires">
               <p>
                 Avant chaque journée, les participants choisissent leurs 11 titulaires.
-                L&apos;heure limite est fixée à <strong className="text-white">2h avant le coup d&apos;envoi
-                du premier match</strong> de la journée.
-              </p>
-              <p>
-                Habituellement : vendredi 18h pour le match du vendredi, samedi 13h pour les matchs
-                de 15h, dimanche 11h pour les matchs de 13h. Multiplex du dimanche : 15h.
+                L&apos;heure limite est fixée le jour du match à{" "}
+                <strong className="text-white">{Number(dl.deadline_hour)}h (heure de Paris)</strong>, avancée
+                à {Number(dl.early_match_offset_hours)}h avant le coup d&apos;envoi si le match commence
+                avant {Number(dl.early_match_hour)}h.
               </p>
             </Section>
 
@@ -104,13 +173,17 @@ export default function ReglementPage() {
                   <PointRule label="Note de base" desc="Note L'Équipe (sur 10)" />
                   <PointRule label="Joueur entré en jeu mais non noté (<45 min)" desc="Forfait : 2 pts (saisie admin)" />
                   <PointRule label="Joueur n'ayant pas joué" desc="0 pt" />
-                  <PointRule label="Carton rouge" desc="Note ramenée à 0, primes conservées" />
-                  <PointRule label="But (Gardien)" desc="+10 pts" />
-                  <PointRule label="But (Défenseur)" desc="+4 pts" />
-                  <PointRule label="But (Milieu / Attaquant)" desc="+2 pts" />
+                  <PointRule
+                    label="Carton rouge"
+                    desc={cfg.redCardNoteZero ? "Note ramenée à 0, primes conservées" : "Pas d'impact sur la note"}
+                  />
+                  <PointRule label="But (Gardien)" desc={`+${cfg.goalBonusGk} pts`} />
+                  <PointRule label="But (Défenseur)" desc={`+${cfg.goalBonusDef} pts`} />
+                  <PointRule label="But (Milieu)" desc={`+${cfg.goalBonusMid} pts`} />
+                  <PointRule label="But (Attaquant)" desc={`+${cfg.goalBonusAtt} pts`} />
                   <PointRule label="Passe décisive" desc="+1 pt" />
-                  <PointRule label="Pénalty arrêté (Gardien)" desc="+2 pts" />
-                  <PointRule label="But contre son camp (CSC)" desc="-2 pts" />
+                  <PointRule label="Pénalty arrêté (Gardien)" desc={`+${cfg.penaltySavedBonus} pts`} />
+                  <PointRule label="But contre son camp (CSC)" desc={`${cfg.cscMalus} pts`} />
                 </div>
               </div>
 
@@ -130,15 +203,27 @@ export default function ReglementPage() {
 
             {/* Jokers */}
             <Section title="5. Jokers">
-              <p>Chaque participant dispose de :</p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li><strong className="text-white">2 jokers &quot;Août&quot;</strong> valables uniquement avant le 1er septembre</li>
-                <li><strong className="text-white">4 jokers</strong> valables toute l&apos;année</li>
-              </ul>
+              {jokerRows.length > 0 ? (
+                <>
+                  <p>Chaque participant dispose cette saison de :</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    {jokerRows.map((r) => (
+                      <li key={r.type}>
+                        <strong className="text-white">
+                          {Number(r.max_count)} {(JOKER_TYPE_LABELS[r.type] ?? `jokers ${r.type}`).toLowerCase()}
+                        </strong>
+                        {r.deadline ? ` valables avant le ${frDate(r.deadline)}` : " valables toute la saison"}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p>Le quota de jokers de la saison est communiqué par les admins.</p>
+              )}
               <p>
                 Un joker permet de remplacer un joueur de son effectif par un joueur libre
-                (visible dans l&apos;explorateur club par club). Le joker doit être signalé sur le forum
-                de la ligue (topic &quot;Joker&quot;) au plus tard la veille de la journée à 18h.
+                (visible dans l&apos;explorateur club par club). Il se pose directement sur le site
+                (Ma ligue → Jokers) et est annoncé automatiquement sur le forum de la ligue.
               </p>
               <p>
                 Les jokers sont bloqués pendant la trêve hivernale (fermeture entre la 19e journée et
@@ -218,7 +303,7 @@ export default function ReglementPage() {
                 Deux topics importants à respecter :
               </p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li><strong className="text-white">Topic &quot;Joker&quot;</strong> : exclusivement pour les demandes de joker</li>
+                <li><strong className="text-white">Topic &quot;Jokers&quot;</strong> : les jokers posés sur le site y sont annoncés automatiquement</li>
                 <li><strong className="text-white">Topic &quot;Réclamations&quot;</strong> : pour signaler les erreurs de notation</li>
               </ul>
               <p>
@@ -233,7 +318,7 @@ export default function ReglementPage() {
             Accueil
           </Link>
           <span className="text-muted text-sm mx-3">|</span>
-          <span className="text-muted text-sm">La Ligue Enchantée - Saison 2025-2026</span>
+          <span className="text-muted text-sm">La Ligue Enchantée - Saison {seasonKey}</span>
         </footer>
       </div>
     </>
@@ -255,9 +340,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function PointRule({ label, desc }: { label: string; desc: string }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+    <div className="flex items-center justify-between gap-4 px-4 py-2.5 text-sm">
       <span className="text-white font-medium">{label}</span>
-      <span className="text-gold tabular-nums">{desc}</span>
+      <span className="text-gold tabular-nums text-right">{desc}</span>
     </div>
   );
 }

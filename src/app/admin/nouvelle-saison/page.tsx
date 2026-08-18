@@ -46,6 +46,14 @@ interface AdminUser {
   email: string;
 }
 
+interface LaunchChecklistItem {
+  key: string;
+  label: string;
+  ok: boolean;
+  blocking: boolean;
+  detail: string;
+}
+
 const btn = "rounded bg-gold px-4 py-2 text-sm font-medium text-night hover:bg-gold-dim disabled:opacity-40 disabled:cursor-not-allowed";
 const btnGhost = "rounded border border-border bg-surface px-3 py-1.5 text-sm text-foreground hover:bg-surface-2 disabled:opacity-40";
 const input = "rounded border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-gold";
@@ -54,6 +62,13 @@ export default function NouvelleSaisonPage() {
   const [step, setStep] = useState(1);
   const [season, setSeason] = useState<Season | null>(null);
   const [error, setError] = useState("");
+  // Étape 6 : lancement de la saison (checklist + action). Ajoutée après le
+  // loupé 2026-2027 : le lancement ne vivait que dans « Saisons existantes »
+  // et personne ne l'avait fait, laissant la saison en AUCTION et la page
+  // Paiements vide (pas de lignes de pointage cotisations).
+  const [launchItems, setLaunchItems] = useState<LaunchChecklistItem[] | null>(null);
+  const [launchBusy, setLaunchBusy] = useState(false);
+  const [launchDone, setLaunchDone] = useState("");
   // Compteur incrémenté après chaque création de saison pour forcer le re-fetch de SeasonManager.
   const [seasonManagerKey, setSeasonManagerKey] = useState(0);
 
@@ -441,6 +456,46 @@ export default function NouvelleSaisonPage() {
     }
   }
 
+  // Étape 6 : checklist de lancement (GET sans effet de bord) puis lancement.
+  async function goToLaunch() {
+    if (!season) return;
+    setError("");
+    setLaunchDone("");
+    setLaunchItems(null);
+    setStep(6);
+    try {
+      const res = await fetch(`/api/admin/seasons/launch?seasonId=${season.id}`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.items)) setLaunchItems(data.items);
+      else setError(data.error || "Impossible de charger la checklist");
+    } catch {
+      setError("Impossible de charger la checklist");
+    }
+  }
+
+  async function launchSeason() {
+    if (!season) return;
+    setError("");
+    setLaunchBusy(true);
+    try {
+      const res = await fetch("/api/admin/seasons/launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seasonId: season.id }),
+      });
+      const data = await res.json();
+      if (Array.isArray(data.items)) setLaunchItems(data.items);
+      if (!res.ok) throw new Error(data.error || "Erreur au lancement");
+      setLaunchDone(data.message ?? `Saison ${season.label} lancée.`);
+      setSeason({ ...season, status: "ACTIVE" });
+      setSeasonManagerKey((k) => k + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setLaunchBusy(false);
+    }
+  }
+
   // Défaut de la Ligue Enchantée : 3 ligues (Ligue 1/2/3). Labels éditables.
   function applyDefaultLeagues() {
     setLeagues([
@@ -485,6 +540,7 @@ export default function NouvelleSaisonPage() {
           { n: 3, label: "Ligues" },
           { n: 4, label: "Participants" },
           { n: 5, label: "Enchères ouvertes" },
+          { n: 6, label: "Lancement" },
         ].map((s, i) => (
           <div key={s.n} className="flex items-center gap-2">
             <span
@@ -495,7 +551,7 @@ export default function NouvelleSaisonPage() {
               {s.n}
             </span>
             <span className={step >= s.n ? "text-foreground" : "text-muted"}>{s.label}</span>
-            {i < 4 && <span className="mx-1 text-muted">→</span>}
+            {i < 5 && <span className="mx-1 text-muted">→</span>}
           </div>
         ))}
       </div>
@@ -747,6 +803,63 @@ export default function NouvelleSaisonPage() {
             >
               ← Étape 2 (clubs &amp; joueurs)
             </button>
+            <button className={btn} onClick={goToLaunch}>
+              Étape 6 : lancer la saison →
+            </button>
+          </div>
+          <p className="text-xs text-muted">
+            Une fois les enchères dépouillées, la saison doit être lancée (étape 6) : sans ça,
+            pas de pointage des cotisations dans Admin → Paiements.
+          </p>
+        </div>
+      )}
+
+      {/* ÉTAPE 6 : LANCEMENT DE LA SAISON */}
+      {step === 6 && season && (
+        <div className="rounded-lg border border-border bg-surface p-5 space-y-4">
+          <p className="text-sm text-foreground">
+            Lancer la saison <span className="font-semibold text-gold">{season.label}</span> :
+            la saison passe en statut actif, les configs barème et jokers sont créées si
+            absentes, et une ligne de pointage cotisation est créée pour chaque participant
+            (Admin → Paiements). Action rejouable sans doublon.
+          </p>
+
+          {launchItems === null && !error && (
+            <p className="text-sm text-muted">Chargement de la checklist...</p>
+          )}
+          {launchItems && (
+            <ul className="space-y-1.5">
+              {launchItems.map((item) => (
+                <li key={item.key} className="flex items-start gap-2 text-sm">
+                  <span className={item.ok ? "text-vert" : item.blocking ? "text-rouge" : "text-orange-400"}>
+                    {item.ok ? "✓" : "✗"}
+                  </span>
+                  <span className="text-foreground">
+                    {item.label}
+                    <span className="ml-2 text-xs text-muted">{item.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button className={btnGhost} onClick={() => setStep(5)}>
+              ← Étape 5 (enchères)
+            </button>
+            <button
+              className={btn}
+              onClick={launchSeason}
+              disabled={
+                launchBusy ||
+                !launchItems ||
+                launchItems.some((item) => item.blocking && !item.ok) ||
+                Boolean(launchDone)
+              }
+            >
+              {launchBusy ? "Lancement..." : "Lancer la saison"}
+            </button>
+            {launchDone && <span className="text-sm text-vert">{launchDone}</span>}
           </div>
         </div>
       )}
