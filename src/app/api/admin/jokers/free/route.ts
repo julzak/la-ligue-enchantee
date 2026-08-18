@@ -93,7 +93,10 @@ export async function GET(request: Request) {
     orderBy: { lname: "asc" },
   });
 
-  const clubs = await prisma.club.findMany();
+  // Clubs scopés saison courante (même périmètre que les joueurs) : sans le
+  // filtre, le menu déroulant listait les clubs de toutes les saisons en
+  // double (ANGERS + Angers SCO, etc. — constaté le 2026-08-18).
+  const clubs = await prisma.club.findMany({ where: seasonFilters.club });
   const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
 
   const free = players
