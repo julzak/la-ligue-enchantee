@@ -1,25 +1,46 @@
 import { prisma } from "./prisma";
 import { getCurrentSeasonKey } from "./season";
 
-// Poste l'annonce d'un joker dans le fil « Jokers <saison courante> » de la
-// catégorie, créé au besoin. Le fil est recherché par titre EXACT : l'ancienne
-// recherche (LIKE 'Jokers%' + dernier id) faisait capter les jokers de la
-// nouvelle saison par le fil de la saison passée quand celui de la saison
-// courante n'existait pas encore (constaté le 2026-08-18 en L1/L2/N1, alors
-// que la L3 avait déjà son fil 2026-2027). Logique partagée par la pose
-// self-service (POST /api/jokers) et la pose admin (POST /api/admin/jokers).
+// Abréviation de ligue pour les titres de fils jokers : « Ligue 1 (Baudens
+// League) » -> L1, « National 1 » -> N1. Repli sur le nom sans parenthèse.
+export function jokerLeagueAbbrev(leagueName: string): string {
+  const ligue = leagueName.match(/^ligue\s*(\d+)/i);
+  if (ligue) return `L${ligue[1]}`;
+  const national = leagueName.match(/^national\s*(\d+)?/i);
+  if (national) return `N${national[1] ?? "1"}`;
+  return leagueName.replace(/\s*\(.*\)\s*$/, "").trim();
+}
+
+// Titre du fil jokers d'une ligue : « Jokers L1 2026-2027 » (demande Pierre,
+// 2026-08-18 : la ligue dans le titre pour faciliter la lecture du forum).
+export function jokerTopicTitle(leagueName: string, season: string): string {
+  return `Jokers ${jokerLeagueAbbrev(leagueName)} ${season}`;
+}
+
+// Poste l'annonce d'un joker dans le fil « Jokers <ligue> <saison courante> »
+// de la catégorie, créé au besoin. Le fil est recherché par titre EXACT :
+// l'ancienne recherche (LIKE 'Jokers%' + dernier id) faisait capter les jokers
+// de la nouvelle saison par le fil de la saison passée quand celui de la
+// saison courante n'existait pas encore (constaté le 2026-08-18 en L1/L2/N1,
+// alors que la L3 avait déjà son fil 2026-2027). L'ancien titre sans ligue
+// (« Jokers <saison> ») reste accepté en repli tant que le renommage n'a pas
+// tourné. Logique partagée par la pose self-service (POST /api/jokers) et la
+// pose admin (POST /api/admin/jokers).
 export async function postJokerToForum(params: {
   leagueId: number;
+  leagueName: string;
   category: string;
   userId: number;
   content: string;
 }): Promise<number> {
-  const { leagueId, category, userId, content } = params;
-  const seasonTitle = `Jokers ${await getCurrentSeasonKey()}`;
+  const { leagueId, leagueName, category, userId, content } = params;
+  const season = await getCurrentSeasonKey();
+  const seasonTitle = jokerTopicTitle(leagueName, season);
+  const legacyTitle = `Jokers ${season}`;
 
   const existing = await prisma.$queryRawUnsafe<{ id: number }[]>(
-    "SELECT id FROM FORUM_TOPIC WHERE category = ? AND title = ? ORDER BY id DESC LIMIT 1",
-    category, seasonTitle
+    "SELECT id FROM FORUM_TOPIC WHERE category = ? AND title IN (?, ?) ORDER BY title = ? DESC, id DESC LIMIT 1",
+    category, seasonTitle, legacyTitle, seasonTitle
   );
 
   let topicId: number;

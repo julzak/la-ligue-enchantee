@@ -246,13 +246,14 @@ export async function POST(request: Request) {
     // Get league slug for forum category (derive from league name, not id —
     // real DB ids are 19/20/22, not 1/2/3)
     const leagues = await getLeagues();
-    const category = leagues.find((l) => l.dbId === leagueId)?.slug ?? "general";
+    const league = leagues.find((l) => l.dbId === leagueId);
+    const category = league?.slug ?? "general";
 
-    // Auto-post dans le fil "Jokers <saison courante>" de la ligue (créé au besoin)
+    // Auto-post dans le fil "Jokers <ligue> <saison courante>" (créé au besoin)
     let topicId: number | null = null;
     try {
       const content = `**${userName}** utilise un joker :\n\nSortie : **${outName}** (${outClub})\nEntree : **${inName}** (${inClub})\n\nEffectif a partir de la J${nextDay}.`;
-      topicId = await postJokerToForum({ leagueId, category, userId, content });
+      topicId = await postJokerToForum({ leagueId, leagueName: league?.name ?? "", category, userId, content });
     } catch {
       // Forum post failed — don't block the joker
     }

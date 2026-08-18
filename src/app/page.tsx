@@ -118,7 +118,14 @@ async function CupBadgesSection() {
 }
 
 async function RecentJokersSection() {
-  const jokers = await getRecentJokers({ limit: 5, sinceDays: 7 });
+  // Règle de gestion (Pierre, 2026-08-18) : les 5 derniers jokers toujours
+  // affichés, et jusqu'à 10 pour ceux posés dans les 48 dernières heures.
+  // 5 quand il ne se passe pas grand-chose, 10 en août-septembre où ça flambe.
+  const all = await getRecentJokers({ limit: 10 });
+  const cutoff = Date.now() - 48 * 3600 * 1000;
+  const jokers = all.filter(
+    (j, i) => i < 5 || (j.createdAt !== null && j.createdAt.getTime() >= cutoff)
+  );
   if (jokers.length === 0) return null;
   return <RecentJokersCard jokers={jokers} variant="home" />;
 }

@@ -4,6 +4,21 @@ import { prisma } from "@/lib/prisma";
 import { Trophy } from "lucide-react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
+import { isSummerMercatoClosed } from "@/lib/db";
+import { getCurrentSeasonKey } from "@/lib/season";
+
+function NoCupPlaceholder() {
+  return (
+    <>
+      <Navbar />
+      <div className="pt-[52px] max-w-5xl mx-auto px-4 py-12 text-center">
+        <Trophy className="w-16 h-16 text-muted mx-auto mb-4" />
+        <p className="text-muted text-lg">Aucune coupe en cours</p>
+        <p className="text-xs text-muted mt-2">Le tableau apparaîtra au lancement de la prochaine coupe.</p>
+      </div>
+    </>
+  );
+}
 
 export default async function CoupePage() {
   // Get latest active cup
@@ -12,18 +27,16 @@ export default async function CoupePage() {
   }[]>("SELECT id, name, season, status FROM CUP ORDER BY id DESC LIMIT 1");
 
   if (cups.length === 0) {
-    return (
-      <>
-        <Navbar />
-        <div className="pt-[52px] max-w-5xl mx-auto px-4 py-12 text-center">
-          <Trophy className="w-16 h-16 text-muted mx-auto mb-4" />
-          <p className="text-muted text-lg">Aucune coupe en cours</p>
-        </div>
-      </>
-    );
+    return <NoCupPlaceholder />;
   }
 
   const cup = cups[0];
+
+  // Le tableau d'une coupe d'une saison passée est retiré dès la clôture du
+  // mercato d'été de la saison courante (même règle que le bandeau vainqueur).
+  if (cup.season !== (await getCurrentSeasonKey()) && (await isSummerMercatoClosed())) {
+    return <NoCupPlaceholder />;
+  }
 
   const matches = await prisma.$queryRawUnsafe<{
     id: number; round: string; position: number; matchday: number | null;

@@ -5,6 +5,7 @@ import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "
 import { getScoringConfig, type ScoringConfig } from "./scoring-config";
 import { computePlayerTotal, SCORING_DEFAULTS } from "./scoring-core";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
+import { jokerTopicTitle } from "./joker-forum";
 import { leagueSlug } from "./season-key";
 import { parisUtcOffsetHours, parisWallTimeToUtc } from "./paris-time";
 import {
@@ -1015,6 +1016,26 @@ export async function getCupContextForDay(day: number): Promise<CupContext | nul
   };
 }
 
+// ── Clôture du mercato d'été ─────────────────────────────
+// Vrai quand toutes les ligues de la saison courante ont leur enchère d'été
+// 'resolved' (et qu'il en existe au moins une). C'est le « lancement de la
+// nouvelle saison » au sens du règlement d'affichage : à partir de là, le
+// bandeau coupe redevient une annonce des journées de coupe et cesse de
+// féliciter le vainqueur de la saison passée (règle Pierre, 2026-08-18).
+export const isSummerMercatoClosed = cache(async (): Promise<boolean> => {
+  const leagues = await getLeagues();
+  if (leagues.length === 0) return false;
+  const rows = await prisma.$queryRawUnsafe<{ league_id: number; status: string }[]>(
+    `SELECT a.league_id, a.status FROM AUCTION a
+     JOIN (SELECT league_id, MAX(id) AS max_id FROM AUCTION
+           WHERE COALESCE(type, 'summer') = 'summer' GROUP BY league_id) last
+       ON last.max_id = a.id
+     WHERE a.league_id IN (${leagues.map(() => "?").join(",")})`,
+    ...leagues.map((l) => l.dbId)
+  );
+  return rows.length > 0 && rows.every((r) => r.status === "resolved");
+});
+
 export interface CupChampion {
   cupName: string;
   season: string;
@@ -1027,6 +1048,12 @@ export async function getCupChampion(): Promise<CupChampion | null> {
   );
   if (cups.length === 0) return null;
   const cup = cups[0];
+
+  // Le vainqueur d'une coupe d'une saison passée n'est mis en avant que
+  // jusqu'à la clôture du mercato d'été de la saison courante.
+  if (cup.season !== (await getCurrentSeasonKey()) && (await isSummerMercatoClosed())) {
+    return null;
+  }
 
   const finals = await prisma.$queryRawUnsafe<{ winner_id: number | null }[]>(
     "SELECT winner_id FROM CUP_MATCH WHERE cup_id = ? AND round = 'Finale' AND winner_id IS NOT NULL LIMIT 1",
@@ -1339,16 +1366,17 @@ export async function getRecentJokers(opts: {
 
   const playerIds = Array.from(new Set(rows.flatMap((r) => [Number(r.player_out_id), Number(r.player_in_id)])));
   const userIds = Array.from(new Set(rows.map((r) => Number(r.user_id))));
+  const season = await getCurrentSeasonKey();
   const [players, users, topics] = await Promise.all([
     prisma.player.findMany({ where: { id: { in: playerIds } } }),
     prisma.user.findMany({ where: { id: { in: userIds } } }),
-    // Fil forum "Jokers <saison>" de chaque ligue (catégorie = slug), là où
-    // postJokerToForum a posté l'annonce détaillée.
-    getCurrentSeasonKey().then((season) =>
-      prisma.$queryRawUnsafe<{ id: bigint; category: string }[]>(
-        "SELECT id, category FROM FORUM_TOPIC WHERE title = ?",
-        `Jokers ${season}`
-      )
+    // Fil forum jokers de chaque ligue (catégorie = slug), là où
+    // postJokerToForum a posté l'annonce détaillée. Titre « Jokers <ligue>
+    // <saison> », ancien titre sans ligue accepté tant que le renommage n'a
+    // pas tourné.
+    prisma.$queryRawUnsafe<{ id: bigint; category: string; title: string }[]>(
+      "SELECT id, category, title FROM FORUM_TOPIC WHERE title LIKE ? ORDER BY id",
+      `Jokers %${season}`
     ),
   ]);
   const clubs = await prisma.club.findMany({
@@ -1357,7 +1385,11 @@ export async function getRecentJokers(opts: {
   const clubMap = new Map(clubs.map((c) => [c.id, c.name]));
   const playerMap = new Map(players.map((p) => [p.id, p]));
   const userMap = new Map(users.map((u) => [u.id, parseUserName(u.name).cleanName]));
-  const topicMap = new Map(topics.map((t) => [t.category, Number(t.id)]));
+  const topicMap = new Map(topics.map((t) => [`${t.category}|${t.title}`, Number(t.id)]));
+  const topicIdFor = (l: { slug: string; name: string }): number | null =>
+    topicMap.get(`${l.slug}|${jokerTopicTitle(l.name, season)}`) ??
+    topicMap.get(`${l.slug}|Jokers ${season}`) ??
+    null;
 
   return rows.map((r) => {
     const league = leagueMap.get(Number(r.league_id))!;
@@ -1375,7 +1407,7 @@ export async function getRecentJokers(opts: {
       // JOKER_LOG.day = journée de décision ; le joker agit à J+1.
       effectDay: Number(r.day) + 1,
       createdAt: r.created_at,
-      topicId: topicMap.get(league.slug) ?? null,
+      topicId: topicIdFor(league),
     };
   });
 }

@@ -277,9 +277,10 @@ export async function POST(request: Request) {
     // Post in forum (same logic as self-service jokers)
     try {
       const leagues = await getLeagues();
-      const category = leagues.find((l) => l.dbId === leagueId)?.slug ?? "general";
+      const league = leagues.find((l) => l.dbId === leagueId);
+      const category = league?.slug ?? "general";
       const content = `**${userName}** utilise un joker :\n\nSortie : **${outName}** (${outClub})\nEntree : **${inName}** (${inClub})\n\nEffectif a partir de la J${nextDay}.`;
-      await postJokerToForum({ leagueId, category, userId, content });
+      await postJokerToForum({ leagueId, leagueName: league?.name ?? "", category, userId, content });
     } catch {
       // Forum post failed — don't block the joker
     }
