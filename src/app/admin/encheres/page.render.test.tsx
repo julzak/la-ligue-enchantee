@@ -8,7 +8,9 @@
 //   - 100% des participants restent listés, effectifs complets inclus ;
 //   - un effectif complet sans mise ce tour est badgé COMPLET, pas EN ATTENTE ;
 //   - il ne figure pas dans le bandeau « X participant(s) sans soumission » ;
-//   - il reste au dénominateur du compteur « X / N soumissions ».
+//   - il est SORTI du dénominateur du compteur « X / N soumissions » (demande
+//     Julien 2026-08-18 : N = soumises + en attente), mais reste signalé via
+//     la ligne « X effectif(s) complet(s) ».
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
@@ -73,6 +75,11 @@ describe("Console des enchères — suivi des soumissions (tour ouvert)", () => 
     }
   });
 
+  it("le bandeau du haut signale l'effectif complet sous le compteur", async () => {
+    await renderConsole("open");
+    expect(screen.getByText("1 effectif complet")).toBeDefined();
+  });
+
   it("l'effectif complet est badgé COMPLET 13/13, pas EN ATTENTE", async () => {
     await renderConsole("open");
     expect(screen.getByText("COMPLET 13/13")).toBeDefined();
@@ -101,10 +108,14 @@ describe("Console des enchères — suivi des soumissions (tour clôturé)", () 
     expect((encart.parentElement as HTMLElement).textContent).toContain("Joueur2");
   });
 
-  it("le compteur garde tous les participants au dénominateur", async () => {
+  it("le compteur exclut les effectifs complets du dénominateur", async () => {
     await renderConsole("closed");
-    // 1 soumission (Joueur1) sur 3 participants : l'effectif complet reste compté.
-    expect(screen.getByText("1 / 3")).toBeDefined();
-    expect(screen.getByText(/dont 1 effectif\(s\) déjà complet\(s\)/)).toBeDefined();
+    // 1 soumission (Joueur1), 1 en attente (Joueur3) : dénominateur = 2.
+    // SANITY-CHECK de la régression gardée : avant le correctif (2026-08-18),
+    // Joueur2 (13/13) gonflait le dénominateur et on affichait « 1 / 3 ».
+    expect(screen.queryByText("1 / 3")).toBeNull();
+    expect(screen.getByText("1 / 2")).toBeDefined();
+    // L'effectif complet reste signalé à côté du compteur, sans le fausser.
+    expect(screen.getByText(/· 1 effectif\(s\) complet\(s\)/)).toBeDefined();
   });
 });

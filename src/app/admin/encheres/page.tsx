@@ -533,14 +533,16 @@ export default function AdminEncheresPage() {
             : "tallied";
 
   // Suivi des soumissions du tour : 3 états disjoints (demande Pierre 2026-08-14).
-  // Les effectifs complets restent listés et au dénominateur, mais ne sont plus
-  // comptés comme « soumission attendue » : ils n'ont plus rien à miser.
+  // Les effectifs complets restent listés, mais sortent du compteur « X / N »
+  // (demande Julien 2026-08-18) : n'ont plus rien à miser, ils gonflaient le
+  // dénominateur et donnaient l'impression d'attendre des soumissions fantômes.
   const playersPerUser = auction?.playersPerUser ?? 0;
   const submissions = summarizeSubmissions(participants, playersPerUser);
   const submitted = submissions.submitted;
   const missing = submissions.pending;
   const rosterComplete = submissions.complete;
-  const subPct = participants.length > 0 ? Math.round((submitted.length / participants.length) * 100) : 0;
+  const expected = submitted.length + missing.length;
+  const subPct = expected > 0 ? Math.round((submitted.length / expected) * 100) : participants.length > 0 ? 100 : 0;
   const incomplete = participants.filter((p) => !p.rosterValid);
 
   const chip =
@@ -814,13 +816,20 @@ export default function AdminEncheresPage() {
             <div className="w-full lg:w-[380px] shrink-0">
               <div className="flex items-baseline justify-between mb-2">
                 <span className="text-[10.5px] font-bold tracking-[1.4px] text-muted uppercase">Soumissions reçues</span>
-                <span className="text-[13px] font-bold text-paper-dim">
-                  <span className="text-gold text-lg tabular-nums">{submitted.length}</span> / {participants.length}
-                </span>
+                {expected > 0 && (
+                  <span className="text-[13px] font-bold text-paper-dim">
+                    <span className="text-gold text-lg tabular-nums">{submitted.length}</span> / {expected}
+                  </span>
+                )}
               </div>
               <div className="h-[7px] rounded bg-surface-2 overflow-hidden mb-2.5">
                 <div className="h-full rounded bg-gold" style={{ width: `${subPct}%` }} />
               </div>
+              {rosterComplete.length > 0 && (
+                <div className="text-[10.5px] text-muted mb-1.5">
+                  {rosterComplete.length} effectif{rosterComplete.length > 1 ? "s" : ""} complet{rosterComplete.length > 1 ? "s" : ""}
+                </div>
+              )}
               {(mode === "open" || mode === "closed") && missing.length > 0 && (
                 <>
                   <div className="text-[10.5px] text-muted mb-1.5">En attente · {missing.length}</div>
@@ -996,11 +1005,11 @@ export default function AdminEncheresPage() {
                   <div className="font-serif font-bold text-2xl text-paper mb-4">Prêt à dépouiller le tour {auction.currentRound}</div>
                   <div className="flex flex-col sm:flex-row gap-3.5 mb-5">
                     <div className="flex-1 bg-night border border-white/[0.07] rounded-lg px-4 py-3.5">
-                      <div className="text-3xl font-extrabold text-gold tabular-nums leading-none">{submitted.length} / {participants.length}</div>
+                      <div className="text-3xl font-extrabold text-gold tabular-nums leading-none">{submitted.length} / {expected}</div>
                       <div className="text-[11.5px] text-muted mt-1.5">
                         soumissions enregistrées
                         {rosterComplete.length > 0 && (
-                          <> · dont {rosterComplete.length} effectif(s) déjà complet(s)</>
+                          <> · {rosterComplete.length} effectif(s) complet(s)</>
                         )}
                       </div>
                     </div>
