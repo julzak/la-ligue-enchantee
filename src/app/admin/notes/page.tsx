@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, memo } from "react";
 import { Save, Send, Loader2, ChevronDown, Image as ImageIcon, CalendarClock } from "lucide-react";
-import { canonicalClubKey, getClubShortNameByName } from "@/lib/assets";
+import { canonicalClubKey } from "@/lib/assets";
 
 interface PlayerScore {
   playerId: number;
@@ -349,6 +349,15 @@ export default function AdminNotesPage() {
   }
 
   // Group players by match
+  // Nom de club complet (celui de la table CLUB, affiché partout ailleurs)
+  // pour les en-têtes de match, à la place de l'abréviation (demande Pierre,
+  // 2026-08-18 : les mêmes noms partout). Repli sur le nom MATCH_SCHEDULE.
+  function fullClubName(matchTeam: string): string {
+    const key = canonicalClubKey(matchTeam);
+    const s = scores.find((sc) => canonicalClubKey(sc.clubName) === key);
+    return s?.clubName ?? matchTeam;
+  }
+
   function getMatchPlayers(match: MatchInfo): { home: PlayerScore[]; away: PlayerScore[] } {
     const homeKey = canonicalClubKey(match.home_team);
     const awayKey = canonicalClubKey(match.away_team);
@@ -503,9 +512,9 @@ export default function AdminNotesPage() {
                 <div key={`${match.home_team}-${match.away_team}`} className="bg-surface rounded-lg border border-white/[0.07]">
                   {/* Match header */}
                   <div className="flex items-center justify-between px-4 py-2 bg-surface-2 border-b border-white/[0.07]">
-                    <span className="text-sm font-medium text-white">{getClubShortNameByName(match.home_team, match.home_team)}</span>
-                    <span className="text-sm font-serif font-bold text-gold tabular-nums">{score}</span>
-                    <span className="text-sm font-medium text-white">{getClubShortNameByName(match.away_team, match.away_team)}</span>
+                    <span className="text-sm font-medium text-white truncate">{fullClubName(match.home_team)}</span>
+                    <span className="text-sm font-serif font-bold text-gold tabular-nums shrink-0 px-2">{score}</span>
+                    <span className="text-sm font-medium text-white truncate text-right">{fullClubName(match.away_team)}</span>
                     {match.infographic_url && (
                       <a
                         href={match.infographic_url}

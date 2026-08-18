@@ -88,7 +88,8 @@ export default async function JourneePage({ params }: { params: Promise<{ slug: 
                   <PlayerAvatar imageUrl={p.imageUrl} name={p.playerName} size={24} clubLogoUrl={p.clubLogo} />
                   <PositionBadge position={p.position} />
                   <span className="text-white/80 flex-1 truncate text-xs">{p.playerName}</span>
-                  <span className="text-[10px] text-muted">{p.clubShort}</span>
+                  {/* Nom de club complet, comme partout ailleurs (demande Pierre 2026-08-18) */}
+                  <span className="text-[10px] text-muted truncate max-w-[30%]">{p.clubName || p.clubShort}</span>
                   {p.goals > 0 && <span className="text-[10px] text-gold">{p.goals}g</span>}
                   {p.passes > 0 && <span className="text-[10px] text-vert">{p.passes}a</span>}
                   <span className={`text-sm font-bold tabular-nums w-8 text-right ${
