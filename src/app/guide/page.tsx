@@ -1,5 +1,13 @@
+export const revalidate = 3600; // Config de saison lue en base, refresh horaire
+
+import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Trophy, Users, BarChart3, Gavel, Shield, BookOpen, Clock } from "lucide-react";
+import {
+  getSeasonPublicConfig,
+  JOKER_TYPE_LABELS,
+  frDate,
+} from "@/lib/season-public-config";
 
 function Section({ icon: Icon, title, children }: { icon: React.ComponentType<{ className?: string }>; title: string; children: React.ReactNode }) {
   return (
@@ -15,7 +23,11 @@ function Section({ icon: Icon, title, children }: { icon: React.ComponentType<{ 
   );
 }
 
-export default function GuidePage() {
+// Les chiffres (barème, jokers, deadlines) viennent de la config de saison,
+// la même source que /reglement et Admin → Configuration (demande Pierre,
+// 2026-08-18 : plus de valeurs d'une saison passée codées en dur ici).
+export default async function GuidePage() {
+  const { seasonKey, scoring: cfg, jokers, ...dl } = await getSeasonPublicConfig();
   return (
     <>
       <Navbar />
@@ -63,28 +75,54 @@ export default function GuidePage() {
             <Section icon={Shield} title="Scoring">
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                 <span className="text-white/50">Note L&apos;Équipe</span><span>1 à 10 pts</span>
-                <span className="text-white/50">But (ATT / MIL)</span><span>+2 pts</span>
-                <span className="text-white/50">But (DEF)</span><span>+4 pts</span>
-                <span className="text-white/50">But (GK)</span><span>+10 pts</span>
+                <span className="text-white/50">But (ATT)</span><span>+{cfg.goalBonusAtt} pts</span>
+                <span className="text-white/50">But (MIL)</span><span>+{cfg.goalBonusMid} pts</span>
+                <span className="text-white/50">But (DEF)</span><span>+{cfg.goalBonusDef} pts</span>
+                <span className="text-white/50">But (GK)</span><span>+{cfg.goalBonusGk} pts</span>
                 <span className="text-white/50">Passe décisive</span><span>+1 pt</span>
-                <span className="text-white/50">CSC</span><span className="text-rouge">-2 pts</span>
-                <span className="text-white/50">Carton rouge</span><span className="text-rouge">Note → 0</span>
-                <span className="text-white/50">Penalty arrêté (GK)</span><span className="text-vert">+2 pts</span>
+                <span className="text-white/50">CSC</span><span className="text-rouge">{cfg.cscMalus} pts</span>
+                <span className="text-white/50">Carton rouge</span><span className="text-rouge">{cfg.redCardNoteZero ? "Note → 0" : "Sans effet"}</span>
+                <span className="text-white/50">Penalty arrêté (GK)</span><span className="text-vert">+{cfg.penaltySavedBonus} pts</span>
                 <span className="text-white/50">Joueur non noté</span><span>2 pts forfait</span>
               </div>
+              <p className="mt-3 text-xs">
+                <Link href="/reglement#chiffres" className="text-gold hover:underline">
+                  Toutes les valeurs officielles de la saison {seasonKey} →
+                </Link>
+              </p>
             </Section>
 
             <Section icon={BookOpen} title="Jokers">
-              <p>Chaque participant dispose de <strong className="text-white">4 jokers + 2 jokers d&apos;août</strong> par saison pour remplacer un joueur de son effectif.</p>
-              <p>Les jokers sont à poster dans le sujet &quot;Jokers&quot; dédié à chaque ligue sur le forum.</p>
-              <p>Pour être validé pour la journée à venir, le joker doit être pris <strong className="text-white">avant 18h la veille du premier match</strong> de la journée. Un joker pris après 18h sera pris en compte pour la journée suivante.</p>
+              {jokers.length > 0 ? (
+                <p>
+                  Chaque participant dispose cette saison de{" "}
+                  {jokers.map((j, i) => (
+                    <span key={j.type}>
+                      {i > 0 && " + "}
+                      <strong className="text-white">
+                        {j.maxCount} {(JOKER_TYPE_LABELS[j.type] ?? `jokers ${j.type}`).toLowerCase()}
+                      </strong>
+                      {j.deadline ? ` (avant le ${frDate(j.deadline)})` : ""}
+                    </span>
+                  ))}{" "}
+                  pour remplacer un joueur de son effectif par un joueur libre.
+                </p>
+              ) : (
+                <p>Le quota de jokers de la saison est annoncé par les admins.</p>
+              )}
+              <p>Le joker se pose directement sur le site (Ma ligue → Jokers) : il est annoncé automatiquement dans le fil &quot;Jokers&quot; du forum de la ligue et prend effet à partir de la journée suivante.</p>
+              <p className="text-xs">
+                <Link href="/reglement#chiffres" className="text-gold hover:underline">
+                  Quotas et deadlines officiels de la saison →
+                </Link>
+              </p>
             </Section>
 
             <Section icon={Clock} title="Validation des équipes">
               <p>Les équipes doivent être validées selon les horaires suivants :</p>
               <ul className="list-disc list-inside space-y-1 mt-2">
-                <li><strong className="text-white">Tous les jours</strong> : validation avant 15h le jour du match</li>
-                <li><strong className="text-white">Match avant 17h</strong> : validation 2h avant le coup d&apos;envoi du 1er match</li>
+                <li><strong className="text-white">Tous les jours</strong> : validation avant {dl.deadlineHour}h le jour du match</li>
+                <li><strong className="text-white">Match avant {dl.earlyMatchHour}h</strong> : validation {dl.earlyMatchOffsetHours}h avant le coup d&apos;envoi du 1er match</li>
               </ul>
               <p className="mt-2 text-white/40 text-xs italic">Merci de respecter ces horaires même si le blocage n&apos;a pas encore été effectué par les admins.</p>
             </Section>

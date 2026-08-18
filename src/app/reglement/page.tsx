@@ -2,47 +2,19 @@ export const revalidate = 3600; // Config de saison lue en base, refresh horaire
 
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
-import { prisma } from "@/lib/prisma";
-import { getCurrentSeasonKey } from "@/lib/season";
-import { getScoringConfig } from "@/lib/scoring-config";
+import {
+  getSeasonPublicConfig,
+  JOKER_TYPE_LABELS,
+  frDate,
+} from "@/lib/season-public-config";
 
 // Demande Benjamin (2026-08-18) : les participants doivent pouvoir visualiser
 // les règles chiffrées de l'année (jokers par type, barème, deadlines) en
-// lecture, sans accès admin. Les valeurs viennent de JOKER_CONFIG et
-// SCORING_CONFIG, les mêmes que celles éditées dans Admin → Configuration.
-interface JokerConfigRow {
-  type: string;
-  max_count: number;
-  deadline: Date | null;
-}
-
-const JOKER_TYPE_LABELS: Record<string, string> = {
-  summer: "Jokers mercato d'été",
-  winter: "Jokers mercato d'hiver",
-  regular: "Jokers saison",
-};
-
-function frDate(d: Date): string {
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
-}
-
+// lecture, sans accès admin. Valeurs partagées avec /guide via
+// getSeasonPublicConfig (les mêmes que Admin → Configuration).
 export default async function ReglementPage() {
-  const seasonKey = await getCurrentSeasonKey();
-  const cfg = await getScoringConfig();
-
-  const jokerRows = await prisma.$queryRawUnsafe<JokerConfigRow[]>(
-    "SELECT type, max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1 ORDER BY FIELD(type, 'summer', 'winter', 'regular')",
-    seasonKey
-  );
-  const jokerTotal = jokerRows.reduce((sum, r) => sum + Number(r.max_count), 0);
-
-  const deadlineRows = await prisma.$queryRawUnsafe<{
-    deadline_hour: number; early_match_hour: number; early_match_offset_hours: number;
-  }[]>(
-    "SELECT deadline_hour, early_match_hour, early_match_offset_hours FROM SCORING_CONFIG WHERE season = ? LIMIT 1",
-    seasonKey
-  );
-  const dl = deadlineRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
+  const { seasonKey, scoring: cfg, jokers: jokerRows, jokerTotal, ...dl } =
+    await getSeasonPublicConfig();
 
   return (
     <>
@@ -56,7 +28,7 @@ export default async function ReglementPage() {
 
           <div className="space-y-8 text-sm text-white/80 leading-relaxed">
             {/* Configuration de la saison (valeurs vivantes, lecture seule) */}
-            <Section title={`La saison ${seasonKey} en chiffres`}>
+            <Section id="chiffres" title={`La saison ${seasonKey} en chiffres`}>
               <p className="text-xs text-muted">
                 Valeurs officielles configurées par les admins pour cette saison. Le reste de la
                 page décrit les règles générales du jeu.
@@ -67,7 +39,7 @@ export default async function ReglementPage() {
                     <PointRule
                       key={r.type}
                       label={JOKER_TYPE_LABELS[r.type] ?? `Jokers ${r.type}`}
-                      desc={`${Number(r.max_count)}${r.deadline ? ` (avant le ${frDate(r.deadline)})` : ""}`}
+                      desc={`${r.maxCount}${r.deadline ? ` (avant le ${frDate(r.deadline)})` : ""}`}
                     />
                   ))}
                   {jokerRows.length > 0 && (
@@ -75,11 +47,11 @@ export default async function ReglementPage() {
                   )}
                   <PointRule
                     label="Deadline des compositions"
-                    desc={`Jour du match, ${Number(dl.deadline_hour)}h (Paris)`}
+                    desc={`Jour du match, ${dl.deadlineHour}h (Paris)`}
                   />
                   <PointRule
                     label="Match avant"
-                    desc={`${Number(dl.early_match_hour)}h : deadline avancée à ${Number(dl.early_match_offset_hours)}h avant le coup d'envoi`}
+                    desc={`${dl.earlyMatchHour}h : deadline avancée à ${dl.earlyMatchOffsetHours}h avant le coup d'envoi`}
                   />
                   <PointRule label="Mercato d'hiver" desc="Dates communiquées en cours de saison" />
                 </div>
@@ -156,9 +128,9 @@ export default async function ReglementPage() {
               <p>
                 Avant chaque journée, les participants choisissent leurs 11 titulaires.
                 L&apos;heure limite est fixée le jour du match à{" "}
-                <strong className="text-white">{Number(dl.deadline_hour)}h (heure de Paris)</strong>, avancée
-                à {Number(dl.early_match_offset_hours)}h avant le coup d&apos;envoi si le match commence
-                avant {Number(dl.early_match_hour)}h.
+                <strong className="text-white">{dl.deadlineHour}h (heure de Paris)</strong>, avancée
+                à {dl.earlyMatchOffsetHours}h avant le coup d&apos;envoi si le match commence
+                avant {dl.earlyMatchHour}h.
               </p>
             </Section>
 
@@ -210,7 +182,7 @@ export default async function ReglementPage() {
                     {jokerRows.map((r) => (
                       <li key={r.type}>
                         <strong className="text-white">
-                          {Number(r.max_count)} {(JOKER_TYPE_LABELS[r.type] ?? `jokers ${r.type}`).toLowerCase()}
+                          {r.maxCount} {(JOKER_TYPE_LABELS[r.type] ?? `jokers ${r.type}`).toLowerCase()}
                         </strong>
                         {r.deadline ? ` valables avant le ${frDate(r.deadline)}` : " valables toute la saison"}
                       </li>
@@ -325,9 +297,9 @@ export default async function ReglementPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <section>
+    <section id={id} className="scroll-mt-16">
       <h2 className="font-serif text-lg text-white mb-3 border-b border-white/[0.07] pb-2">
         {title}
       </h2>
