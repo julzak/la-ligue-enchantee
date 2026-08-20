@@ -24,6 +24,9 @@ interface MercatoHiverConfig {
   rankingMatchday: number | null;
   treveStart: string | null;
   treveEnd: string | null;
+  // Gel des jokers pendant le mercato d'hiver (format datetime-local)
+  jokersFreezeStart: string | null;
+  jokersFreezeEnd: string | null;
 }
 
 interface DeadlinesConfig {
@@ -50,6 +53,7 @@ export default function AdminConfigPage() {
   });
   const [mercato, setMercato] = useState<MercatoHiverConfig>({
     rankingMatchday: null, treveStart: null, treveEnd: null,
+    jokersFreezeStart: null, jokersFreezeEnd: null,
   });
   const [deadlines, setDeadlines] = useState<DeadlinesConfig>({
     defaultHour: 15, earlyMatchHour: 17, earlyMatchOffsetHours: 2,
@@ -330,7 +334,23 @@ export default function AdminConfigPage() {
             value={mercato.treveEnd ?? ""}
             onChange={(v) => setMercato({ ...mercato, treveEnd: v || null })}
           />
+          <Field
+            label="Gel des jokers : debut"
+            type="datetime-local"
+            value={mercato.jokersFreezeStart ?? ""}
+            onChange={(v) => setMercato({ ...mercato, jokersFreezeStart: v || null })}
+          />
+          <Field
+            label="Gel des jokers : fin (reouverture)"
+            type="datetime-local"
+            value={mercato.jokersFreezeEnd ?? ""}
+            onChange={(v) => setMercato({ ...mercato, jokersFreezeEnd: v || null })}
+          />
         </div>
+        <p className="text-xs text-muted mt-3">
+          Les jokers sont bloqués du début à la fin du gel (heure du serveur, tolérance zéro).
+          Une bannière prévient sur l&apos;accueil et les pages ligue 7 jours avant le début.
+        </p>
         <div className="mt-4 flex justify-end">
           <SaveButton section="mercatoHiver" data={mercato} />
         </div>
@@ -421,7 +441,7 @@ function Field({
   label, type, value, onChange, prefix, placeholder, className, disabled,
 }: {
   label: string;
-  type: "number" | "date";
+  type: "number" | "date" | "datetime-local";
   value: string | number;
   onChange: (v: string) => void;
   prefix?: string;

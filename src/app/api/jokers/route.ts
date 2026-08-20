@@ -6,6 +6,7 @@ import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAuth } from "@/lib/admin-auth";
 import { getLeagues, getCurrentMatchday } from "@/lib/db";
 import { postJokerToForum } from "@/lib/joker-forum";
+import { getJokersFreeze, formatFreezeDate } from "@/lib/jokers-freeze";
 
 // GET: get squad + joker info for the logged-in user
 export async function GET(request: Request) {
@@ -96,12 +97,20 @@ export async function GET(request: Request) {
     return sum + Number(c.max_count);
   }, 0);
 
+  // Gel des jokers pendant le mercato d'hiver : l'UI désactive le formulaire
+  // (le POST re-vérifie de son côté, la fermeture ne repose pas sur le client).
+  const freeze = await getJokersFreeze();
+
   return NextResponse.json({
     squad: squadData,
     jokersUsed: jokerUsed,
     jokersRemaining: totalMax - jokerUsed,
     jokerHistory,
     currentDay,
+    freeze: {
+      phase: freeze.phase,
+      endLabel: freeze.end ? formatFreezeDate(freeze.end, true) : null,
+    },
   });
 }
 
@@ -121,6 +130,18 @@ export async function POST(request: Request) {
 
     if (!leagueId || !playerOutId || !playerInId) {
       return NextResponse.json({ error: "Tous les champs sont requis" }, { status: 400 });
+    }
+
+    // Gel des jokers pendant le mercato d'hiver : tolérance zéro, timestamp
+    // serveur faisant foi (même convention que la deadline des enchères).
+    // Le geste admin (/api/admin/jokers) reste possible pendant le gel.
+    const freeze = await getJokersFreeze();
+    if (freeze.phase === "active") {
+      const endLabel = freeze.end ? formatFreezeDate(freeze.end, true) : "la fin du mercato d'hiver";
+      return NextResponse.json(
+        { error: `Jokers gelés pendant le mercato d'hiver : réouverture le ${endLabel}` },
+        { status: 403 }
+      );
     }
 
     // Verify user belongs to league

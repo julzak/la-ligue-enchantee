@@ -120,6 +120,11 @@ export default function MercatoHiverPage() {
           Mercato d&apos;hiver
         </h1>
         <p className="text-sm text-muted">Renforcement des effectifs en milieu de saison (1 IN = 1 OUT)</p>
+        <p className="text-xs text-muted mt-1">
+          Les jokers sont gelés pendant le mercato d&apos;hiver : les dates du gel se règlent dans{" "}
+          <a href="/admin/config" className="text-gold hover:underline">Configuration → Mercato d&apos;hiver</a>
+          {" "}(bannière automatique sur le site 7 jours avant le début).
+        </p>
       </div>
 
       {/* League selector */}
