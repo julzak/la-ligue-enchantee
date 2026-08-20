@@ -50,6 +50,30 @@ interface MercatoConfigRow {
   ranking_matchday: number | null;
   treve_start: string | null;
   treve_end: string | null;
+  jokers_freeze_start: Date | string | null;
+  jokers_freeze_end: Date | string | null;
+}
+
+// Valeur d'un <input type="datetime-local"> ("YYYY-MM-DDTHH:mm") -> DATETIME
+// SQL naïf ("YYYY-MM-DD HH:mm:00"). Toute valeur non conforme devient NULL.
+function toSqlDateTime(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const m = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/);
+  return m ? `${m[1]} ${m[2]}:00` : null;
+}
+
+// DATETIME naïf -> valeur d'un <input type="datetime-local"> ("YYYY-MM-DDTHH:mm"),
+// sans conversion de fuseau (heure locale serveur, convention du projet).
+function toDateTimeInput(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    const mm = String(value.getMonth() + 1).padStart(2, "0");
+    const dd = String(value.getDate()).padStart(2, "0");
+    const hh = String(value.getHours()).padStart(2, "0");
+    const mi = String(value.getMinutes()).padStart(2, "0");
+    return `${value.getFullYear()}-${mm}-${dd}T${hh}:${mi}`;
+  }
+  return String(value).slice(0, 16).replace(" ", "T");
 }
 
 // GET: return all config for current season
@@ -68,7 +92,7 @@ export async function GET() {
       CURRENT_SEASON
     ),
     prisma.$queryRawUnsafe<MercatoConfigRow[]>(
-      "SELECT type, ranking_matchday, treve_start, treve_end FROM MERCATO_CONFIG WHERE season = ?",
+      "SELECT type, ranking_matchday, treve_start, treve_end, jokers_freeze_start, jokers_freeze_end FROM MERCATO_CONFIG WHERE season = ?",
       CURRENT_SEASON
     ),
   ]);
@@ -103,6 +127,8 @@ export async function GET() {
     rankingMatchday: winterMercato?.ranking_matchday ?? null,
     treveStart: toDateInput(winterMercato?.treve_start),
     treveEnd: toDateInput(winterMercato?.treve_end),
+    jokersFreezeStart: toDateTimeInput(winterMercato?.jokers_freeze_start),
+    jokersFreezeEnd: toDateTimeInput(winterMercato?.jokers_freeze_end),
   };
 
   // Clés API effectifs/photos (jamais renvoyées en clair, seulement masquées)
@@ -228,12 +254,14 @@ export async function POST(request: Request) {
 
       case "mercatoHiver":
         await prisma.$executeRawUnsafe(
-          `INSERT INTO MERCATO_CONFIG (season, type, ranking_matchday, treve_start, treve_end)
-           VALUES (?, 'winter', ?, ?, ?)
-           ON DUPLICATE KEY UPDATE ranking_matchday=?, treve_start=?, treve_end=?`,
+          `INSERT INTO MERCATO_CONFIG (season, type, ranking_matchday, treve_start, treve_end, jokers_freeze_start, jokers_freeze_end)
+           VALUES (?, 'winter', ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE ranking_matchday=?, treve_start=?, treve_end=?, jokers_freeze_start=?, jokers_freeze_end=?`,
           CURRENT_SEASON,
           data.rankingMatchday ?? null, data.treveStart ?? null, data.treveEnd ?? null,
-          data.rankingMatchday ?? null, data.treveStart ?? null, data.treveEnd ?? null
+          toSqlDateTime(data.jokersFreezeStart), toSqlDateTime(data.jokersFreezeEnd),
+          data.rankingMatchday ?? null, data.treveStart ?? null, data.treveEnd ?? null,
+          toSqlDateTime(data.jokersFreezeStart), toSqlDateTime(data.jokersFreezeEnd)
         );
         break;
 

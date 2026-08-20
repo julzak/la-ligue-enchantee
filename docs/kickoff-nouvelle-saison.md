@@ -180,7 +180,11 @@ courante et fait pointer le site public dessus.
 
 **Qui : un admin, prévenir les autres juste avant. Vers la mi-juillet.**
 
-- Dans « Saisons existantes », cliquer sur **Démarrer la saison**.
+- Deux chemins équivalents, au choix :
+  - **étape 6 « Lancement » du stepper** (partie basse de la page) : la
+    checklist de readiness s'affiche directement, avec le bouton **Lancer la
+    saison** ;
+  - ou dans « Saisons existantes », cliquer sur **Démarrer la saison**.
 - Le système vérifie d'abord une **checklist** : ligues créées, clubs et
   joueurs importés, participants dans chaque ligue, libellé exploitable.
   - Si quelque chose manque : **rien n'est lancé**, la liste s'affiche avec

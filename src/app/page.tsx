@@ -16,6 +16,7 @@ import {
   getRecentJokers,
 } from "@/lib/db";
 import { RecentJokersCard } from "@/components/jokers/RecentJokersCard";
+import { JokersFreezeBanner } from "@/components/jokers/JokersFreezeBanner";
 import { getClubLogoUrlByName, getClubShortNameByName, canonicalClubKey } from "@/lib/assets";
 import { TrophyBadges } from "@/components/ui/TrophyBadges";
 import { MatchCard } from "@/components/scoring/MatchCard";
@@ -450,6 +451,8 @@ export default async function HomePage() {
     <div className="min-h-screen">
       <Navbar />
       <div className="pt-[52px]" />
+
+      <JokersFreezeBanner />
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 flex flex-col lg:flex-row gap-6">
         {/* Main content */}

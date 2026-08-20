@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { LockCountdown } from "@/components/layout/LockCountdown";
+import { JokersFreezeBanner } from "@/components/jokers/JokersFreezeBanner";
 import { Gavel, Snowflake } from "lucide-react";
 
 export default function LigueLayout({ children }: { children: React.ReactNode }) {
@@ -89,6 +90,8 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
       <Navbar />
       <div className="pt-[52px]">
         <LockCountdown matchdayNumber={currentMatchday} lockAt={lockAt} isLocked={false} />
+
+        <JokersFreezeBanner />
 
         {/* Auction banner — hidden on the auction page itself */}
         {auctionOpen && !pathname.includes("/encheres") && (

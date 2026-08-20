@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Zap, Loader2, Search, ArrowRight } from "lucide-react";
+import { Zap, Loader2, Search, ArrowRight, Snowflake } from "lucide-react";
 
 interface SquadPlayer {
   playerId: number;
@@ -53,6 +53,9 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
   const [message, setMessage] = useState("");
   const [executing, setExecuting] = useState(false);
   const [topicLink, setTopicLink] = useState<string | null>(null);
+  // Gel des jokers pendant le mercato d'hiver : le formulaire est masqué
+  // (le POST /api/jokers re-vérifie côté serveur de toute façon).
+  const [freezeEndLabel, setFreezeEndLabel] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -65,6 +68,7 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
         setSquad(d.squad ?? []);
         setJokersRemaining(d.jokersRemaining ?? 0);
         setJokerHistory(d.jokerHistory ?? []);
+        setFreezeEndLabel(d.freeze?.phase === "active" ? (d.freeze.endLabel ?? "la fin du mercato d'hiver") : null);
       }
     } catch {
       setMessage("Erreur de chargement");
@@ -169,7 +173,15 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
         </div>
       )}
 
-      {jokersRemaining <= 0 && !loading && (
+      {freezeEndLabel && !loading && (
+        <div className="bg-blue-500/10 rounded-lg border border-blue-400/20 px-6 py-8 text-center">
+          <Snowflake className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+          <p className="text-white font-medium mb-1">Jokers gelés pendant le mercato d&apos;hiver</p>
+          <p className="text-sm text-muted">Réouverture le {freezeEndLabel}.</p>
+        </div>
+      )}
+
+      {jokersRemaining <= 0 && !loading && !freezeEndLabel && (
         <div className="bg-surface rounded-lg border border-white/[0.07] px-6 py-8 text-center">
           <Zap className="w-8 h-8 text-muted mx-auto mb-3" />
           <p className="text-white font-medium mb-1">Plus de jokers disponibles</p>
@@ -181,7 +193,7 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
         <div className="flex justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-gold" />
         </div>
-      ) : jokersRemaining > 0 && (
+      ) : jokersRemaining > 0 && !freezeEndLabel && (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Left: current squad — select player OUT */}
           <div>
