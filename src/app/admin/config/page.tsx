@@ -22,8 +22,6 @@ interface JokersConfig {
 
 interface MercatoHiverConfig {
   rankingMatchday: number | null;
-  treveStart: string | null;
-  treveEnd: string | null;
   // Gel des jokers pendant le mercato d'hiver (format datetime-local)
   jokersFreezeStart: string | null;
   jokersFreezeEnd: string | null;
@@ -52,7 +50,7 @@ export default function AdminConfigPage() {
     regularCount: 4, summerCount: 2, summerDeadline: "2025-09-15",
   });
   const [mercato, setMercato] = useState<MercatoHiverConfig>({
-    rankingMatchday: null, treveStart: null, treveEnd: null,
+    rankingMatchday: null,
     jokersFreezeStart: null, jokersFreezeEnd: null,
   });
   const [deadlines, setDeadlines] = useState<DeadlinesConfig>({
@@ -322,18 +320,6 @@ export default function AdminConfigPage() {
             onChange={(v) => setMercato({ ...mercato, rankingMatchday: v ? Number(v) : null })}
           />
           <div />
-          <Field
-            label="Debut treve"
-            type="date"
-            value={mercato.treveStart ?? ""}
-            onChange={(v) => setMercato({ ...mercato, treveStart: v || null })}
-          />
-          <Field
-            label="Fin treve"
-            type="date"
-            value={mercato.treveEnd ?? ""}
-            onChange={(v) => setMercato({ ...mercato, treveEnd: v || null })}
-          />
           <Field
             label="Gel des jokers : debut"
             type="datetime-local"
