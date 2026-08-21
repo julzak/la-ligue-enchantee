@@ -144,7 +144,7 @@ export default function AdminGuidePage() {
       {/* Mercato hiver */}
       <Section title="Mercato d&apos;hiver" step="En milieu de saison (treve hivernale)">
         <p>Meme fonctionnement que le mercato d&apos;ete, mais le budget est calcule automatiquement selon le classement de la ligue (le dernier recoit plus de points que le premier). Chaque recrutement implique la liberation d&apos;un joueur de l&apos;effectif (1 entrant = 1 sortant).</p>
-        <p className="text-xs text-muted mt-2">La journee de reference pour le classement et les dates de treve sont configurables dans la page <strong className="text-white">Configuration</strong>.</p>
+        <p className="text-xs text-muted mt-2">La journee de reference pour le classement et les dates du gel des jokers sont configurables dans la page <strong className="text-white">Configuration</strong>.</p>
       </Section>
 
       {/* Paiements */}

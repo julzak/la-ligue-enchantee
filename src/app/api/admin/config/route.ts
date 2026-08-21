@@ -48,8 +48,6 @@ interface JokerConfigRow {
 interface MercatoConfigRow {
   type: string;
   ranking_matchday: number | null;
-  treve_start: string | null;
-  treve_end: string | null;
   jokers_freeze_start: Date | string | null;
   jokers_freeze_end: Date | string | null;
 }
@@ -92,7 +90,7 @@ export async function GET() {
       CURRENT_SEASON
     ),
     prisma.$queryRawUnsafe<MercatoConfigRow[]>(
-      "SELECT type, ranking_matchday, treve_start, treve_end, jokers_freeze_start, jokers_freeze_end FROM MERCATO_CONFIG WHERE season = ?",
+      "SELECT type, ranking_matchday, jokers_freeze_start, jokers_freeze_end FROM MERCATO_CONFIG WHERE season = ?",
       CURRENT_SEASON
     ),
   ]);
@@ -125,8 +123,6 @@ export async function GET() {
   const winterMercato = mercatoRows.find((m) => m.type === "winter");
   const mercatoHiver = {
     rankingMatchday: winterMercato?.ranking_matchday ?? null,
-    treveStart: toDateInput(winterMercato?.treve_start),
-    treveEnd: toDateInput(winterMercato?.treve_end),
     jokersFreezeStart: toDateTimeInput(winterMercato?.jokers_freeze_start),
     jokersFreezeEnd: toDateTimeInput(winterMercato?.jokers_freeze_end),
   };
@@ -254,13 +250,13 @@ export async function POST(request: Request) {
 
       case "mercatoHiver":
         await prisma.$executeRawUnsafe(
-          `INSERT INTO MERCATO_CONFIG (season, type, ranking_matchday, treve_start, treve_end, jokers_freeze_start, jokers_freeze_end)
-           VALUES (?, 'winter', ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE ranking_matchday=?, treve_start=?, treve_end=?, jokers_freeze_start=?, jokers_freeze_end=?`,
+          `INSERT INTO MERCATO_CONFIG (season, type, ranking_matchday, jokers_freeze_start, jokers_freeze_end)
+           VALUES (?, 'winter', ?, ?, ?)
+           ON DUPLICATE KEY UPDATE ranking_matchday=?, jokers_freeze_start=?, jokers_freeze_end=?`,
           CURRENT_SEASON,
-          data.rankingMatchday ?? null, data.treveStart ?? null, data.treveEnd ?? null,
+          data.rankingMatchday ?? null,
           toSqlDateTime(data.jokersFreezeStart), toSqlDateTime(data.jokersFreezeEnd),
-          data.rankingMatchday ?? null, data.treveStart ?? null, data.treveEnd ?? null,
+          data.rankingMatchday ?? null,
           toSqlDateTime(data.jokersFreezeStart), toSqlDateTime(data.jokersFreezeEnd)
         );
         break;
