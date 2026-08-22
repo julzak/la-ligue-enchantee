@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getLeagues, getCurrentMatchday } from "@/lib/db";
+import { getLeagues } from "@/lib/db";
+import { getJokerEffectDay, applyJokerSwap } from "@/lib/joker-day";
 import { postJokerToForum } from "@/lib/joker-forum";
 
 // GET: get squad + joker usage for a participant
@@ -17,10 +18,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "leagueId and userId required" }, { status: 400 });
   }
 
-  // Journée courante scopée saison (0 en avant-saison), pas le max global SCORE.
-  // Effectif affiché = celui de la prochaine journée composable (rosterDay).
-  const currentDay = await getCurrentMatchday();
-  const rosterDay = currentDay + 1;
+  // Effectif affiché = celui de la journée d'effet calculée (cutoff 18h la
+  // veille du premier match, cf src/lib/joker-day-core.ts).
+  const { effectDay, cutoff, currentDay } = await getJokerEffectDay();
+  const rosterDay = effectDay;
 
   // Get current squad (roster actif pour la prochaine journée)
   const squad = await prisma.team.findMany({
@@ -96,6 +97,8 @@ export async function GET(request: Request) {
     jokersRemaining: totalMax - jokerUsed,
     jokerHistory,
     currentDay,
+    effectDay,
+    effectCutoff: cutoff ? cutoff.toISOString() : null,
   });
 }
 
@@ -144,6 +147,15 @@ export async function DELETE(request: Request) {
       leagueId, userId, playerInId, jokerDay + 1
     );
 
+    // 2b. Compos : l'entrant reprend la place du sortant dans toutes les
+    //     journées à partir de la journée d'effet. Sans ça, « Annuler » laissait
+    //     l'entrant titulaire d'une journée où il n'est plus dans l'effectif
+    //     (constaté J1 2026-2027 après l'annulation du joker de LST).
+    await prisma.$executeRawUnsafe(
+      "UPDATE TEAM_DAY SET ID_PLAYER = ? WHERE ID_LEAGUE = ? AND ID_USER = ? AND ID_PLAYER = ? AND DAY >= ?",
+      playerOutId, leagueId, userId, playerInId, jokerDay + 1
+    );
+
     // 3. Delete the JOKER_LOG entry
     await prisma.$executeRawUnsafe(
       "DELETE FROM JOKER_LOG WHERE id = ?",
@@ -187,10 +199,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "All fields required" }, { status: 400 });
     }
 
-    // Journée courante scopée saison (0 en avant-saison), pas le max global SCORE.
-    const latestDay = await getCurrentMatchday();
-    const currentDay = overrideDay && overrideDay > 0 && overrideDay <= latestDay ? overrideDay : latestDay;
-    const nextDay = currentDay + 1;
+    // `day` = journée D'EFFET choisie par l'admin (« effectif à partir de J<d> »),
+    // sans plafond à la dernière publiée : l'ancien plafond renvoyait tout
+    // joker ressaisi « en J2 » sur la J1 tant que la J1 n'était pas publiée
+    // (constaté par Pierre le 2026-08-21). Sans choix : journée d'effet
+    // calculée (cutoff 18h la veille du premier match).
+    const nextDay = overrideDay && overrideDay >= 1 && overrideDay <= 38
+      ? Math.floor(overrideDay)
+      : (await getJokerEffectDay()).effectDay;
 
     // Check joker limit from config
     const jokerCount = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
@@ -238,24 +254,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ce joueur est déjà pris par un autre participant" }, { status: 400 });
     }
 
-    // Execute swap:
-    // 1. End the outgoing player's stint (set dayLast to current day)
-    await prisma.$executeRawUnsafe(
-      "UPDATE TEAM SET DAY_LAST = ? WHERE ID_LEAGUE = ? AND ID_USER = ? AND ID_PLAYER = ? AND DAY_FIRST = ?",
-      currentDay, leagueId, userId, playerOutId, outEntry.dayFirst
-    );
-
-    // 2. Add the incoming player starting next day
-    await prisma.$executeRawUnsafe(
-      "INSERT INTO TEAM (ID_LEAGUE, ID_USER, ID_PLAYER, DAY_FIRST, DAY_LAST, IS_SUBS) VALUES (?, ?, ?, ?, 38, ?)",
-      leagueId, userId, playerInId, nextDay, outEntry.isSubs
-    );
-
-    // 3. Log the joker
-    await prisma.$executeRawUnsafe(
-      "INSERT INTO JOKER_LOG (league_id, user_id, player_out_id, player_in_id, day) VALUES (?, ?, ?, ?, ?)",
-      leagueId, userId, playerOutId, playerInId, currentDay
-    );
+    await applyJokerSwap({
+      leagueId, userId, playerOutId, playerInId,
+      outDayFirst: outEntry.dayFirst, isSubs: outEntry.isSubs, effectDay: nextDay,
+    });
 
     // Get player names for confirmation
     const [playerOut, playerIn] = await Promise.all([

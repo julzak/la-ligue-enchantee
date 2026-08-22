@@ -198,6 +198,12 @@ export default async function ReglementPage() {
                 (Ma ligue → Jokers) et est annoncé automatiquement sur le forum de la ligue.
               </p>
               <p>
+                <strong className="text-white">Journée d&apos;effet :</strong> un joker posé avant{" "}
+                <strong className="text-white">18h la veille du premier match</strong> d&apos;une journée
+                compte pour cette journée. Après cette heure, il compte pour la journée suivante.
+                Tolérance zéro : l&apos;heure de pose sur le site fait foi.
+              </p>
+              <p>
                 Les jokers sont bloqués pendant la trêve hivernale (fermeture entre la 19e journée et
                 la fin du mercato d&apos;hiver).
               </p>
