@@ -147,6 +147,15 @@ export async function DELETE(request: Request) {
       leagueId, userId, playerInId, jokerDay + 1
     );
 
+    // 2b. Compos : l'entrant reprend la place du sortant dans toutes les
+    //     journées à partir de la journée d'effet. Sans ça, « Annuler » laissait
+    //     l'entrant titulaire d'une journée où il n'est plus dans l'effectif
+    //     (constaté J1 2026-2027 après l'annulation du joker de LST).
+    await prisma.$executeRawUnsafe(
+      "UPDATE TEAM_DAY SET ID_PLAYER = ? WHERE ID_LEAGUE = ? AND ID_USER = ? AND ID_PLAYER = ? AND DAY >= ?",
+      playerOutId, leagueId, userId, playerInId, jokerDay + 1
+    );
+
     // 3. Delete the JOKER_LOG entry
     await prisma.$executeRawUnsafe(
       "DELETE FROM JOKER_LOG WHERE id = ?",
