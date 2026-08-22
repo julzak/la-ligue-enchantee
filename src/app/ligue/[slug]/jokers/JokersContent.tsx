@@ -43,6 +43,9 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
   const [squad, setSquad] = useState<SquadPlayer[]>([]);
   const [jokersRemaining, setJokersRemaining] = useState(0);
   const [jokerHistory, setJokerHistory] = useState<JokerLogEntry[]>([]);
+  // Journée d'effet du prochain joker (cutoff 18h la veille du premier match).
+  const [effectDay, setEffectDay] = useState<number | null>(null);
+  const [effectCutoff, setEffectCutoff] = useState<string | null>(null);
   const [playerOut, setPlayerOut] = useState<number>(0);
   const [freePlayers, setFreePlayers] = useState<FreePlayer[]>([]);
   const [clubs, setClubs] = useState<ClubOption[]>([]);
@@ -68,6 +71,8 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
         setSquad(d.squad ?? []);
         setJokersRemaining(d.jokersRemaining ?? 0);
         setJokerHistory(d.jokerHistory ?? []);
+        setEffectDay(typeof d.effectDay === "number" ? d.effectDay : null);
+        setEffectCutoff(d.effectCutoff ?? null);
         setFreezeEndLabel(d.freeze?.phase === "active" ? (d.freeze.endLabel ?? "la fin du mercato d'hiver") : null);
       }
     } catch {
@@ -153,6 +158,15 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
           <p className="text-sm text-muted">
             Remplacer un joueur de votre effectif par un joueur libre.
           </p>
+          {effectDay !== null && (
+            <p className="text-xs text-gold mt-1">
+              Un joker posé maintenant est effectif à partir de la J{effectDay}
+              {effectCutoff
+                ? ` (jusqu'au ${new Date(effectCutoff).toLocaleString("fr-FR", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })}, ensuite J${effectDay + 1})`
+                : ""}
+              .
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-surface rounded-lg border border-white/[0.07]">
           <Zap className="w-4 h-4 text-gold" />
@@ -297,7 +311,7 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
           <h3 className="text-sm font-medium text-white mb-3">Historique de vos jokers</h3>
           <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
             <div className="grid grid-cols-[3rem_1fr_1fr] gap-1 px-4 py-2 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.07]">
-              <span>Jour</span>
+              <span>Effet</span>
               <span>Sortant</span>
               <span>Entrant</span>
             </div>
@@ -306,7 +320,8 @@ export function JokersContent({ leagueId }: { leagueId: number }) {
                 key={j.id}
                 className="grid grid-cols-[3rem_1fr_1fr] gap-1 px-4 py-2 items-center border-b border-white/[0.04] text-sm"
               >
-                <span className="text-xs text-muted tabular-nums">J{j.day}</span>
+                {/* JOKER_LOG.day = journée de décision ; on affiche la journée d'effet (J+1) */}
+                <span className="text-xs text-muted tabular-nums">J{j.day + 1}</span>
                 <span className="text-rouge text-xs truncate">{j.playerOutName}</span>
                 <span className="text-vert text-xs truncate">{j.playerInName}</span>
               </div>

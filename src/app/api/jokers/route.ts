@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAuth } from "@/lib/admin-auth";
-import { getLeagues, getCurrentMatchday } from "@/lib/db";
+import { getLeagues } from "@/lib/db";
+import { getJokerEffectDay, applyJokerSwap } from "@/lib/joker-day";
 import { postJokerToForum } from "@/lib/joker-forum";
 import { getJokersFreeze, formatFreezeDate } from "@/lib/jokers-freeze";
 
@@ -25,13 +26,11 @@ export async function GET(request: Request) {
   });
   if (!membership) return NextResponse.json({ error: "Pas membre de cette ligue" }, { status: 403 });
 
-  // Journée courante scopée saison (0 en avant-saison), et NON le max global de
-  // SCORE toutes saisons confondues (bug historique : findFirst renvoyait ~38).
-  // L'effectif à afficher/modifier est celui de la PROCHAINE journée composable
-  // (rosterDay), là où le joker agira : avant-saison -> effectif J1 ; en saison
-  // -> effectif de la journée à venir (dont un joker déjà posé pour cette journée).
-  const currentDay = await getCurrentMatchday();
-  const rosterDay = currentDay + 1;
+  // Journée d'effet du joker = première journée dont le cutoff (18h la veille
+  // du premier match, cf src/lib/joker-day-core.ts) n'est pas passé. L'effectif
+  // affiché/modifiable est celui de cette journée.
+  const { effectDay, cutoff, currentDay } = await getJokerEffectDay();
+  const rosterDay = effectDay;
 
   // Get current squad (roster actif pour la prochaine journée)
   const squad = await prisma.team.findMany({
@@ -107,6 +106,8 @@ export async function GET(request: Request) {
     jokersRemaining: totalMax - jokerUsed,
     jokerHistory,
     currentDay,
+    effectDay,
+    effectCutoff: cutoff ? cutoff.toISOString() : null,
     freeze: {
       phase: freeze.phase,
       endLabel: freeze.end ? formatFreezeDate(freeze.end, true) : null,
@@ -150,11 +151,10 @@ export async function POST(request: Request) {
     });
     if (!membership) return NextResponse.json({ error: "Pas membre de cette ligue" }, { status: 403 });
 
-    // Journée courante scopée saison (0 en avant-saison), pas le max global de
-    // SCORE toutes saisons confondues. Le joker prend effet à nextDay = la
-    // prochaine journée composable (J1 en avant-saison).
-    const currentDay = await getCurrentMatchday();
-    const nextDay = currentDay + 1;
+    // Journée d'effet : première journée dont le cutoff joker n'est pas passé
+    // (18h la veille du premier match). Plus jamais « dernière publiée + 1 »,
+    // qui laissait modifier une journée verrouillée tout le week-end.
+    const { effectDay: nextDay } = await getJokerEffectDay();
 
     // Check joker limit
     const jokerCount = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
@@ -204,50 +204,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ce joueur est deja pris par un autre participant" }, { status: 400 });
     }
 
-    // Execute swap
-    await prisma.$executeRawUnsafe(
-      "UPDATE TEAM SET DAY_LAST = ? WHERE ID_LEAGUE = ? AND ID_USER = ? AND ID_PLAYER = ? AND DAY_FIRST = ?",
-      currentDay, leagueId, userId, playerOutId, outEntry.dayFirst
-    );
-
-    await prisma.$executeRawUnsafe(
-      "INSERT INTO TEAM (ID_LEAGUE, ID_USER, ID_PLAYER, DAY_FIRST, DAY_LAST, IS_SUBS) VALUES (?, ?, ?, ?, 38, ?)",
-      leagueId, userId, playerInId, nextDay, outEntry.isSubs
-    );
-
-    // JOKER_LOG.day = currentDay (jour de decision du joker = DAY_LAST du sortant),
-    // meme convention que la pose admin. L'annulation admin suppose
-    // DAY_LAST = jokerDay et DAY_FIRST = jokerDay + 1 : loguer nextDay ici
-    // rendait l'undo d'un joker self-service inoperant (0 ligne TEAM touchee)
-    // tout en supprimant le log -> effectif corrompu silencieusement.
-    await prisma.$executeRawUnsafe(
-      "INSERT INTO JOKER_LOG (league_id, user_id, player_out_id, player_in_id, day) VALUES (?, ?, ?, ?, ?)",
-      leagueId, userId, playerOutId, playerInId, currentDay
-    );
-
-    // Copy lineup from current day to next day, replacing OUT with IN player
-    const prevLineup = await prisma.teamDay.findMany({
-      where: { leagueId, userId, day: currentDay },
+    await applyJokerSwap({
+      leagueId, userId, playerOutId, playerInId,
+      outDayFirst: outEntry.dayFirst, isSubs: outEntry.isSubs, effectDay: nextDay,
     });
-    if (prevLineup.length > 0) {
-      // Delete any existing lineup for nextDay
-      await prisma.teamDay.deleteMany({
-        where: { leagueId, userId, day: nextDay },
-      });
-      const now = new Date();
-      await prisma.teamDay.createMany({
-        data: prevLineup.map((l) => ({
-          leagueId,
-          userId,
-          playerId: l.playerId === playerOutId ? playerInId : l.playerId,
-          day: nextDay,
-          indx: l.indx,
-          isValid: l.isValid,
-          dtSave: now,
-          dtValid: now,
-        })),
-      });
-    }
 
     // Get player + user names for forum post
     const [playerOut, playerIn, userRows] = await Promise.all([

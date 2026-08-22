@@ -40,47 +40,43 @@ async function getDeadlineConfig(): Promise<DeadlineConfig> {
   return DEFAULT_DEADLINE_CONFIG;
 }
 
-function calcDeadline(matches: { date: string; time: string }[], config: DeadlineConfig): Date {
+// Deadline d'une date de match : defaultHour, avancée à (premier coup d'envoi
+// du jour - offset) si ce coup d'envoi est avant earlyMatchHour. Même règle que
+// getLockedClubIds (db.ts), qui verrouille club par club.
+function deadlineForDate(date: string, times: string[], config: DeadlineConfig): Date {
+  const sortedTimes = [...times].sort();
+  const [fhStr, fmStr] = (sortedTimes[0] || "20:00").split(":");
+  const firstKick = parisWallTimeToUtc(date, Number(fhStr), Number(fmStr) || 0);
+  const earlyThreshold = parisWallTimeToUtc(date, config.earlyMatchHour);
+  if (firstKick < earlyThreshold) {
+    return new Date(firstKick.getTime() - config.earlyMatchOffsetHours * 60 * 60 * 1000);
+  }
+  return parisWallTimeToUtc(date, config.defaultHour);
+}
+
+// Une deadline par date de match de la journée, triées. La première est la
+// deadline « historique » (lockAt) ; les suivantes servent au bandeau : une
+// journée étalée sur vendredi/samedi/dimanche n'est pas « fermée » à la
+// première (remontée Pierre J1 2026-2027 : 8 matchs encore ouverts).
+function calcDeadlines(matches: { date: string; time: string }[], config: DeadlineConfig): Date[] {
   if (matches.length === 0) {
-    // Fallback: next Thursday midnight
     const now = new Date();
     const d = (4 - now.getDay() + 7) % 7 || 7;
     const dt = new Date(now);
     dt.setDate(now.getDate() + d);
     dt.setHours(0, 0, 0, 0);
-    return dt;
+    return [dt];
   }
-
-  // Sort matches by date+time
-  const sorted = [...matches].sort((a, b) => {
-    const da = a.date + (a.time || "00:00");
-    const db = b.date + (b.time || "00:00");
-    return da.localeCompare(db);
-  });
-
-  const firstMatch = sorted[0];
-  // Heure du coup d'envoi (heure de Paris, stockee "HH:MM") convertie en UTC
-  // avec l'offset reel du jour (CET/CEST), au lieu d'un +2 fige.
-  const [fhStr, fmStr] = (firstMatch.time || "20:00").split(":");
-  const firstDate = parisWallTimeToUtc(firstMatch.date, Number(fhStr), Number(fmStr) || 0);
-
-  // Default deadline: config.defaultHour Paris time on the day of the first match
-  const defaultDeadline = parisWallTimeToUtc(firstMatch.date, config.defaultHour);
-
-  // Early match threshold
-  const earlyThreshold = parisWallTimeToUtc(firstMatch.date, config.earlyMatchHour);
-
-  if (firstDate < earlyThreshold) {
-    // Match before threshold: deadline is N hours before kickoff
-    return new Date(firstDate.getTime() - config.earlyMatchOffsetHours * 60 * 60 * 1000);
+  const byDate = new Map<string, string[]>();
+  for (const m of matches) {
+    if (!byDate.has(m.date)) byDate.set(m.date, []);
+    byDate.get(m.date)!.push(m.time || "20:00");
   }
-
-  return defaultDeadline;
+  return Array.from(byDate.entries())
+    .map(([date, times]) => deadlineForDate(date, times, config))
+    .sort((a, b) => a.getTime() - b.getTime());
 }
 
-// GET: get deadline for a matchday (or current)
-// Volontairement sans auth : consommé par le layout public /ligue/[slug]
-// (classement, stats accessibles sans session). Lecture seule, donnée non sensible.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dayParam = Number(searchParams.get("day") ?? 0);
@@ -94,7 +90,7 @@ export async function GET(request: Request) {
   );
 
   if (config.length > 0 && config[0].lock_at) {
-    return NextResponse.json({ day: currentDay, lockAt: config[0].lock_at, source: "manual" });
+    return NextResponse.json({ day: currentDay, lockAt: config[0].lock_at, lockDates: [config[0].lock_at], source: "manual" });
   }
 
   // Load deadline config from DB
@@ -119,15 +115,15 @@ export async function GET(request: Request) {
         date: String(r.d instanceof Date ? r.d.toISOString().slice(0, 10) : r.d).slice(0, 10),
         time: (r.t ? String(r.t) : "").slice(0, 5) || "20:00",
       }));
-      const lockAt = calcDeadline(matches, deadlineConfig);
+      const lockDates = calcDeadlines(matches, deadlineConfig);
       const firstMatch = matches.sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date))[0];
-      return NextResponse.json({ day: currentDay, lockAt, source: "auto", firstMatch: firstMatch.date });
+      return NextResponse.json({ day: currentDay, lockAt: lockDates[0], lockDates, source: "auto", firstMatch: firstMatch.date });
     }
   } catch {}
 
   // Fallback
-  const lockAt = calcDeadline([], deadlineConfig);
-  return NextResponse.json({ day: currentDay, lockAt, source: "fallback" });
+  const lockDates = calcDeadlines([], deadlineConfig);
+  return NextResponse.json({ day: currentDay, lockAt: lockDates[0], lockDates, source: "fallback" });
 }
 
 // POST: set deadline for a matchday

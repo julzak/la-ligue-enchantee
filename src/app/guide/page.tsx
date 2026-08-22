@@ -110,7 +110,7 @@ export default async function GuidePage() {
               ) : (
                 <p>Le quota de jokers de la saison est annoncé par les admins.</p>
               )}
-              <p>Le joker se pose directement sur le site (Ma ligue → Jokers) : il est annoncé automatiquement dans le fil &quot;Jokers&quot; du forum de la ligue et prend effet à partir de la journée suivante.</p>
+              <p>Le joker se pose directement sur le site (Ma ligue → Jokers) : il est annoncé automatiquement dans le fil &quot;Jokers&quot; du forum de la ligue et prend effet à partir de la prochaine journée dont le cutoff n&apos;est pas passé : <strong className="text-white">18h la veille du premier match</strong>. Posé après, il compte pour la journée d&apos;après (la page Jokers indique la journée d&apos;effet).</p>
               <p className="text-xs">
                 <Link href="/reglement#chiffres" className="text-gold hover:underline">
                   Quotas et deadlines officiels de la saison →

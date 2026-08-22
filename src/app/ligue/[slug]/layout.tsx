@@ -31,6 +31,8 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
     return dt;
   });
 
+  const [lockDates, setLockDates] = useState<Date[]>([]);
+
   // Check if there's an active auction for this league
   const [auctionOpen, setAuctionOpen] = useState(false);
   const [auctionRound, setAuctionRound] = useState(0);
@@ -46,6 +48,9 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
         const deadlineData = await deadlineRes.json();
         if (deadlineData.day) setCurrentMatchday(deadlineData.day);
         if (deadlineData.lockAt) setLockAt(new Date(deadlineData.lockAt));
+        if (Array.isArray(deadlineData.lockDates)) {
+          setLockDates(deadlineData.lockDates.map((d: string) => new Date(d)));
+        }
       } catch {}
       try {
         // Check auction
@@ -89,7 +94,7 @@ export default function LigueLayout({ children }: { children: React.ReactNode })
     <>
       <Navbar />
       <div className="pt-[52px]">
-        <LockCountdown matchdayNumber={currentMatchday} lockAt={lockAt} isLocked={false} />
+        <LockCountdown matchdayNumber={currentMatchday} lockAt={lockAt} lockDates={lockDates} isLocked={false} />
 
         <JokersFreezeBanner />
 

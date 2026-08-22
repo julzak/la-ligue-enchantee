@@ -72,6 +72,8 @@ export default function JokersPage() {
   const [executing, setExecuting] = useState(false);
   const [canceling, setCanceling] = useState<number>(0);
   const [overrideDay, setOverrideDay] = useState<number>(0);
+  // Journée d'effet calculée par le serveur (cutoff 18h la veille du premier match).
+  const [autoEffectDay, setAutoEffectDay] = useState<number | null>(null);
 
   // Load leagues
   useEffect(() => {
@@ -119,6 +121,7 @@ export default function JokersPage() {
       setSquad(d.squad ?? []);
       setJokersRemaining(d.jokersRemaining ?? 2);
       setJokerHistory(d.jokerHistory ?? []);
+      setAutoEffectDay(typeof d.effectDay === "number" ? d.effectDay : null);
     } catch {
       // ignore
     }
@@ -257,13 +260,13 @@ export default function JokersPage() {
               <span className="text-sm text-white">{jokersRemaining} joker{jokersRemaining !== 1 ? "s" : ""} restant{jokersRemaining !== 1 ? "s" : ""}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <label className="text-xs text-muted">Journee :</label>
+              <label className="text-xs text-muted">Effectif à partir de :</label>
               <select
                 value={overrideDay}
                 onChange={(e) => setOverrideDay(Number(e.target.value))}
                 className="bg-surface-2 border border-white/[0.07] rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-gold"
               >
-                <option value={0}>Actuelle</option>
+                <option value={0}>{autoEffectDay ? `Auto (J${autoEffectDay})` : "Auto"}</option>
                 {Array.from({ length: 38 }, (_, i) => i + 1).map((d) => (
                   <option key={d} value={d}>J{d}</option>
                 ))}
@@ -392,7 +395,7 @@ export default function JokersPage() {
           <h3 className="text-sm font-medium text-white mb-3">Historique des jokers</h3>
           <div className="bg-surface rounded-lg border border-white/[0.07] overflow-hidden">
             <div className="grid grid-cols-[3rem_1fr_1fr_5rem] gap-1 px-4 py-2 text-[9px] uppercase tracking-wider text-muted border-b border-white/[0.07]">
-              <span>Jour</span>
+              <span>Effet</span>
               <span>Sortant</span>
               <span>Entrant</span>
               <span className="text-right">Action</span>
@@ -402,7 +405,8 @@ export default function JokersPage() {
                 key={j.id}
                 className="grid grid-cols-[3rem_1fr_1fr_5rem] gap-1 px-4 py-2 items-center border-b border-white/[0.04] text-sm"
               >
-                <span className="text-xs text-muted tabular-nums">J{j.day}</span>
+                {/* JOKER_LOG.day = journée de décision ; affichage = journée d'effet (J+1) */}
+                <span className="text-xs text-muted tabular-nums">J{j.day + 1}</span>
                 <span className="text-rouge text-xs truncate">{j.playerOutName}</span>
                 <span className="text-vert text-xs truncate">{j.playerInName}</span>
                 <div className="flex justify-end">
