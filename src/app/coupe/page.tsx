@@ -6,6 +6,17 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { isSummerMercatoClosed } from "@/lib/db";
 import { getCurrentSeasonKey } from "@/lib/season";
+import { seasonKeyFromLabel } from "@/lib/season-key";
+
+// Libellé court d'une ligue pour le tableau (même convention que la home) :
+// "Ligue 1 (Baudens League)" -> L1, "National 1" -> Nat., "Ligue 2" -> L2.
+function shortLeagueLabel(name: string): string {
+  if (name.toLowerCase().includes("baudens")) return "L1";
+  if (/national/i.test(name)) return "Nat.";
+  const ligue = name.match(/ligue\s*(\d+)/i);
+  if (ligue) return `L${ligue[1]}`;
+  return name;
+}
 
 function NoCupPlaceholder() {
   return (
@@ -59,22 +70,49 @@ export default async function CoupePage() {
     (u.NAME ?? "").replace(/<[^>]*>/g, "").trim(),
   ]));
 
-  // Get league info per user
-  const leagueUsers = userIds.length > 0
+  // Ligues de la saison de la coupe : CUP.season stocke une clé "YYYY-YYYY",
+  // SEASON.LABEL peut être "2027" ou "2026-2027" -> on compare via seasonKeyFromLabel.
+  // Les IDs de ligues changent chaque saison (19/20/22 en 2025-2026, 39/40/41 en
+  // 2026-2027) : tout scoping par ID doit passer par cette résolution.
+  const seasons = await prisma.season.findMany({ select: { id: true, label: true } });
+  const cupSeasonIds = seasons
+    .filter((s) => seasonKeyFromLabel(s.label) === cup.season)
+    .map((s) => s.id);
+  const cupLeagues = cupSeasonIds.length > 0
+    ? await prisma.league.findMany({
+        where: { seasonId: { in: cupSeasonIds } },
+        select: { id: true, name: true },
+      })
+    : // Coupe legacy sans Season rattachée : même repli que getLeagues (hors ligue 0)
+      await prisma.league.findMany({
+        where: { id: { gt: 0 } },
+        select: { id: true, name: true },
+      });
+  const cupLeagueIds = cupLeagues.map((l) => l.id);
+  const leagueLabels = new Map(cupLeagues.map((l) => [l.id, shortLeagueLabel(l.name)]));
+
+  // Get league info per user, restreint aux ligues de la saison de la coupe :
+  // un user peut avoir des memberships LEAGUE_USER sur plusieurs saisons.
+  const leagueUsers = userIds.length > 0 && cupLeagueIds.length > 0
     ? await prisma.$queryRawUnsafe<{ ID_USER: number; ID_LEAGUE: number }[]>(
-        `SELECT ID_USER, ID_LEAGUE FROM LEAGUE_USER WHERE ID_USER IN (${userIds.join(",")})`)
+        `SELECT ID_USER, ID_LEAGUE FROM LEAGUE_USER
+         WHERE ID_USER IN (${userIds.join(",")})
+           AND ID_LEAGUE IN (${cupLeagueIds.join(",")})`)
     : [];
   const leagueMap = new Map(leagueUsers.map((lu) => [Number(lu.ID_USER), Number(lu.ID_LEAGUE)]));
-  const leagueLabels: Record<number, string> = { 19: "L2", 20: "L1", 22: "Nat." };
 
   // Get intra-league cumulative ranks for petit poucet bonus
-  // Each user has a rank within their own league (1-18), not across all leagues
-  const leagueStats = await prisma.$queryRawUnsafe<{ userId: number; leagueId: number; total: number }[]>(
-    `SELECT s.ID_USER as userId, s.ID_LEAGUE as leagueId, SUM(s.PTS_TOT) as total
-     FROM STATS_USER s WHERE s.ID_LEAGUE > 0
-     GROUP BY s.ID_USER, s.ID_LEAGUE
-     ORDER BY s.ID_LEAGUE, total DESC`
-  );
+  // Each user has a rank within their own league (1-18), not across all leagues.
+  // STATS_USER cumule toutes les saisons : on restreint aux ligues de la saison
+  // de la coupe (même famille de bug que les PR #87 et #88).
+  const leagueStats = cupLeagueIds.length > 0
+    ? await prisma.$queryRawUnsafe<{ userId: number; leagueId: number; total: number }[]>(
+        `SELECT s.ID_USER as userId, s.ID_LEAGUE as leagueId, SUM(s.PTS_TOT) as total
+         FROM STATS_USER s WHERE s.ID_LEAGUE IN (${cupLeagueIds.join(",")})
+         GROUP BY s.ID_USER, s.ID_LEAGUE
+         ORDER BY s.ID_LEAGUE, total DESC`
+      )
+    : [];
   // Build rankMap: userId -> rank within their own league
   const rankMap = new Map<number, number>();
   const byLeague = new Map<number, { userId: number; total: number }[]>();
@@ -163,8 +201,8 @@ export default async function CoupePage() {
                       const u2Name = m.user2_id ? userMap.get(Number(m.user2_id)) ?? "?" : feederLabel(Number(m.position), "user2");
                       const u1Tbd = !m.user1_id;
                       const u2Tbd = !m.user2_id;
-                      const u1League = m.user1_id ? leagueLabels[leagueMap.get(Number(m.user1_id)) ?? 0] ?? "" : "";
-                      const u2League = m.user2_id ? leagueLabels[leagueMap.get(Number(m.user2_id)) ?? 0] ?? "" : "";
+                      const u1League = m.user1_id ? leagueLabels.get(leagueMap.get(Number(m.user1_id)) ?? 0) ?? "" : "";
+                      const u2League = m.user2_id ? leagueLabels.get(leagueMap.get(Number(m.user2_id)) ?? 0) ?? "" : "";
                       const isResolved = m.winner_id !== null;
                       const u1Won = Number(m.winner_id) === Number(m.user1_id);
                       const u2Won = Number(m.winner_id) === Number(m.user2_id);
