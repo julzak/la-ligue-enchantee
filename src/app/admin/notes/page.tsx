@@ -221,8 +221,8 @@ export default function AdminNotesPage() {
     if (day === 0) {
       fetch("/api/admin/scores?day=0")
         .then((r) => r.json())
-        .then((d) => { if (d.day) setDay(d.day); else setDay(26); })
-        .catch(() => setDay(26));
+        .then((d) => { if (d.day) setDay(d.day); else setDay(1); })
+        .catch(() => setDay(1));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

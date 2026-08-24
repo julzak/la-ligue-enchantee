@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getSeasonFilters } from "@/lib/season";
+import { getSeasonFilters, getSeasonScope } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
 import { isClubGoalkeeper } from "@/lib/club-goalkeeper";
 
@@ -62,19 +62,26 @@ export async function GET(request: Request) {
     };
   });
 
-  let activeClubs = await prisma.clubValid.findMany({ where: { day, isValid: 1 } });
-  if (activeClubs.length === 0) {
-    const latest = await prisma.clubValid.findFirst({
-      where: { isValid: 1 },
-      orderBy: { day: "desc" },
-    });
-    if (latest) {
-      activeClubs = await prisma.clubValid.findMany({ where: { day: latest.day, isValid: 1 } });
+  // CLUB_VALID est une table legacy de l'ancien site PHP, jamais alimentée
+  // par la nouvelle plateforme : ses jours pointent sur les anciens ID_CLUB.
+  // Saison scopée -> tous les clubs de la saison sont actifs, on ne filtre pas.
+  const scope = await getSeasonScope();
+  let filtered = data;
+  if (!(scope.season && scope.hasClubs)) {
+    let activeClubs = await prisma.clubValid.findMany({ where: { day, isValid: 1 } });
+    if (activeClubs.length === 0) {
+      const latest = await prisma.clubValid.findFirst({
+        where: { isValid: 1 },
+        orderBy: { day: "desc" },
+      });
+      if (latest) {
+        activeClubs = await prisma.clubValid.findMany({ where: { day: latest.day, isValid: 1 } });
+      }
     }
-  }
 
-  const activeClubIds = new Set(activeClubs.map((c) => c.clubId));
-  const filtered = data.filter((p) => scoreMap.has(p.playerId) || activeClubIds.has(p.clubId));
+    const activeClubIds = new Set(activeClubs.map((c) => c.clubId));
+    filtered = data.filter((p) => scoreMap.has(p.playerId) || activeClubIds.has(p.clubId));
+  }
 
   filtered.sort((a, b) => {
     if (a.clubName !== b.clubName) return a.clubName.localeCompare(b.clubName);
