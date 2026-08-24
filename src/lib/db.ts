@@ -390,9 +390,13 @@ export async function getInterleagueStandings(day?: number) {
   const currentDay = day ?? await getCurrentMatchday();
   const leagues = await getLeagues();
 
-  // PTS_TOT is per-day, need to sum all days for cumulative
+  // PTS_TOT is per-day, need to sum all days for cumulative.
+  // Restreint aux ligues renvoyées par getLeagues (= saison courante) : les
+  // STATS_USER des saisons passées partagent la même table avec d'autres
+  // ID_LEAGUE, et `leagueId > 0` gonflait le classement (108 participants,
+  // ligues « ? », doublons — bug signalé par Thomas, 2026-08-24).
   const allStats = await prisma.statsUser.findMany({
-    where: { leagueId: { gt: 0 }, day: { lte: currentDay } },
+    where: { leagueId: { in: leagues.map((l) => l.dbId) }, day: { lte: currentDay } },
   });
 
   // Build cumulative totals per user+league
@@ -439,7 +443,14 @@ export async function getInterleagueStandings(day?: number) {
 interface AggRow { totalGoals: number; totalPoints: number; playerCount: number; }
 
 async function aggregateScoresSQL(dayFilter?: number): Promise<AggRow> {
-  const whereClause = dayFilter != null ? `WHERE s.DAY = ${Number(dayFilter)}` : "";
+  // SCORE mélange les saisons sur un même DAY : sans le filtre saison, les
+  // compteurs de la journée (buts, points) additionnaient aussi les lignes
+  // des saisons passées. Mode legacy (pas de saison scopée) : non filtré.
+  const scope = await getSeasonScope();
+  const conditions: string[] = [];
+  if (dayFilter != null) conditions.push(`s.DAY = ${Number(dayFilter)}`);
+  if (scope.season && scope.hasPlayers) conditions.push(`p.ID_SEASON = ${Number(scope.season.id)}`);
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
   const rows = await prisma.$queryRawUnsafe<AggRow[]>(`
     SELECT
       COALESCE(SUM(s.GOALS), 0) AS totalGoals,
@@ -486,15 +497,24 @@ export async function getBestPerformances(day?: number, limit = 5) {
   const currentDay = day ?? await getCurrentMatchday();
   const scoringCfg = await getScoringConfig();
 
-  const scores = await prisma.score.findMany({
-    where: { day: currentDay, used: { gt: 0 } },
-    orderBy: [{ goals: "desc" }, { passes: "desc" }, { points: "desc" }],
-    take: 50,
-  });
-
   // Need player info
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
+
+  // SCORE n'a pas de colonne saison : le même DAY existe pour toutes les
+  // saisons. On restreint aux joueurs de la saison courante (même pattern que
+  // getPlayerStats), sinon les scores des saisons passées polluent le top et
+  // sortent en « Player 11918 » faute de fiche joueur. Mode legacy (playerMap
+  // non scopé) : chargement non filtré, comportement inchangé.
+  const scope = await getSeasonScope();
+  const seasonFilter = scope.season && scope.hasPlayers
+    ? { playerId: { in: Array.from(playerMap.keys()) } }
+    : {};
+  const scores = await prisma.score.findMany({
+    where: { day: currentDay, used: { gt: 0 }, ...seasonFilter },
+    orderBy: [{ goals: "desc" }, { passes: "desc" }, { points: "desc" }],
+    take: 50,
+  });
 
   // Sort by total points (POINTS + 2*GOALS + PASSES)
   const ranked = scores
@@ -528,13 +548,19 @@ export async function getWorstPerformances(day?: number, limit = 5) {
   const currentDay = day ?? await getCurrentMatchday();
   const scoringCfg = await getScoringConfig();
 
-  const scores = await prisma.score.findMany({
-    where: { day: currentDay, used: { gt: 0 } },
-    take: 500,
-  });
-
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
+
+  // Même garde-fou saison que getBestPerformances : SCORE mélange les
+  // saisons sur un même DAY, on restreint aux joueurs de la saison courante.
+  const scope = await getSeasonScope();
+  const seasonFilter = scope.season && scope.hasPlayers
+    ? { playerId: { in: Array.from(playerMap.keys()) } }
+    : {};
+  const scores = await prisma.score.findMany({
+    where: { day: currentDay, used: { gt: 0 }, ...seasonFilter },
+    take: 500,
+  });
 
   const ranked = scores
     .filter((s) => {
