@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { Fragment, useState, useEffect, useCallback, memo } from "react";
 import { Save, Send, Loader2, ChevronDown, Image as ImageIcon, CalendarClock } from "lucide-react";
 import { canonicalClubKey, getClubLogoUrlByName } from "@/lib/assets";
 
@@ -54,6 +54,15 @@ function calcTotal(s: PlayerScore): number {
 }
 
 const isGK = (position: string) => position.toLowerCase().includes("gardien");
+
+// Libellé de groupe de poste, dans l'ordre de tri de l'API (GK > DEF > MIL > ATT).
+function positionGroup(position: string): string {
+  const lower = position.toLowerCase();
+  if (lower.includes("gardien")) return "Gardiens";
+  if (lower.includes("fense")) return "Défenseurs";
+  if (lower.includes("milieu")) return "Milieux";
+  return "Attaquants";
+}
 
 // Memoized PlayerRow to prevent re-renders of all rows when one input changes
 const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: PlayerScore; onUpdate: (playerId: number, field: keyof PlayerScore, value: number | null) => void; showInitials: boolean }) {
@@ -369,6 +378,24 @@ export default function AdminNotesPage() {
     };
   }
 
+  // Démarcation discrète entre les groupes de postes (facilite la saisie).
+  function renderTeamRows(players: PlayerScore[]) {
+    return players.map((s, i) => {
+      const group = positionGroup(s.position);
+      const isNewGroup = i === 0 || positionGroup(players[i - 1].position) !== group;
+      return (
+        <Fragment key={s.playerId}>
+          {isNewGroup && (
+            <div className={`px-2 pt-1 pb-0.5 text-[8px] uppercase tracking-wider text-white/30 ${i > 0 ? "border-t border-white/[0.08]" : ""}`}>
+              {group}
+            </div>
+          )}
+          <PlayerRow s={s} onUpdate={updateScore} showInitials={showInitials} />
+        </Fragment>
+      );
+    });
+  }
+
   const filledCount = scores.filter((s) => s.points !== null).length;
   const totalWithGoals = scores.filter((s) => s.goals > 0).reduce((sum, s) => sum + s.goals, 0);
   const takenCount = scores.filter((s) => s.isTaken).length;
@@ -537,12 +564,12 @@ export default function AdminNotesPage() {
 
                     {/* Home team */}
                     <div className="border-b border-white/[0.05]">
-                      {home.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
+                      {renderTeamRows(home)}
                     </div>
 
                     {/* Away team — subtle separator */}
                     <div className="border-t border-gold/10">
-                      {away.map((s) => <PlayerRow key={s.playerId} s={s} onUpdate={updateScore} showInitials={showInitials} />)}
+                      {renderTeamRows(away)}
                     </div>
                   </div>
                 </div>
