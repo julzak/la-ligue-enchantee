@@ -34,35 +34,25 @@ export async function GET(request: Request) {
   const scoreMap = new Map(scores.map((s) => [s.playerId, s]));
   const takenPlayerIds = new Set(takenTeams.map((t) => t.playerId));
 
-  // M3 : exclure les pseudo-gardiens « Gardiens [Club] » de la grille de saisie.
-  // Leur note est synthétisée au publish depuis le gardien nommé aligné (§7).
-  // Laisser une ligne SCORE sur un pseudo-gardien crée un double comptage dans
-  // getParticipantCumulativeStats (ligne réelle + ligne synthétique).
+  // Saisie gardiens (retour à la méthode historique, décision 2026-08-24) :
+  // la grille montre UNE ligne « Gardiens [Club] » (le pseudo-gardien, celui
+  // que possèdent les participants) et masque les gardiens nommés. La note
+  // saisie sur le pseudo fait foi partout (buildDayScoreResolver la prend en
+  // priorité) ; la résolution par gardien nommé aligné ne sert plus que de
+  // repli (historique, note nominative exceptionnelle).
   const visiblePlayers = players.filter(
-    (p) => !isClubGoalkeeper({ position: p.position, link: p.link })
-  );
-
-  // Un gardien nommé compte comme « pris » dès que le pseudo-gardien de son
-  // club est possédé par un participant : c'est sa note qui résout celle du
-  // pseudo au publish. Sans ça, le filtre « joueurs pris » (actif par défaut
-  // dans la grille) masquait TOUS les gardiens : les participants possèdent
-  // les pseudos (exclus de la grille), jamais les gardiens nommés.
-  const pseudoGkTakenClubIds = new Set(
-    players
-      .filter(
-        (p) =>
-          isClubGoalkeeper({ position: p.position, link: p.link }) &&
-          takenPlayerIds.has(p.id)
-      )
-      .map((p) => p.clubId)
+    (p) => !isNamedGoalkeeper({ position: p.position, link: p.link })
   );
 
   const data = visiblePlayers.map((p) => {
     const score = scoreMap.get(p.id);
+    const isPseudoGk = isClubGoalkeeper({ position: p.position, link: p.link });
     return {
       playerId: p.id,
-      fname: p.fname,
-      lname: p.lname,
+      // Pseudo-gardien : LNAME = nom du club en base ; la grille affiche déjà
+      // le club (logo + regroupement), on montre juste « Gardiens ».
+      fname: isPseudoGk ? "" : p.fname,
+      lname: isPseudoGk ? "Gardiens" : p.lname,
       position: p.position,
       clubId: p.clubId,
       clubName: clubMap.get(p.clubId) ?? "",
@@ -73,10 +63,7 @@ export async function GET(request: Request) {
       redCard: score?.redCard ?? 0,
       ownGoals: score?.ownGoals ?? 0,
       penaltySaved: score?.penaltySaved ?? 0,
-      isTaken:
-        takenPlayerIds.has(p.id) ||
-        (isNamedGoalkeeper({ position: p.position, link: p.link }) &&
-          pseudoGkTakenClubIds.has(p.clubId)),
+      isTaken: takenPlayerIds.has(p.id),
     };
   });
 
