@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSeasonFilters, getSeasonScope } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
-import { isClubGoalkeeper } from "@/lib/club-goalkeeper";
+import { isClubGoalkeeper, isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 
 // GET: fetch scores for a matchday
 export async function GET(request: Request) {
@@ -42,6 +42,21 @@ export async function GET(request: Request) {
     (p) => !isClubGoalkeeper({ position: p.position, link: p.link })
   );
 
+  // Un gardien nommé compte comme « pris » dès que le pseudo-gardien de son
+  // club est possédé par un participant : c'est sa note qui résout celle du
+  // pseudo au publish. Sans ça, le filtre « joueurs pris » (actif par défaut
+  // dans la grille) masquait TOUS les gardiens : les participants possèdent
+  // les pseudos (exclus de la grille), jamais les gardiens nommés.
+  const pseudoGkTakenClubIds = new Set(
+    players
+      .filter(
+        (p) =>
+          isClubGoalkeeper({ position: p.position, link: p.link }) &&
+          takenPlayerIds.has(p.id)
+      )
+      .map((p) => p.clubId)
+  );
+
   const data = visiblePlayers.map((p) => {
     const score = scoreMap.get(p.id);
     return {
@@ -58,7 +73,10 @@ export async function GET(request: Request) {
       redCard: score?.redCard ?? 0,
       ownGoals: score?.ownGoals ?? 0,
       penaltySaved: score?.penaltySaved ?? 0,
-      isTaken: takenPlayerIds.has(p.id),
+      isTaken:
+        takenPlayerIds.has(p.id) ||
+        (isNamedGoalkeeper({ position: p.position, link: p.link }) &&
+          pseudoGkTakenClubIds.has(p.clubId)),
     };
   });
 
