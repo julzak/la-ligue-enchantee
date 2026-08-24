@@ -161,6 +161,39 @@ describe("attribution multi-journées (stats cumulées)", () => {
   });
 });
 
+describe("saisie directe sur le pseudo-gardien (retour méthode historique, 2026-08-24)", () => {
+  it("résolution : la ligne saisie sur « Gardiens [Club] » fait foi, même si un gardien nommé est noté", () => {
+    const resolve = buildDayScoreResolver(PLAYERS, [score(900, 6.5), score(901, 8.0)]);
+    const r = resolve(PSEUDO_GK.id)!;
+    expect(r.playerId).toBe(900);
+    expect(Number(r.points)).toBe(6.5);
+    // Sanity check : sans ligne directe, le repli par gardien nommé détecte
+    // bien que ce test garderait la régression (901 serait choisi).
+    const fallback = buildDayScoreResolver(PLAYERS, [score(901, 8.0)]);
+    expect(fallback(PSEUDO_GK.id)!.playerId).toBe(901);
+  });
+
+  it("attribution multi-journées : ligne directe prioritaire, jamais de double comptage sur la journée", () => {
+    const scores = [
+      score(900, 6.5, { day: 1 }), // saisie directe J1
+      score(901, 8.0, { day: 1 }), // note nominative le même jour : ignorée
+      score(902, 5.0, { day: 2 }), // J2 sans ligne directe : repli par nommé
+    ];
+    const synthetic = attributeClubGoalkeeperDayScores([900], PLAYERS, scores);
+    expect(synthetic).toHaveLength(2);
+    const j1 = synthetic.find((s) => s.day === 1)!;
+    const j2 = synthetic.find((s) => s.day === 2)!;
+    expect(Number(j1.points)).toBe(6.5); // la directe, pas la 8.0 nominative
+    expect(j1.playerId).toBe(900);
+    expect(Number(j2.points)).toBe(5.0);
+    expect(j2.playerId).toBe(900);
+    // Sanity check : sans la ligne directe, J1 serait résolue à 8.0 : le test
+    // détecte bien la régression qu'il garde.
+    const sans = attributeClubGoalkeeperDayScores([900], PLAYERS, scores.slice(1));
+    expect(Number(sans.find((s) => s.day === 1)!.points)).toBe(8.0);
+  });
+});
+
 describe("flag used — préférence gardien aligné (finding m1)", () => {
   it("gardien non aligné used=0 avec meilleure note vs gardien aligné used=1 → le gardien aligné gagne", () => {
     // 901 = titulaire (used=0, note 9.0 — blessé en cours de match, noté mais

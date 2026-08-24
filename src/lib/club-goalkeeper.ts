@@ -117,6 +117,12 @@ export function buildDayScoreResolver<S extends ClubGkScoreLike>(
   return (playerId: number) => {
     const p = playersById.get(playerId);
     if (p && isClubGoalkeeper(p)) {
+      // Depuis le 2026-08-24 (retour à la saisie « une ligne Gardiens [Club]
+      // par club », décision Julien) : une ligne SCORE saisie DIRECTEMENT sur
+      // le pseudo-gardien fait foi. À défaut, repli sur la résolution par
+      // gardien nommé aligné (historique + note nominative exceptionnelle).
+      const direct = scoreByPlayer.get(playerId);
+      if (direct) return direct;
       const rows = (namedGkIdsByClub.get(p.clubId) ?? [])
         .map((id) => scoreByPlayer.get(id))
         .filter((s): s is S => s !== undefined);
@@ -163,24 +169,40 @@ export function attributeClubGoalkeeperDayScores<
   const playersById = new Map<number, ClubGkPlayerLike>();
   for (const p of Array.from(allPlayers)) playersById.set(p.id, p);
 
-  // Lignes des gardiens nommés, groupées par (clubId, day).
+  // Lignes des gardiens nommés, groupées par (clubId, day), et lignes
+  // saisies directement sur un pseudo-gardien, par (pseudoId, day).
   const namedRowsByClubDay = new Map<string, S[]>();
+  const directRowByPseudoDay = new Map<string, S>();
   for (const s of Array.from(scores)) {
     const p = playersById.get(s.playerId);
-    if (!p || !isNamedGoalkeeper(p)) continue;
-    const key = `${p.clubId}|${s.day}`;
-    const arr = namedRowsByClubDay.get(key) ?? [];
-    arr.push(s);
-    namedRowsByClubDay.set(key, arr);
+    if (!p) continue;
+    if (isNamedGoalkeeper(p)) {
+      const key = `${p.clubId}|${s.day}`;
+      const arr = namedRowsByClubDay.get(key) ?? [];
+      arr.push(s);
+      namedRowsByClubDay.set(key, arr);
+    } else if (isClubGoalkeeper(p)) {
+      directRowByPseudoDay.set(`${p.id}|${s.day}`, s);
+    }
   }
 
   const synthetic: S[] = [];
   for (const pseudoId of pseudoGkIds) {
     const pseudo = playersById.get(pseudoId);
     if (!pseudo || !isClubGoalkeeper(pseudo)) continue;
+    const emittedDays = new Set<number>();
+    // Priorité aux lignes saisies directement sur le pseudo (saisie « une
+    // ligne Gardiens [Club] par club », 2026-08-24) : une seule ligne par
+    // journée, jamais de double comptage avec la résolution par nommé.
+    for (const [key, row] of Array.from(directRowByPseudoDay.entries())) {
+      const [id] = key.split("|");
+      if (Number(id) !== pseudoId) continue;
+      synthetic.push(row);
+      emittedDays.add(row.day);
+    }
     for (const [key, rows] of Array.from(namedRowsByClubDay.entries())) {
-      const [clubId] = key.split("|");
-      if (Number(clubId) !== pseudo.clubId) continue;
+      const [clubId, dayStr] = key.split("|");
+      if (Number(clubId) !== pseudo.clubId || emittedDays.has(Number(dayStr))) continue;
       const aligned = pickAlignedGoalkeeperScore(rows);
       if (aligned) synthetic.push({ ...aligned, playerId: pseudoId });
     }

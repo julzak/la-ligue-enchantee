@@ -795,11 +795,10 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
     return p !== undefined && isClubGoalkeeper(p);
   });
   const pseudoGkIdSet = new Set(pseudoGkIds);
-  // M3 : on ecarte les lignes SCORE dont l'id est un pseudo-gardien.
-  // Si une ligne a ete saisie par erreur sur un pseudo (la grille admin les
-  // exclut desormais, mais une ligne peut exister en base), elle ne doit pas
-  // etre comptee : la ligne synthetique generee par attributeClubGoalkeeperDayScores
-  // fait foi et serait doublement comptee sinon.
+  // Les lignes SCORE portant l'id d'un pseudo-gardien passent uniquement par
+  // attributeClubGoalkeeperDayScores (qui les prend en priorite depuis le
+  // retour a la saisie directe « Gardiens [Club] », 2026-08-24) : les garder
+  // aussi dans realScores les compterait deux fois.
   const realScores = fetchedScores.filter((s) => !pseudoGkIdSet.has(s.playerId));
   const allScores = [
     ...realScores,
