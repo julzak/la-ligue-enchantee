@@ -83,9 +83,20 @@ export async function GET(request: Request) {
     filtered = data.filter((p) => scoreMap.has(p.playerId) || activeClubIds.has(p.clubId));
   }
 
+  // Tri par poste dans l'ordre football (pas alphabétique, qui donnait
+  // Attaque > Défense > Gardien > Milieu), puis nom.
+  const positionRank = (position: string): number => {
+    const lower = position.toLowerCase();
+    if (lower.includes("gardien")) return 0;
+    if (lower.includes("fense")) return 1; // Défense / Defense
+    if (lower.includes("milieu")) return 2;
+    return 3; // Attaque
+  };
   filtered.sort((a, b) => {
     if (a.clubName !== b.clubName) return a.clubName.localeCompare(b.clubName);
-    return a.position.localeCompare(b.position);
+    const rankDiff = positionRank(a.position) - positionRank(b.position);
+    if (rankDiff !== 0) return rankDiff;
+    return a.lname.localeCompare(b.lname);
   });
 
   return NextResponse.json({ scores: filtered, day });
