@@ -19,14 +19,14 @@ export async function GET() {
   const params: (string | number)[] = scoped ? [scope.season!.id, seasonKey] : [seasonKey];
 
   const payments = await prisma.$queryRawUnsafe<{
-    user_id: number; season: string; amount: number; paid: number; paid_at: string | null; notes: string | null; userName: string; leagueId: number | null; leagueName: string | null;
+    user_id: number; season: string; amount: number; paid: number; paid_at: string | null; notes: string | null; userName: string; leagueId: number | null; leagueName: string | null; leagueTier: number | null;
   }[]>(
     `SELECT p.user_id, p.season, p.amount, p.paid, p.paid_at, p.notes, u.NAME as userName,
-            x.leagueId, x.leagueName
+            x.leagueId, x.leagueName, x.leagueTier
      FROM PAYMENT p
      JOIN USER u ON p.user_id = u.ID_USER
      LEFT JOIN (
-       SELECT lu.ID_USER as uid, lg.ID_LEAGUE as leagueId, lg.NAME as leagueName
+       SELECT lu.ID_USER as uid, lg.ID_LEAGUE as leagueId, lg.NAME as leagueName, lg.TIER as leagueTier
        FROM LEAGUE_USER lu
        JOIN \`LEAGUE\` lg ON lg.ID_LEAGUE = lu.ID_LEAGUE
        WHERE ${leagueCond}
@@ -46,6 +46,10 @@ export async function GET() {
       notes: p.notes,
       leagueId: p.leagueId ? Number(p.leagueId) : null,
       leagueName: p.leagueName ?? null,
+      // Ordre d'affichage des groupes côté client (division la plus haute
+      // d'abord). Les IDs de ligues changent chaque saison : ne jamais
+      // re-coder un ordre par ID en dur côté front.
+      leagueTier: p.leagueTier != null ? Number(p.leagueTier) : null,
     })),
     totalPaid: payments.filter((p) => p.paid === 1).length,
     totalDue: payments.length,
