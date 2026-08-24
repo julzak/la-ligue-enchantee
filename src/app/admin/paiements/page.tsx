@@ -12,19 +12,20 @@ interface Payment {
   notes: string | null;
   leagueId: number | null;
   leagueName: string | null;
+  leagueTier: number | null;
 }
 
-const LEAGUE_ORDER: Record<number, number> = { 20: 0, 19: 1, 22: 2 };
-const LEAGUE_SHORT: Record<number, string> = { 20: "L1", 19: "L2", 22: "National" };
-
+// Les IDs de ligues changent à chaque saison (machine à saisons) : l'ordre
+// vient du TIER renvoyé par l'API, jamais d'une map d'IDs codée en dur
+// (bug « module paiements vide » à la bascule 2026-2027).
 function leagueLabel(leagueId: number | null, leagueName: string | null): string {
   if (!leagueId) return "Sans ligue";
-  return LEAGUE_SHORT[leagueId] ?? leagueName ?? "Autre";
+  return leagueName ?? "Autre";
 }
 
-function leagueSortKey(leagueId: number | null): number {
-  if (leagueId === null) return 99;
-  return LEAGUE_ORDER[leagueId] ?? 50;
+function leagueSortKey(g: { leagueId: number | null; leagueTier: number | null }): number {
+  if (g.leagueId === null) return 99;
+  return g.leagueTier ?? 50;
 }
 
 export default function PaiementsPage() {
@@ -58,16 +59,17 @@ export default function PaiementsPage() {
   }
 
   // Group payments by league
-  const grouped = payments.reduce<Record<string, { leagueId: number | null; leagueName: string | null; payments: Payment[] }>>((acc, p) => {
+  const grouped = payments.reduce<Record<string, { leagueId: number | null; leagueName: string | null; leagueTier: number | null; payments: Payment[] }>>((acc, p) => {
     const key = String(p.leagueId ?? "none");
-    if (!acc[key]) acc[key] = { leagueId: p.leagueId, leagueName: p.leagueName, payments: [] };
+    if (!acc[key]) acc[key] = { leagueId: p.leagueId, leagueName: p.leagueName, leagueTier: p.leagueTier, payments: [] };
     acc[key].payments.push(p);
     return acc;
   }, {});
 
+  // Un participant sans ligue de la saison courante reste visible en fin de
+  // liste (groupe « Sans ligue ») plutôt que d'être masqué silencieusement.
   const sortedGroups = Object.values(grouped)
-    .filter((g) => g.leagueId !== null && LEAGUE_ORDER[g.leagueId] !== undefined)
-    .sort((a, b) => leagueSortKey(a.leagueId) - leagueSortKey(b.leagueId));
+    .sort((a, b) => leagueSortKey(a) - leagueSortKey(b));
 
   return (
     <div className="space-y-6 max-w-3xl">
