@@ -18,6 +18,8 @@ const trophyConfig: Record<TrophyType, { icon: React.ElementType; color: string 
   star: { icon: Star, color: "#8B6914" },
   "star-gold": { icon: Star, color: "#C8A84B" },
   "star-red": { icon: Star, color: "#C0392B" },
+  "star-blue": { icon: Star, color: "#4A7FC1" },
+  "star-green": { icon: Star, color: "#4C9A6B" },
   cup: { icon: Trophy, color: "#C8A84B" },
   skull: { icon: Skull, color: "#C0392B" },
   leaf: { icon: Leaf, color: "#E07A5F" },

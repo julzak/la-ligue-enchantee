@@ -65,7 +65,7 @@ function calcPlayerTotal(
 }
 
 // Trophy types from the img tags in USER.NAME
-type TrophyType = "star" | "star-gold" | "star-red" | "cup" | "skull" | "leaf" | "ballon-dor";
+type TrophyType = "star" | "star-gold" | "star-red" | "star-blue" | "star-green" | "cup" | "skull" | "leaf" | "ballon-dor";
 
 interface ParsedUser {
   id: number;
@@ -76,19 +76,24 @@ interface ParsedUser {
 
 function parseUserName(raw: string): { cleanName: string; trophies: TrophyType[] } {
   const trophies: TrophyType[] = [];
-  const imgRegex = /<img[^>]*src="[^"]*?(\w+)\.(gif|png)"[^>]*>/gi;
+  // Le suffixe numérique legacy (etoile_jaune3.gif) condense N étoiles en une image.
+  const imgRegex = /<img[^>]*src="[^"]*?([a-z_]+?)(\d*)\.(gif|png)"[^>]*>/gi;
   let match;
   while ((match = imgRegex.exec(raw)) !== null) {
     const filename = match[1].toLowerCase();
-    if (filename === "etoile_jaune" || filename === "etoile_or") trophies.push("star-gold");
-    else if (filename === "etoile_rouge" || filename === "etoile") trophies.push("star-red");
-    else if (filename === "etoile_noire") trophies.push("star");
-    else if (filename === "etoile_verte") trophies.push("star-gold");
-    else if (filename === "coupe" || filename === "trophee") trophies.push("cup");
-    else if (filename === "skull" || filename === "tete_mort") trophies.push("skull");
-    else if (filename === "champion_automne") trophies.push("leaf");
-    else if (filename === "ballon_dor") trophies.push("ballon-dor");
-    else trophies.push("star"); // fallback
+    const count = match[2] ? Math.max(1, parseInt(match[2], 10)) : 1;
+    let type: TrophyType;
+    if (filename === "etoile_jaune" || filename === "etoile_or") type = "star-gold";
+    else if (filename === "etoile_rouge" || filename === "etoile") type = "star-red";
+    else if (filename === "etoile_noire") type = "star";
+    else if (filename === "etoile_bleue") type = "star-blue";
+    else if (filename === "etoile_verte") type = "star-green";
+    else if (filename === "coupe" || filename === "trophee") type = "cup";
+    else if (filename === "skull" || filename === "tete_mort") type = "skull";
+    else if (filename === "champion_automne") type = "leaf";
+    else if (filename === "ballon_dor") type = "ballon-dor";
+    else type = "star"; // fallback
+    for (let i = 0; i < count; i++) trophies.push(type);
   }
   const cleanName = raw.replace(/<[^>]*>/g, "").trim();
   return { cleanName, trophies };
@@ -1106,6 +1111,12 @@ export async function getPlayerStats(limit = 10) {
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
 
+  // Seuil d'apparitions progressif : 5 en rythme de croisière, mais borné par le
+  // nombre de journées publiées, sinon les stats du championnat restent vides
+  // jusqu'à J5 en début de saison.
+  const currentDay = await getCurrentMatchday();
+  const minDays = Math.max(1, Math.min(5, currentDay));
+
   // Ne charger que les scores des joueurs de la saison courante (SCORE n'a pas de
   // colonne saison : sans ce filtre on ramenait TOUTE la table — 20 ans d'historique —
   // pour ensuite écarter en JS les joueurs hors saison). Résultat identique, volume
@@ -1133,7 +1144,7 @@ export async function getPlayerStats(limit = 10) {
 
   function buildList(sortKey: "totalPts" | "goals" | "passes", ascending = false) {
     const sorted = Array.from(agg.entries())
-      .filter(([, v]) => v.days >= 5) // minimum 5 appearances
+      .filter(([, v]) => v.days >= minDays) // minimum d'apparitions (5, borné par les journées publiées)
       .sort((a, b) => ascending ? a[1][sortKey] - b[1][sortKey] : b[1][sortKey] - a[1][sortKey])
       .slice(0, limit);
 
