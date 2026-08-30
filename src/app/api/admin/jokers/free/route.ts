@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CLUB_GK_KEY_PREFIX } from "@/lib/club-goalkeeper";
 import { getSeasonFilters } from "@/lib/season";
-import { getCurrentMatchday } from "@/lib/db";
+import { getJokerEffectDay } from "@/lib/joker-day";
 
 export async function GET(request: Request) {
   // Volontairement sans requireAdmin (commit 477ae33) : consommé par les pages
@@ -19,13 +19,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ players: [] });
   }
 
-  // Journée courante scopée saison (0 en avant-saison), pas le max global SCORE.
-  // Joueurs pris = effectif actif à la prochaine journée composable (rosterDay) :
-  // en avant-saison rosterDay=1, l'effectif issu des enchères (dayFirst=1) est bien
-  // exclu. NB : pendant la phase d'enchères, TEAM est vide (les pris viennent
+  // Joueurs pris = effectif actif à la journée d'effet joker (effectDay), la
+  // même que celle où POST /api/jokers écrit et valide « entrant libre » :
+  // entre cutoff et publication (effectDay = J+2), évaluer à « dernière
+  // publiée + 1 » proposait des joueurs déjà pris et cachait les sortants
+  // (constaté J2 2026-2027, remontée Pierre du 2026-08-30). En avant-saison
+  // effectDay=1, l'effectif issu des enchères (dayFirst=1) est bien exclu.
+  // NB : pendant la phase d'enchères, TEAM est vide (les pris viennent
   // d'AUCTION_BID plus bas), donc ce scope est neutre pour le module enchères.
-  const currentDay = await getCurrentMatchday();
-  const rosterDay = currentDay + 1;
+  const { effectDay: rosterDay } = await getJokerEffectDay();
 
   // Get taken player IDs in this league (effectif constitué)
   const taken = await prisma.team.findMany({
