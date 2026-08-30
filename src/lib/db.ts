@@ -918,13 +918,15 @@ async function getActiveAuctionWonOwners(leagueDbId: number): Promise<WonOwnerRo
 }
 
 export async function getClubsWithStats(leagueDbId: number, day?: number) {
-  // Propriété évaluée à la PROCHAINE journée composable (rosterDay), comme
-  // /api/admin/jokers/free et POST /api/jokers : en avant-saison (journée
-  // courante 0), l'effectif issu de la clôture des enchères (DAY_FIRST=1)
-  // est bien vu comme pris ; en saison, un joker posé pour J+1 est reflété
-  // immédiatement. Évaluer au jour courant affichait tous les joueurs
-  // libres après la clôture de phase (constaté le 2026-08-18).
-  const rosterDay = day ?? (await getCurrentMatchday()) + 1;
+  // Propriété évaluée à la journée d'effet joker (effectDay), comme les
+  // écritures POST /api/jokers et /api/admin/jokers/free : entre le cutoff
+  // d'une journée et sa publication, un joker s'applique à J+2 et évaluer à
+  // « dernière publiée + 1 » montrait l'entrant Libre et le sortant pris
+  // (constaté J2 2026-2027, remontée Pierre du 2026-08-30). En avant-saison
+  // effectDay = 1 : l'effectif issu de la clôture des enchères (DAY_FIRST=1)
+  // reste vu comme pris. Import différé : joker-day dépend de db.ts.
+  const { getJokerEffectDay } = await import("./joker-day");
+  const rosterDay = day ?? (await getJokerEffectDay()).effectDay;
   const allClubs = await getCachedClubs();
   const clubs = Array.from(allClubs.values()).sort((a, b) => a.name.localeCompare(b.name));
 
