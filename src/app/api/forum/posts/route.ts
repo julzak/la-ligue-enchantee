@@ -7,11 +7,16 @@ import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/admin-auth";
 import { jsonError500 } from "@/lib/api-error";
 
-// GET: list posts for a topic
+// Pagination des messages (demande Violet 2026-08-31 : fil jokers trop long
+// pour atteindre la zone de réponse). Page 1 = messages les plus récents.
+const POSTS_PAGE_SIZE = 20;
+
+// GET: list posts for a topic (paginated)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const topicId = Number(searchParams.get("topicId") ?? 0);
   if (!topicId) return NextResponse.json({ error: "topicId required" }, { status: 400 });
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1) || 1);
 
   // Get topic info
   const [topic] = await prisma.$queryRawUnsafe<{
@@ -21,12 +26,20 @@ export async function GET(request: Request) {
 
   if (!topic) return NextResponse.json({ error: "Topic not found" }, { status: 404 });
 
-  // Get all posts
+  // Get one page of posts (most recent first)
+  const [{ total }] = await prisma.$queryRawUnsafe<{ total: number }[]>(
+    "SELECT COUNT(*) as total FROM FORUM_POST WHERE topic_id = ?", topicId
+  );
+  const totalPosts = Number(total);
+  const totalPages = Math.max(1, Math.ceil(totalPosts / POSTS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
   const posts = await prisma.$queryRawUnsafe<{
     id: number; topic_id: number; author_id: number; content: string;
     created_at: Date; updated_at: Date | null;
   }[]>(
-    "SELECT * FROM FORUM_POST WHERE topic_id = ? ORDER BY created_at DESC",
+    // Ordre secondaire sur id : created_at est à la seconde, deux messages
+    // simultanés rendraient la pagination instable sans lui.
+    `SELECT * FROM FORUM_POST WHERE topic_id = ? ORDER BY created_at DESC, id DESC LIMIT ${POSTS_PAGE_SIZE} OFFSET ${(safePage - 1) * POSTS_PAGE_SIZE}`,
     topicId
   );
 
@@ -64,6 +77,9 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
+    page: safePage,
+    totalPages,
+    totalPosts,
     topic: {
       id: Number(topic.id),
       leagueId: Number(topic.league_id),

@@ -10,15 +10,9 @@ const CAT_LABELS: Record<string, string> = {
   general: "Infos G\u00e9n\u00e9rales",
   "ligue-1": "Ligue 1 (Baudens League)",
   "ligue-2": "Ligue 2",
-  "national-1": "Ligue 3",
+  "ligue-3": "Ligue 3",
   coupe: "Coupe Enchant\u00e9e",
   reclamation: "R\u00e9clamations",
-};
-
-const CAT_LEAGUE_ID: Record<string, number> = {
-  "ligue-1": 20,
-  "ligue-2": 19,
-  "national-1": 22,
 };
 
 interface Topic {
@@ -127,7 +121,10 @@ function TopicRow({ topic, isPinned }: { topic: Topic; isPinned: boolean }) {
 
 export default function CategoryPage() {
   const params = useParams();
-  const category = params.category as string;
+  const rawCategory = params.category as string;
+  // Alias historique : les topics 'national-1' ont été migrés en 'ligue-3'
+  // (2026-08-31), l'ancienne URL reste servie.
+  const category = rawCategory === "national-1" ? "ligue-3" : rawCategory;
   const label = CAT_LABELS[category] ?? category;
 
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -140,8 +137,7 @@ export default function CategoryPage() {
   const fetchTopics = useCallback(async () => {
     setLoading(true);
     try {
-      const leagueId = CAT_LEAGUE_ID[category] ?? 0;
-      const res = await fetch(`/api/forum/topics?category=${category}${leagueId ? `&leagueId=${leagueId}` : ""}`);
+      const res = await fetch(`/api/forum/topics?category=${category}`);
       const data = await res.json();
       setTopics(data.topics ?? []);
     } catch { /* ignore */ }
@@ -157,7 +153,7 @@ export default function CategoryPage() {
       const res = await fetch("/api/forum/topics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leagueId: CAT_LEAGUE_ID[category] ?? 0, title: newTitle, content: newContent, category }),
+        body: JSON.stringify({ title: newTitle, content: newContent, category }),
       });
       const data = await res.json();
       if (data.ok) {

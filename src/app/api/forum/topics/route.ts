@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireAdmin } from "@/lib/admin-auth";
 import { jsonError500 } from "@/lib/api-error";
+import { getLeagues } from "@/lib/db";
 
 // GET: list topics for a league (or all if leagueId=0)
 export async function GET(request: Request) {
@@ -83,8 +84,7 @@ export async function POST(request: Request) {
   const userId = (session.user as { userId?: number }).userId;
   if (!userId) return NextResponse.json({ error: "User ID manquant" }, { status: 401 });
 
-  const { leagueId, title, content, category } = await request.json() as {
-    leagueId: number;
+  const { title, content, category } = await request.json() as {
     title: string;
     content: string;
     category?: string;
@@ -94,7 +94,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Titre et contenu requis" }, { status: 400 });
   }
 
-  const targetLeagueId = leagueId ?? 0;
+  // La ligue est résolue côté serveur depuis la catégorie (slug de la ligue
+  // de la saison courante). Avant (bug Violet 2026-08-31), le client envoyait
+  // des IDs 2025-2026 codés en dur : les nouveaux sujets étaient rattachés
+  // aux ligues de l'ancienne saison. Catégorie sans ligue (general, coupe) = 0.
+  const leagues = await getLeagues();
+  const targetLeagueId = leagues.find((l) => l.slug === category)?.dbId ?? 0;
   // Appartenance : poster dans une ligue précise exige d'en être membre.
   // leagueId=0 = interligue, ouvert à tout utilisateur authentifié.
   if (targetLeagueId > 0) {

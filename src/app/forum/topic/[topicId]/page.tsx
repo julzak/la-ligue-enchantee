@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, Send, ArrowLeft, Pin, Lock, Trash2 } from "lucide-react";
+import { Loader2, Send, ArrowLeft, Pin, Lock, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { EmojiButton } from "@/components/ui/EmojiButton";
 import { useSession } from "next-auth/react";
@@ -96,6 +96,8 @@ export default function TopicPage() {
 
   const [topic, setTopic] = useState<TopicInfo | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -114,18 +116,25 @@ export default function TopicPage() {
     return () => { clearTimeout(timer); document.removeEventListener("click", handleClick); };
   }, [showReactions]);
 
-  const fetchTopic = useCallback(async () => {
-    setLoading(true);
+  const fetchTopic = useCallback(async (targetPage: number, showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
-      const res = await fetch(`/api/forum/posts?topicId=${topicId}`);
+      const res = await fetch(`/api/forum/posts?topicId=${topicId}&page=${targetPage}`);
       const data = await res.json();
       setTopic(data.topic);
       setPosts(data.posts ?? []);
+      setPage(data.page ?? 1);
+      setTotalPages(data.totalPages ?? 1);
     } catch {}
-    setLoading(false);
+    if (showSpinner) setLoading(false);
   }, [topicId]);
 
-  useEffect(() => { fetchTopic(); }, [fetchTopic]);
+  useEffect(() => { fetchTopic(1); }, [fetchTopic]);
+
+  function goToPage(p: number) {
+    fetchTopic(p);
+    window.scrollTo({ top: 0 });
+  }
 
   async function handleReply() {
     if (!reply.trim()) return;
@@ -137,7 +146,9 @@ export default function TopicPage() {
         body: JSON.stringify({ topicId, content: reply }),
       });
       const data = await res.json();
-      if (data.ok) { setReply(""); fetchTopic(); }
+      // Retour page 1 : les messages sont triés du plus récent au plus
+      // ancien, la réponse fraîche y apparaît en tête.
+      if (data.ok) { setReply(""); fetchTopic(1); }
     } catch {}
     setSubmitting(false);
   }
@@ -148,13 +159,8 @@ export default function TopicPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ postId, emoji }),
     });
-    // Refresh without showing loading spinner
-    try {
-      const res = await fetch(`/api/forum/posts?topicId=${topicId}`);
-      const data = await res.json();
-      setTopic(data.topic);
-      setPosts(data.posts ?? []);
-    } catch {}
+    // Refresh current page without showing loading spinner
+    fetchTopic(page, false);
   }
 
   async function deletePost(postId: number) {
@@ -164,7 +170,7 @@ export default function TopicPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ postId }),
     });
-    fetchTopic();
+    fetchTopic(page);
   }
 
   async function deleteTopic() {
@@ -218,6 +224,35 @@ export default function TopicPage() {
           )}
         </div>
       </div>
+
+      {/* Reply form — en tête : les messages sont triés du plus récent au
+          plus ancien, on répond sans avoir à scroller (demande Violet). */}
+      {!topic.locked ? (
+        <div className="bg-surface rounded-xl border border-white/[0.07] p-5">
+          <textarea
+            placeholder="Votre reponse..."
+            value={reply}
+            onChange={e => setReply(e.target.value)}
+            rows={3}
+            className="w-full bg-surface-2 border border-white/[0.07] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-muted resize-none focus:outline-none focus:border-gold"
+          />
+          <div className="flex items-center justify-between mt-3">
+            <EmojiButton onSelect={emoji => setReply(prev => prev + emoji)} />
+            <button
+              onClick={handleReply}
+              disabled={submitting || !reply.trim()}
+              className="h-9 px-5 bg-gold text-night font-semibold rounded-lg text-sm hover:bg-gold/90 flex items-center gap-2 disabled:opacity-50 transition-colors"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Repondre
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-surface rounded-xl border border-white/[0.07] p-5 text-center text-sm text-muted">
+          🔒 Ce sujet est verrouille
+        </div>
+      )}
 
       {/* Posts */}
       {posts.map((post) => {
@@ -300,33 +335,31 @@ export default function TopicPage() {
         );
       })}
 
-      {/* Reply form */}
-      {!topic.locked ? (
-        <div className="bg-surface rounded-xl border border-white/[0.07] p-5">
-          <textarea
-            placeholder="Votre reponse..."
-            value={reply}
-            onChange={e => setReply(e.target.value)}
-            rows={3}
-            className="w-full bg-surface-2 border border-white/[0.07] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-muted resize-none focus:outline-none focus:border-gold"
-          />
-          <div className="flex items-center justify-between mt-3">
-            <EmojiButton onSelect={emoji => setReply(prev => prev + emoji)} />
-            <button
-              onClick={handleReply}
-              disabled={submitting || !reply.trim()}
-              className="h-9 px-5 bg-gold text-night font-semibold rounded-lg text-sm hover:bg-gold/90 flex items-center gap-2 disabled:opacity-50 transition-colors"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Repondre
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-surface rounded-xl border border-white/[0.07] p-5 text-center text-sm text-muted">
-          🔒 Ce sujet est verrouille
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => goToPage(page - 1)}
+            disabled={page <= 1}
+            className="w-8 h-8 rounded-lg bg-surface border border-white/[0.07] text-muted hover:text-gold hover:border-gold/20 disabled:opacity-30 disabled:hover:text-muted disabled:hover:border-white/[0.07] flex items-center justify-center transition-colors"
+            title="Messages plus récents"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-xs text-muted tabular-nums px-2">
+            Page {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => goToPage(page + 1)}
+            disabled={page >= totalPages}
+            className="w-8 h-8 rounded-lg bg-surface border border-white/[0.07] text-muted hover:text-gold hover:border-gold/20 disabled:opacity-30 disabled:hover:text-muted disabled:hover:border-white/[0.07] flex items-center justify-center transition-colors"
+            title="Messages plus anciens"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
+
     </div>
   );
 }

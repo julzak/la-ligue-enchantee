@@ -33,9 +33,10 @@ const CATEGORIES = [
     icon: "ligue2" as const,
   },
   {
-    // Slug historique conserv\u00e9 : les topics existants sont rattach\u00e9s \u00e0
-    // category='national-1' en DB. Seul l'affichage passe en Ligue 3.
-    slug: "national-1",
+    // Migr\u00e9 depuis 'national-1' (2026-08-31) : les topics existants ont
+    // \u00e9t\u00e9 bascul\u00e9s en category='ligue-3' en DB ; l'ancienne URL
+    // /forum/national-1 reste servie en alias par la page cat\u00e9gorie.
+    slug: "ligue-3",
     label: "Ligue 3",
     description: "Jokers, r\u00e9clamations, r\u00e9sultats, chambrages",
     borderColor: "border-l-purple-400",
