@@ -23,6 +23,7 @@ import { MatchCard } from "@/components/scoring/MatchCard";
 import { ChevronRight, Flame, ThumbsDown, Skull, Trophy } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { prisma } from "@/lib/prisma";
+import { getCurrentSeasonKey } from "@/lib/season";
 
 // ── Skeleton loaders ────────────────────────────────────
 function CardSkeleton({ cols = 3 }: { cols?: number }) {
@@ -204,11 +205,13 @@ async function MatchResultsSection() {
   const currentMatchday = await getCurrentMatchday();
   const [matchRatings, dbMatches] = await Promise.all([
     getMatchPlayerRatings(currentMatchday),
-    prisma.$queryRawUnsafe<{
-      home_team: string; away_team: string; home_score: number | null; away_score: number | null;
-    }[]>(
-      "SELECT home_team, away_team, home_score, away_score FROM MATCH_SCHEDULE WHERE matchday = ? AND home_score IS NOT NULL ORDER BY match_date",
-      currentMatchday
+    getCurrentSeasonKey().then((seasonKey) =>
+      prisma.$queryRawUnsafe<{
+        home_team: string; away_team: string; home_score: number | null; away_score: number | null;
+      }[]>(
+        "SELECT home_team, away_team, home_score, away_score FROM MATCH_SCHEDULE WHERE season = ? AND matchday = ? AND home_score IS NOT NULL ORDER BY match_date",
+        seasonKey, currentMatchday
+      )
     ),
   ]);
 

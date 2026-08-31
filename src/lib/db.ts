@@ -806,8 +806,30 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
     where: { leagueId: leagueDbId, userId, day: { lte: currentDay } },
   });
 
+  // Compo effective par journée, mêmes fallbacks que publish (STATS_USER) :
+  // TEAM_DAY du jour, sinon TEAM_DAY de la veille, sinon titulaires TEAM.
+  // Sans ça, un participant sans compo validée à la journée N perdait cette
+  // journée dans le cumul alors que le classement la comptait.
+  const savedByDay = new Map<number, number[]>();
+  allLineups.forEach((l) => {
+    const ids = savedByDay.get(l.day) ?? [];
+    ids.push(l.playerId);
+    savedByDay.set(l.day, ids);
+  });
+  const effectiveByDay = new Map<number, number[]>();
+  for (let d = 1; d <= currentDay; d++) {
+    let ids = savedByDay.get(d) ?? savedByDay.get(d - 1);
+    if (!ids) {
+      const teamMembers = await prisma.team.findMany({
+        where: { leagueId: leagueDbId, userId, dayFirst: { lte: d }, dayLast: { gte: d }, isSubs: 0 },
+      });
+      ids = teamMembers.slice(0, 11).map((t) => t.playerId);
+    }
+    effectiveByDay.set(d, ids);
+  }
+
   // Get unique player IDs
-  const playerIds = Array.from(new Set(allLineups.map((l) => l.playerId)));
+  const playerIds = Array.from(new Set(Array.from(effectiveByDay.values()).flat()));
 
   // Get player details
   const playerMap = await getCachedPlayers();
@@ -836,12 +858,14 @@ export async function getParticipantCumulativeStats(leagueDbId: number, userId: 
     ...attributeClubGoalkeeperDayScores(pseudoGkIds, playerMap.values(), fetchedScores),
   ];
 
-  // Build per-player: which days were they in the lineup?
+  // Build per-player: which days were they in the (effective) lineup?
   const playerDays = new Map<number, Set<number>>();
-  allLineups.forEach((l) => {
-    const days = playerDays.get(l.playerId) ?? new Set();
-    days.add(l.day);
-    playerDays.set(l.playerId, days);
+  effectiveByDay.forEach((ids, day) => {
+    ids.forEach((playerId) => {
+      const days = playerDays.get(playerId) ?? new Set();
+      days.add(day);
+      playerDays.set(playerId, days);
+    });
   });
 
   // Aggregate scores only for days the player was in the lineup
