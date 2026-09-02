@@ -6,6 +6,7 @@ import { getScoringConfig, type ScoringConfig } from "./scoring-config";
 import { computePlayerTotal, SCORING_DEFAULTS } from "./scoring-core";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { jokerTopicTitle } from "./joker-forum";
+import { getLeagueJokerQuotas } from "./joker-quota";
 import { leagueSlug } from "./season-key";
 import { parisUtcOffsetHours, parisWallTimeToUtc } from "./paris-time";
 import {
@@ -1347,31 +1348,19 @@ export async function getLeagueStats(leagueDbId: number) {
 }
 
 // ── Jokers remaining per participant in a league ────────
+// Calcul délégué à joker-quota (socle pur joker-quota-core) : les jokers
+// posés avant la deadline estivale consomment le pot estival, pas le pot saison.
 export async function getLeagueJokersRemaining(leagueDbId: number): Promise<Map<number, number>> {
-  // Get max jokers from config
-  const configs = await prisma.$queryRawUnsafe<{ max_count: number; deadline: string | null }[]>(
-    "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1",
-    await getCurrentSeasonKey()
-  );
-  const maxJokers = configs.reduce((sum, c) => {
-    if (c.deadline && new Date(c.deadline) < new Date()) return sum;
-    return sum + Number(c.max_count);
-  }, 0);
-
-  // Count jokers used per user in this league
-  const logs = await prisma.$queryRawUnsafe<{ user_id: number; cnt: bigint }[]>(
-    "SELECT user_id, COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? GROUP BY user_id",
-    leagueDbId
-  );
+  const { byUser, defaultQuota } = await getLeagueJokerQuotas(leagueDbId);
 
   const result = new Map<number, number>();
-  for (const log of logs) {
-    result.set(Number(log.user_id), maxJokers - Number(log.cnt));
+  for (const [userId, quota] of Array.from(byUser.entries())) {
+    result.set(userId, quota.remaining);
   }
 
   // Participants with no jokers used get full allowance
   // (we return the map, caller fills in defaults)
-  result.set(-1, maxJokers); // sentinel: default value
+  result.set(-1, defaultQuota.remaining); // sentinel: default value
   return result;
 }
 

@@ -2,12 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentSeasonKey } from "@/lib/season";
 import { requireAuth } from "@/lib/admin-auth";
 import { getLeagues } from "@/lib/db";
 import { getJokerEffectDay, applyJokerSwap } from "@/lib/joker-day";
 import { postJokerToForum } from "@/lib/joker-forum";
 import { getJokersFreeze, formatFreezeDate } from "@/lib/jokers-freeze";
+import { getJokerQuotaForUser } from "@/lib/joker-quota";
 
 // GET: get squad + joker info for the logged-in user
 export async function GET(request: Request) {
@@ -66,7 +66,6 @@ export async function GET(request: Request) {
     "SELECT id, player_out_id, player_in_id, day FROM JOKER_LOG WHERE league_id = ? AND user_id = ? ORDER BY id DESC",
     leagueId, userId
   );
-  const jokerUsed = jokerLogEntries.length;
 
   // Resolve player names for history
   const jokerPlayerIds = new Set<number>();
@@ -86,15 +85,10 @@ export async function GET(request: Request) {
     day: Number(j.day),
   }));
 
-  // Joker config
-  const configs = await prisma.$queryRawUnsafe<{ type: string; max_count: number; deadline: string | null }[]>(
-    "SELECT type, max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1",
-    await getCurrentSeasonKey()
-  );
-  const totalMax = configs.reduce((sum, c) => {
-    if (c.deadline && new Date(c.deadline) < new Date()) return sum;
-    return sum + Number(c.max_count);
-  }, 0);
+  // Quota : un joker posé avant la deadline des jokers estivaux (août)
+  // consomme ce pot ; passé la deadline, seuls les jokers estivaux NON
+  // utilisés sont perdus (cf src/lib/joker-quota-core.ts).
+  const quota = await getJokerQuotaForUser(leagueId, userId);
 
   // Gel des jokers pendant le mercato d'hiver : l'UI désactive le formulaire
   // (le POST re-vérifie de son côté, la fermeture ne repose pas sur le client).
@@ -102,8 +96,8 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     squad: squadData,
-    jokersUsed: jokerUsed,
-    jokersRemaining: totalMax - jokerUsed,
+    jokersUsed: quota.used,
+    jokersRemaining: quota.remaining,
     jokerHistory,
     currentDay,
     effectDay,
@@ -156,24 +150,11 @@ export async function POST(request: Request) {
     // qui laissait modifier une journée verrouillée tout le week-end.
     const { effectDay: nextDay } = await getJokerEffectDay();
 
-    // Check joker limit
-    const jokerCount = await prisma.$queryRawUnsafe<{ cnt: bigint }[]>(
-      "SELECT COUNT(*) as cnt FROM JOKER_LOG WHERE league_id = ? AND user_id = ?",
-      leagueId, userId
-    );
-    const used = Number(jokerCount[0]?.cnt ?? 0);
+    // Check joker limit (attribution par pot, cf src/lib/joker-quota-core.ts)
+    const { used, remaining } = await getJokerQuotaForUser(leagueId, userId);
 
-    const configs = await prisma.$queryRawUnsafe<{ max_count: number; deadline: string | null }[]>(
-      "SELECT max_count, deadline FROM JOKER_CONFIG WHERE season = ? AND is_active = 1",
-      await getCurrentSeasonKey()
-    );
-    const maxJokers = configs.reduce((sum, c) => {
-      if (c.deadline && new Date(c.deadline) < new Date()) return sum;
-      return sum + Number(c.max_count);
-    }, 0);
-
-    if (used >= maxJokers) {
-      return NextResponse.json({ error: `Plus de jokers disponibles (${used}/${maxJokers} utilises)` }, { status: 400 });
+    if (remaining <= 0) {
+      return NextResponse.json({ error: `Plus de jokers disponibles (${used} deja utilises, ${Math.max(0, remaining)} restant)` }, { status: 400 });
     }
 
     // Validate: playerOut is in user's squad — au jour où le joker agit (nextDay).

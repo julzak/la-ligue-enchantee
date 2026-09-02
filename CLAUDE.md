@@ -41,6 +41,7 @@ Fantasy football entre potes (~20 ans d'historique). Chronique IA "Lia" qui réd
 
 ## Mécaniques notables
 - TOPO (synthèse Lia) : route `POST /api/topo` avec `{slug, force?}`. `force: true` bypass le cache pour forcer la régénération (utile après un fix de prompt). Pas d'auth sur cette route — à durcir un jour.
+- Quota jokers : calcul unique dans `src/lib/joker-quota-core.ts` (pur, testé dans `joker-quota.test.ts`) + wrapper DB `joker-quota.ts`, partagé par `/api/jokers`, `/api/admin/jokers` et `getLeagueJokersRemaining` (classement). Chaque joker est attribué au pot ouvert au moment de sa pose (`JOKER_LOG.created_at`) qui expire le plus tôt : un joker posé avant la deadline des jokers d'août consomme le pot d'août, jamais le pot saison. Passé la deadline, seuls les jokers d'août NON utilisés sont perdus. Ne JAMAIS revenir à `Σ max_count des pots ouverts − COUNT(JOKER_LOG)` (bug du 2026-09-02 : tout le monde perdait 3 jokers à la deadline, utilisés ou non).
 - Cup section : depuis le fix du commit `2f5f9d5`, format `QUALIFIÉS pour le tour suivant: ... ; ÉLIMINÉS de la Coupe: ...` au lieu d'une syntaxe match-par-match avec flèche, pour empêcher Gemini Flash d'inverser qualifié/éliminé.
 
 # Snippet to append to ~/Projects/la-ligue-enchantee/CLAUDE.md
