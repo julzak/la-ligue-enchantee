@@ -103,8 +103,10 @@ function listFiles(dir: string): string[] {
 // Suffisant pour des SQL écrits en littéral, ce qui est la convention du repo.
 function extractStrings(source: string): string[] {
   const out: string[] = [];
-  const re = /`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/gs;
-  for (const m of source.matchAll(re)) out.push(m[0].slice(1, -1));
+  // `[\s\S]` plutôt que le flag `s` (dotAll) : la cible TS du projet (es5 par
+  // défaut) le refuse au typecheck, et `matchAll` n'y est itérable que via Array.from.
+  const re = /`(?:[^`\\]|\\[\s\S])*`|"(?:[^"\\]|\\[\s\S])*"|'(?:[^'\\]|\\[\s\S])*'/g;
+  for (const m of Array.from(source.matchAll(re))) out.push(m[0].slice(1, -1));
   return out;
 }
 
@@ -132,7 +134,7 @@ function auditPrisma(files: string[]): Finding[] {
   for (const f of files) {
     const rel = path.relative(SRC, f);
     const src = fs.readFileSync(f, "utf8");
-    for (const m of src.matchAll(PRISMA_READ_RE)) {
+    for (const m of Array.from(src.matchAll(PRISMA_READ_RE))) {
       const window = src.slice(m.index!, m.index! + PRISMA_WINDOW);
       if (PRISMA_SCOPE_RE.test(window)) continue;
       if (PRISMA_ALLOWLIST.some((a) => rel === a.file && window.includes(a.contains))) continue;
