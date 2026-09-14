@@ -6,20 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
-import { parisWallTimeToUtc } from "@/lib/paris-time";
-
-// Deadline config (loaded from DB, with defaults)
-interface DeadlineConfig {
-  defaultHour: number;       // e.g. 15 = 15h Paris
-  earlyMatchHour: number;    // e.g. 17 = if match before 17h Paris
-  earlyMatchOffsetHours: number; // e.g. 2 = deadline 2h before kickoff
-}
-
-const DEFAULT_DEADLINE_CONFIG: DeadlineConfig = {
-  defaultHour: 15,
-  earlyMatchHour: 17,
-  earlyMatchOffsetHours: 2,
-};
+import {
+  DEFAULT_DEADLINE_CONFIG,
+  deadlineForDate,
+  matchTimeToWall,
+  type DeadlineConfig,
+  type WallTime,
+} from "@/lib/match-deadline";
 
 async function getDeadlineConfig(): Promise<DeadlineConfig> {
   try {
@@ -40,25 +33,11 @@ async function getDeadlineConfig(): Promise<DeadlineConfig> {
   return DEFAULT_DEADLINE_CONFIG;
 }
 
-// Deadline d'une date de match : defaultHour, avancée à (premier coup d'envoi
-// du jour - offset) si ce coup d'envoi est avant earlyMatchHour. Même règle que
-// getLockedClubIds (db.ts), qui verrouille club par club.
-function deadlineForDate(date: string, times: string[], config: DeadlineConfig): Date {
-  const sortedTimes = [...times].sort();
-  const [fhStr, fmStr] = (sortedTimes[0] || "20:00").split(":");
-  const firstKick = parisWallTimeToUtc(date, Number(fhStr), Number(fmStr) || 0);
-  const earlyThreshold = parisWallTimeToUtc(date, config.earlyMatchHour);
-  if (firstKick < earlyThreshold) {
-    return new Date(firstKick.getTime() - config.earlyMatchOffsetHours * 60 * 60 * 1000);
-  }
-  return parisWallTimeToUtc(date, config.defaultHour);
-}
-
-// Une deadline par date de match de la journée, triées. La première est la
-// deadline « historique » (lockAt) ; les suivantes servent au bandeau : une
-// journée étalée sur vendredi/samedi/dimanche n'est pas « fermée » à la
-// première (remontée Pierre J1 2026-2027 : 8 matchs encore ouverts).
-function calcDeadlines(matches: { date: string; time: string }[], config: DeadlineConfig): Date[] {
+// Meme calcul que getLockedClubIds (db.ts), via match-deadline.ts. Avant :
+// l'heure etait parsee avec String(date).slice(0, 5) sur la Date Prisma d'une
+// colonne TIME ("Thu J" -> NaN), donc la route repondait toujours 15h
+// (signalement Pierre 2026-09-14).
+function calcDeadlines(matches: { date: string; kickoff: WallTime | null }[], config: DeadlineConfig): Date[] {
   if (matches.length === 0) {
     const now = new Date();
     const d = (4 - now.getDay() + 7) % 7 || 7;
@@ -67,13 +46,13 @@ function calcDeadlines(matches: { date: string; time: string }[], config: Deadli
     dt.setHours(0, 0, 0, 0);
     return [dt];
   }
-  const byDate = new Map<string, string[]>();
+  const byDate = new Map<string, WallTime[]>();
   for (const m of matches) {
     if (!byDate.has(m.date)) byDate.set(m.date, []);
-    byDate.get(m.date)!.push(m.time || "20:00");
+    if (m.kickoff) byDate.get(m.date)!.push(m.kickoff);
   }
   return Array.from(byDate.entries())
-    .map(([date, times]) => deadlineForDate(date, times, config))
+    .map(([date, kickoffs]) => deadlineForDate(date, kickoffs, config))
     .sort((a, b) => a.getTime() - b.getTime());
 }
 
@@ -103,7 +82,7 @@ export async function GET(request: Request) {
   // reportés sans nouvelle date sont exclus (leur date d'origine est passée) ;
   // un report re-daté par l'admin compte à sa nouvelle date.
   try {
-    const rows = await prisma.$queryRawUnsafe<{ d: string | Date; t: string | null }[]>(
+    const rows = await prisma.$queryRawUnsafe<{ d: string | Date; t: Date | string | null }[]>(
       `SELECT COALESCE(admin_override_date, match_date) AS d, match_time AS t
          FROM MATCH_SCHEDULE
         WHERE season = ? AND matchday = ?
@@ -113,7 +92,7 @@ export async function GET(request: Request) {
     if (rows.length > 0) {
       const matches = rows.map((r) => ({
         date: String(r.d instanceof Date ? r.d.toISOString().slice(0, 10) : r.d).slice(0, 10),
-        time: (r.t ? String(r.t) : "").slice(0, 5) || "20:00",
+        kickoff: matchTimeToWall(r.t),
       }));
       const lockDates = calcDeadlines(matches, deadlineConfig);
       const firstMatch = matches.sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date))[0];
