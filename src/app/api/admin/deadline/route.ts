@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCurrentSeasonKey } from "@/lib/season";
 import { getCurrentMatchday } from "@/lib/db";
+import { parisWallTimeToUtc } from "@/lib/paris-time";
 import {
   DEFAULT_DEADLINE_CONFIG,
   deadlineForDate,
@@ -112,10 +113,21 @@ export async function POST(request: Request) {
   try {
     const { day, lockAt } = await request.json() as { day: number; lockAt: string };
 
+    // "YYYY-MM-DDTHH:MM" (input datetime-local de l'admin) = heure de Paris.
+    // Avant : new Date() l'interpretait dans le fuseau du serveur (UTC), donc
+    // "13:00" saisi devenait 15h Paris. Un ISO complet (avec offset) reste tel quel.
+    const wall = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(lockAt ?? "");
+    const lockAtUtc = wall
+      ? parisWallTimeToUtc(wall[1], Number(wall[2]), Number(wall[3]))
+      : new Date(lockAt);
+    if (!day || Number.isNaN(lockAtUtc.getTime())) {
+      return NextResponse.json({ error: "day et lockAt (date valide) requis" }, { status: 400 });
+    }
+
     await prisma.$executeRawUnsafe(
       `INSERT INTO MATCHDAY_CONFIG (day, lock_at, status) VALUES (?, ?, 'upcoming')
        ON DUPLICATE KEY UPDATE lock_at = VALUES(lock_at)`,
-      day, new Date(lockAt)
+      day, lockAtUtc
     );
 
     return NextResponse.json({ ok: true });
