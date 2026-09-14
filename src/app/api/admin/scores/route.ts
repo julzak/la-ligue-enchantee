@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSeasonFilters, getSeasonScope } from "@/lib/season";
-import { getCurrentMatchday } from "@/lib/db";
+import { getLatestScoredDay } from "@/lib/db";
 import { isClubGoalkeeper, isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 
 // GET: fetch scores for a matchday
@@ -16,7 +16,8 @@ export async function GET(request: Request) {
   // If day=0, return the current matchday (for auto-detection)
   // Open on the latest day that has scores (not +1), so admin can review/complete
   if (!day) {
-    return NextResponse.json({ day: await getCurrentMatchday() });
+    // Journée en cours de saisie (publiée ou non), pas la journée publiée.
+    return NextResponse.json({ day: await getLatestScoredDay() });
   }
 
   const filters = await getSeasonFilters();
@@ -64,6 +65,9 @@ export async function GET(request: Request) {
       ownGoals: score?.ownGoals ?? 0,
       penaltySaved: score?.penaltySaved ?? 0,
       isTaken: takenPlayerIds.has(p.id),
+      // Une ligne SCORE existe en base : l'UI la renvoie au save meme videe,
+      // pour que le serveur puisse la supprimer (retour a "pas de note").
+      hasRow: score !== undefined,
     };
   });
 
@@ -122,9 +126,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "day and scores required" }, { status: 400 });
     }
 
-    const toSave = scores.filter(
-      (s) => !(s.points === null && s.goals === 0 && s.passes === 0 && s.used === 0)
-    );
+    // Ligne entierement videe (note effacee, aucune stat) : la ligne SCORE est
+    // SUPPRIMEE, quel que soit USED. Avant, une note effacee etait convertie en
+    // POINTS=0 (USED=1 restait pose par la saisie) et comptait comme une
+    // apparition a 0 dans la moyenne du joueur ; et une ligne ignoree n'etait
+    // jamais retiree de la base (signalement Pierre 2026-09-14).
+    const isEmpty = (s: (typeof scores)[number]) =>
+      s.points === null && Number(s.goals) === 0 && Number(s.passes) === 0 &&
+      Number(s.redCard ?? 0) === 0 && Number(s.ownGoals ?? 0) === 0 && Number(s.penaltySaved ?? 0) === 0;
+    const toDelete = scores
+      .filter(isEmpty)
+      .map((s) => Math.round(Number(s.playerId)))
+      .filter((id) => !isNaN(id));
+    const toSave = scores.filter((s) => !isEmpty(s));
 
     // Batch upsert: build a single INSERT ... VALUES (...), (...), ... ON DUPLICATE KEY UPDATE
     const validRows: { playerId: number; used: number; points: number; goals: number; passes: number; redCard: number; ownGoals: number; penaltySaved: number }[] = [];
@@ -158,7 +172,15 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true, saved: toSave.length });
+    for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
+      const batch = toDelete.slice(i, i + BATCH_SIZE);
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM SCORE WHERE DAY = ? AND ID_PLAYER IN (${batch.map(() => "?").join(", ")})`,
+        day, ...batch
+      );
+    }
+
+    return NextResponse.json({ ok: true, saved: toSave.length, deleted: toDelete.length });
   } catch (error) {
     console.error("Save scores error:", error);
     return NextResponse.json({ error: "Erreur sauvegarde" }, { status: 500 });

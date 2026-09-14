@@ -19,6 +19,8 @@ interface PlayerScore {
   ownGoals: number;
   penaltySaved: number;
   isTaken?: boolean;
+  /** Ligne SCORE presente en base au chargement (renvoyee au save meme videe). */
+  hasRow?: boolean;
 }
 
 interface MatchInfo {
@@ -263,9 +265,11 @@ export default function AdminNotesPage() {
       prev.map((s) => {
         if (s.playerId !== playerId) return s;
         const updated = { ...s, [field]: value };
-        // Auto-set used=1 when a note is entered
-        if (field === "points" && value !== null && value > 0) {
-          updated.used = 1;
+        // Auto-set used=1 when a note is entered ; note effacee -> used=0,
+        // sinon la ligne repartait en POINTS=0 / USED=1 (0 automatique).
+        if (field === "points") {
+          if (value !== null && value > 0) updated.used = 1;
+          else if (value === null) updated.used = 0;
         }
         return updated;
       })
@@ -277,7 +281,7 @@ export default function AdminNotesPage() {
     setMessage("");
     try {
       const toSave = scores
-        .filter((s) => s.used > 0 || s.points !== null || s.goals > 0 || s.passes > 0 || s.redCard > 0 || s.ownGoals > 0 || s.penaltySaved > 0)
+        .filter((s) => s.hasRow || s.used > 0 || s.points !== null || s.goals > 0 || s.passes > 0 || s.redCard > 0 || s.ownGoals > 0 || s.penaltySaved > 0)
         .map((s) => ({
           playerId: s.playerId,
           used: s.points !== null && s.points > 0 ? 1 : s.used,
@@ -296,7 +300,10 @@ export default function AdminNotesPage() {
       });
       const data = await res.json();
       if (data.ok) {
-        setMessage(`Sauvegardé (${toSave.length} joueurs)`);
+        const deleted = Number(data.deleted ?? 0);
+        setMessage(`Sauvegardé (${Number(data.saved ?? toSave.length)} joueurs${deleted > 0 ? `, ${deleted} note${deleted > 1 ? "s" : ""} effacée${deleted > 1 ? "s" : ""}` : ""})`);
+        // hasRow suit l'etat reel de la base apres suppression/creation.
+        setScores((prev) => prev.map((s) => ({ ...s, hasRow: !(s.points === null && s.goals === 0 && s.passes === 0 && s.redCard === 0 && s.ownGoals === 0 && s.penaltySaved === 0) })));
         const ts = new Date().toLocaleString("fr-FR");
         setLastSaved(ts);
         localStorage.setItem("notes_lastSaved", ts);
