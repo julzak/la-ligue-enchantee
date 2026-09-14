@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, useEffect, useCallback, memo } from "react";
+import { toParisDateTime } from "@/lib/paris-time";
 import { Save, Send, Loader2, ChevronDown, Image as ImageIcon, CalendarClock } from "lucide-react";
 import { canonicalClubKey, getClubLogoUrlByName } from "@/lib/assets";
 
@@ -245,7 +246,11 @@ export default function AdminNotesPage() {
       setScores(scoresData.scores ?? []);
       setMatches(matchData.matches ?? []);
       if (deadlineData.lockAt) {
-        setDeadline(new Date(deadlineData.lockAt).toISOString().slice(0, 16));
+        // Affichage en heure de Paris. Avant : toISOString() mettait l'heure UTC
+        // dans un input local (15h Paris affiché "13:00"), et la valeur ressaisie
+        // repartait en UTC (question Pierre 2026-09-14).
+        const paris = toParisDateTime(deadlineData.lockAt);
+        setDeadline(paris ? `${paris.date}T${paris.time}` : "");
       } else {
         setDeadline("");
       }
@@ -437,6 +442,7 @@ export default function AdminNotesPage() {
           <div className="flex items-center gap-1.5">
             <input
               type="datetime-local"
+              title="Deadline de la journée, heure de Paris. Pré-remplie avec la deadline automatique (premier match, ou 2h avant s'il est avant 17h). Cliquer sur Deadline la fige manuellement : plus aucune compo modifiable après cet instant, tous clubs confondus."
               value={deadline}
               onChange={(e) => { setDeadline(e.target.value); setDeadlineSaved(false); }}
               className="bg-surface-2 border border-white/[0.07] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-gold"
