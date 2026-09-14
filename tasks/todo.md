@@ -710,3 +710,17 @@ sur les conventions TheSportsDB.
   APP_CONFIG, saisi une fois, permanent).
 - `assets.test.ts` fige les 19 noms prod : un changement de fournisseur qui
   casse la résolution des logos fait échouer la CI.
+
+## Suites des remontées Pierre / Thomas (2026-09-14, après PR #92 et #93)
+
+- [ ] `api/auction/route.ts:109` et `api/admin/mercato-hiver/route.ts:17,171` dérivent
+  encore la journée courante de `prisma.score.findFirst` (dernière journée SAISIE,
+  non scopée saison). À aligner sur `getCurrentMatchday` (dernière journée
+  PUBLIÉE) avant le mercato d'hiver (budget indexé sur le classement J19).
+- [ ] Demande Thomas : focus des champs de la page admin Notes sur mobile
+  (saisie dans le métro). Ergonomie, à cadrer avec lui (quel champ perd le
+  focus, clavier numérique, navigation entre lignes).
+- [ ] Deploy auto : `.github/workflows/deploy.yml` a cassé une fois sur une
+  coupure SSH pendant `next build` (> 4 min, "client_loop: send disconnect:
+  Broken pipe"). Ajouter ServerAliveInterval côté action SSH ou lancer le
+  build en détaché avec sondage.
