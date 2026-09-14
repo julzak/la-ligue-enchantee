@@ -7,7 +7,7 @@ import { computePlayerTotal, SCORING_DEFAULTS } from "./scoring-core";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { jokerTopicTitle } from "./joker-forum";
 import { leagueSlug } from "./season-key";
-import { parisUtcOffsetHours, parisWallTimeToUtc } from "./paris-time";
+import { deadlineForDate, matchTimeToWall, type WallTime } from "./match-deadline";
 import {
   isClubGoalkeeper,
   expandIdsForGoalkeeperResolution,
@@ -175,24 +175,44 @@ export async function getUserById(userId: number): Promise<ParsedUser | null> {
 }
 
 // ── Current matchday ──────────────────────────────────────
+// Journée courante = dernière journée PUBLIÉE (STATS_USER écrit par
+// api/admin/publish), pas la dernière journée ayant des notes en SCORE.
+// Avant (signalement Pierre 2026-09-14) : MAX(SCORE.DAY) faisait basculer tout
+// le site (compos, jokers, classements) dès la première sauvegarde de notes,
+// sans publication. Pour la journée en cours de saisie, voir getLatestScoredDay.
 export const getCurrentMatchday = cache(async (): Promise<number> => {
   const scope = await getSeasonScope();
+  if (scope.season && scope.hasLeagues) {
+    const rows = await prisma.$queryRawUnsafe<{ maxDay: number | null }[]>(
+      "SELECT MAX(su.DAY) AS maxDay FROM STATS_USER su JOIN LEAGUE l ON l.ID_LEAGUE = su.ID_LEAGUE WHERE l.ID_SEASON = ?",
+      scope.season.id
+    );
+    const maxDay = rows[0]?.maxDay;
+    // Aucune journee publiee (avant-saison) -> 0, pas 1. Sinon "prochaine journee"
+    // = currentDay + 1 vaudrait 2 avant J1 : les participants composeraient J2
+    // et J1 serait etiquetee "passee" (bug historique "bandeau J2 avant-saison").
+    return maxDay != null ? Number(maxDay) : 0;
+  }
+  const latest = await prisma.statsUser.findFirst({ orderBy: { day: "desc" } });
+  return latest?.day ?? 0;
+});
+
+// Dernière journée ayant des notes saisies (publiée ou non). Usage admin
+// uniquement : ouvrir la page de saisie sur la journée en cours de travail.
+export async function getLatestScoredDay(): Promise<number> {
+  const scope = await getSeasonScope();
   if (scope.season && scope.hasPlayers) {
-    // Saison scopée : seule la progression des joueurs de la saison compte.
     // SCORE n'a pas de relation Prisma vers PLAYER (tables MyISAM) -> SQL brut.
     const rows = await prisma.$queryRawUnsafe<{ maxDay: number | null }[]>(
       "SELECT MAX(s.DAY) AS maxDay FROM SCORE s JOIN PLAYER p ON p.ID_PLAYER = s.ID_PLAYER WHERE p.ID_SEASON = ?",
       scope.season.id
     );
     const maxDay = rows[0]?.maxDay;
-    // Aucune journee jouee (avant-saison) -> 0, pas 1. Sinon "prochaine journee"
-    // = currentDay + 1 vaudrait 2 avant J1 : les participants composeraient J2
-    // et J1 serait etiquetee "passee" (bug historique "bandeau J2 avant-saison").
     return maxDay != null ? Number(maxDay) : 0;
   }
   const latest = await prisma.score.findFirst({ orderBy: { day: "desc" } });
   return latest?.day ?? 0;
-});
+}
 
 // ── Locked clubs for a matchday ─────────────────────────
 // Retourne les clubIds dont la deadline de saisie d'equipe est passee
@@ -207,7 +227,8 @@ export const getCurrentMatchday = cache(async (): Promise<number> => {
 //   - Sinon : deadline calculee sur match_date
 //   - Deadline = SCORING_CONFIG.deadline_hour (15h Paris par defaut),
 //     avancee a (heure_match - early_match_offset_hours) si match avant
-//     early_match_hour (17h)
+//     early_match_hour (17h). Calcul dans match-deadline.ts (partage avec
+//     /api/admin/deadline).
 export async function getLockedClubIds(day: number): Promise<Set<number>> {
   const seasonKey = await getCurrentSeasonKey();
   const matches = await prisma.$queryRawUnsafe<{
@@ -236,7 +257,7 @@ export async function getLockedClubIds(day: number): Promise<Set<number>> {
   );
   const cfg = cfgRows[0] ?? { deadline_hour: 15, early_match_hour: 17, early_match_offset_hours: 2 };
 
-  const byDate = new Map<string, { clubIds: Set<number>; earliestHour: number }>();
+  const byDate = new Map<string, { clubIds: Set<number>; kickoffs: WallTime[] }>();
   for (const m of matches) {
     const isUnplayedPostponed = m.is_postponed === 1 && m.home_score === null;
     let effectiveDate: Date;
@@ -255,34 +276,33 @@ export async function getLockedClubIds(day: number): Promise<Set<number>> {
       continue;
     }
     const date = effectiveDate.toISOString().slice(0, 10);
-    const timeObj = m.match_time ? new Date(m.match_time as unknown as string) : null;
-    // match_time stocke en UTC -> heure de Paris avec l'offset reel du jour (CET/CEST).
-    const hour = timeObj && !Number.isNaN(timeObj.getTime())
-      ? timeObj.getUTCHours() + parisUtcOffsetHours(effectiveDate)
-      : 20;
+    // match_time est ecrit en HEURE DE PARIS par la synchro football-data.
+    // L'ancienne lecture "UTC + offset Paris" decalait chaque coup d'envoi de
+    // 2h : Lille-Troyes dimanche 15h etait vu a 17h et la deadline restait a
+    // 15h au lieu de 13h (signalement Pierre 2026-09-14).
+    const kickoff = matchTimeToWall(m.match_time);
     const homeId = clubIdByKey.get(canonicalClubKey(m.home_team)) ?? null;
     const awayId = clubIdByKey.get(canonicalClubKey(m.away_team)) ?? null;
     if (homeId === null || awayId === null) {
       console.warn(`[getLockedClubIds] Unknown team J${day}: "${m.home_team}" / "${m.away_team}"`);
       continue;
     }
-    if (!byDate.has(date)) byDate.set(date, { clubIds: new Set(), earliestHour: hour });
+    if (!byDate.has(date)) byDate.set(date, { clubIds: new Set(), kickoffs: [] });
     const entry = byDate.get(date)!;
     entry.clubIds.add(homeId);
     entry.clubIds.add(awayId);
-    if (hour < entry.earliestHour) entry.earliestHour = hour;
+    if (kickoff) entry.kickoffs.push(kickoff);
   }
 
+  const deadlineCfg = {
+    defaultHour: Number(cfg.deadline_hour),
+    earlyMatchHour: Number(cfg.early_match_hour),
+    earlyMatchOffsetHours: Number(cfg.early_match_offset_hours),
+  };
   const now = new Date();
   const lockedClubIds = new Set<number>();
-  for (const [date, { clubIds, earliestHour }] of Array.from(byDate.entries())) {
-    let deadlineHour = Number(cfg.deadline_hour);
-    if (earliestHour < Number(cfg.early_match_hour)) {
-      deadlineHour = earliestHour - Number(cfg.early_match_offset_hours);
-    }
-    // Heure de deadline en heure de Paris -> instant UTC avec l'offset reel du
-    // jour (au lieu d'un -2 fige qui avancait la deadline d'1h en hiver).
-    const deadline = parisWallTimeToUtc(date, Math.max(0, deadlineHour));
+  for (const [date, { clubIds, kickoffs }] of Array.from(byDate.entries())) {
+    const deadline = deadlineForDate(date, kickoffs, deadlineCfg);
     if (now >= deadline) {
       clubIds.forEach((id) => lockedClubIds.add(id));
     }

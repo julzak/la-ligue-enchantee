@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSeasonFilters, getSeasonScope } from "@/lib/season";
-import { getCurrentMatchday } from "@/lib/db";
+import { getLatestScoredDay } from "@/lib/db";
 import { isClubGoalkeeper, isNamedGoalkeeper } from "@/lib/club-goalkeeper";
 
 // GET: fetch scores for a matchday
