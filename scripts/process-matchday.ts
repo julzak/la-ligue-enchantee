@@ -159,7 +159,10 @@ async function extractFromArticles(
   matchToUrl: Map<string, string>
 ): Promise<{ notes: PlayerNote[]; events: PlayerEvents[] }> {
   const page = ctx.pages()[0] || await ctx.newPage();
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  // Modèles stables uniquement. 3.8 Flash lit mieux les infographies que 2.5
+  // (joueurs côte à côte non fusionnés, test scripts/diag-ocr-models.ts du
+  // 2026-09-24) mais renvoie parfois 503 "high demand" : repli sur 3.5 Flash.
+  const OCR_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"];
   const allNotes: PlayerNote[] = [];
   const allEvents: PlayerEvents[] = [];
 
@@ -195,15 +198,26 @@ async function extractFromArticles(
       console.log(`  📷 ${Math.round(imgBuffer.length / 1024)} KB`);
 
       try {
-        const result = await model.generateContent([
-          { inlineData: { mimeType: "image/jpeg", data: base64 } },
-          { text: 'Extrais les notes de joueurs de football. Les notes sont des chiffres dans des cercles colorés. Retourne un JSON: [{"playerName":"nom","rating":N}]. Chaque joueur a sa propre note. Retourne UNIQUEMENT le JSON.' },
-        ]);
-        const text = result.response.text();
+        let text = "";
+        for (const modelId of OCR_MODELS) {
+          try {
+            const result = await genAI.getGenerativeModel({ model: modelId }).generateContent([
+              { inlineData: { mimeType: "image/jpeg", data: base64 } },
+              { text: 'Extrais les notes de joueurs de football. Les notes sont des chiffres dans des cercles colorés. Retourne un JSON: [{"playerName":"nom","rating":N}]. Chaque joueur a sa propre note. Retourne UNIQUEMENT le JSON.' },
+            ]);
+            text = result.response.text();
+            break;
+          } catch (err) {
+            console.log(`  ⚠️ ${modelId} KO, repli : ${String(err).slice(-100)}`);
+          }
+        }
         const start = text.indexOf("[");
         const end = text.lastIndexOf("]");
         if (start >= 0 && end > start) {
-          const ratings = JSON.parse(text.slice(start, end + 1));
+          // Un joueur "NON NOTÉ" peut revenir avec rating null : on l'ignore,
+          // comme avant (il n'était pas extrait du tout).
+          const ratings = (JSON.parse(text.slice(start, end + 1)) as { playerName: string; rating: unknown }[])
+            .filter((r): r is { playerName: string; rating: number } => typeof r.rating === "number");
           console.log(`  ✅ ${ratings.length} notes (OCR)`);
           ratings.forEach((r: { playerName: string; rating: number }) =>
             allNotes.push({ ...r, match })

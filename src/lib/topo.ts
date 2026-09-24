@@ -57,16 +57,16 @@ async function callClaude(prompt: string): Promise<string> {
 
 async function callGemini(modelId: string, prompt: string): Promise<string> {
   const isPro = modelId.includes("2.5-pro");
-  const is25 = modelId.includes("2.5");
   // Gemini 2.5 Pro : le "thinking" est obligatoire (thinkingBudget=0 interdit) et
   // compte dans maxOutputTokens. On le plafonne et on laisse assez de marge pour
   // que la synthèse (~600 tokens visibles) s'écrive APRÈS le raisonnement, sinon
   // la réponse revient vide (finishReason=MAX_TOKENS). Le thinking améliore
   // l'exactitude (pas d'inversion qualifié/éliminé, bonne attribution des joueurs).
-  // Flash 2.5 : thinking désactivé (rapide, free tier). 2.0 : pas de thinking.
+  // Flash 3.x : thinking actif PAR DÉFAUT, il faut le couper explicitement sinon
+  // il consomme les 600 tokens et la synthèse sort tronquée (MAX_TOKENS).
   const generationConfig: Record<string, unknown> = isPro
     ? { maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: 1024 } }
-    : { maxOutputTokens: 600, ...(is25 ? { thinkingConfig: { thinkingBudget: 0 } } : {}) };
+    : { maxOutputTokens: 600, thinkingConfig: { thinkingBudget: 0 } };
   const body: Record<string, unknown> = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig,
@@ -239,11 +239,11 @@ Détail par participant (meilleurs/pires joueurs L1 de LEUR effectif) :
 ${participantDetails.join("\n\n")}
 `;
 
-  // Qualité d'abord, gratuit d'abord : Gemini 2.5 Pro en primaire (meilleure
-  // plume + suit le prompt fidèlement = moins d'erreurs), repli Flash puis 2.0.
-  // Tout est sur le free tier Google. Sur une clé sans facturation, un dépassement
-  // de quota Pro renvoie un 429 -> repli automatique sur Flash, jamais de charge.
-  const MODELS = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+  // Modèles STABLES uniquement (pas de preview : retrait possible sans préavis).
+  // 3.8 Flash en primaire : respecte la consigne 4-5 phrases et les faits (test
+  // scripts/test-topo-cup-fix.ts, 2026-09-24), là où 2.5 Pro déborde en 3-4
+  // paragraphes. Repli 2.5 Pro puis 3.5 Flash. gemini-2.0-flash est retiré (404).
+  const MODELS = ["gemini-3.8-flash", "gemini-2.5-pro", "gemini-3.5-flash"];
 
   const prompt = `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
 

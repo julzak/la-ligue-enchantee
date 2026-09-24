@@ -3,8 +3,8 @@
  * Reproduit le contexte J32 Ligue 2 où Gemini Flash avait halluciné Benhijk en finale et
  * Cdt de Bord qualifié, alors que les vrais qualifiés sont Nums et Batistuta.
  *
- * Lance le test sur Gemini 2.5 Flash (modèle primaire) et Claude Sonnet 4.6 (fallback).
- * 3 runs par modèle pour couvrir la variance.
+ * Lance le test sur la chaîne Gemini de src/lib/topo.ts (même generationConfig) et
+ * sur Claude Sonnet 5 (fallback). 3 runs par modèle pour couvrir la variance.
  */
 import { config as loadDotenv } from "dotenv";
 import * as path from "path";
@@ -123,14 +123,16 @@ ${context}
 
 Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`;
 
+// Miroir de la chaîne et de la config de src/lib/topo.ts (non importable hors RSC).
+const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-2.5-pro", "gemini-3.5-flash"];
+
 async function callGemini(modelId: string): Promise<string> {
-  const useThinking = modelId.includes("2.5");
+  const generationConfig = modelId.includes("2.5-pro")
+    ? { maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: 1024 } }
+    : { maxOutputTokens: 600, thinkingConfig: { thinkingBudget: 0 } };
   const body: Record<string, unknown> = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: {
-      maxOutputTokens: 600,
-      ...(useThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-    },
+    generationConfig,
   };
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${GEMINI_KEY}`,
@@ -138,14 +140,17 @@ async function callGemini(modelId: string): Promise<string> {
   );
   if (!res.ok) throw new Error(`Gemini ${modelId}: ${res.status} ${res.statusText} — ${await res.text()}`);
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const candidate = data.candidates?.[0];
+  if (candidate?.finishReason !== "STOP") throw new Error(`Gemini ${modelId}: finishReason=${candidate?.finishReason}`);
+  const parts: { text?: string }[] = candidate?.content?.parts ?? [];
+  return parts.map((p) => p.text ?? "").join("").trim();
 }
 
 async function callClaude(): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 600, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model: "claude-sonnet-5", thinking: { type: "disabled" }, max_tokens: 600, messages: [{ role: "user", content: prompt }] }),
   });
   if (!res.ok) throw new Error(`Claude: ${res.status} — ${await res.text()}`);
   const data = await res.json();
@@ -208,14 +213,16 @@ async function main() {
   }
   console.log(`Détecteur sanity-check : OK (flag attendu sur texte d'origine: ${sanityFlags[0]})\n`);
 
-  console.log("Test cup-fix : 3 runs Gemini 2.5 Flash + 3 runs Claude Sonnet 4.6");
+  console.log(`Test cup-fix : 3 runs par modèle (${GEMINI_MODELS.join(", ")}, claude-sonnet-5)`);
   console.log("Ground truth : Batistuta + Nums qualifiés ; Cdt de Bord + Benhijk éliminés\n");
 
-  const gemini = await runModel("gemini-2.5-flash", () => callGemini("gemini-2.5-flash"));
-  const claude = await runModel("claude-sonnet-4-6", () => callClaude());
+  const all: (Verdict & { model: string })[] = [];
+  for (const m of GEMINI_MODELS) {
+    all.push(...(await runModel(m, () => callGemini(m))).map((r) => ({ ...r, model: m })));
+  }
+  all.push(...(await runModel("claude-sonnet-5", () => callClaude())).map((r) => ({ ...r, model: "claude-sonnet-5" })));
 
   console.log("\n\n========== RÉCAP ==========");
-  const all = [...gemini.map((r) => ({ ...r, model: "gemini-2.5-flash" })), ...claude.map((r) => ({ ...r, model: "claude-sonnet-4-6" }))];
   const okCount = all.filter((r) => r.ok).length;
   console.log(`${okCount}/${all.length} runs sans inversion`);
   for (const r of all) {

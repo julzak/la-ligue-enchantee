@@ -566,7 +566,7 @@ async function extractRatingsFromScreenshots(
   screenshotPaths: string[]
 ): Promise<ExtractedRating[]> {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
   const allRatings: ExtractedRating[] = [];
   for (let i = 0; i < screenshotPaths.length; i++) {
     const filepath = screenshotPaths[i];
