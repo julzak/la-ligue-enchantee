@@ -725,7 +725,7 @@ sur les conventions TheSportsDB.
   Broken pipe"). Ajouter ServerAliveInterval côté action SSH ou lancer le
   build en détaché avec sondage.
 
-## Cron import notes L'Équipe à l'arrêt (constaté 2026-09-24)
+## Cron import notes L'Équipe : ABANDONNÉ (décision Julien 2026-09-24, saisie manuelle conservée)
 
 - [ ] `scripts/cron-scrape.sh` (lundi 8h) ne tourne plus depuis le 2026-05-18 :
   `tmp/cron-scrape.lock` est resté en place après un run planté (timeout
