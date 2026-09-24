@@ -32,7 +32,7 @@ Fantasy football entre potes (~20 ans d'historique). Chronique IA "Lia" qui réd
 - Next.js 14 (App Router), TypeScript, Tailwind, shadcn (v4 + Base UI)
 - Prisma + MySQL (driver `mysql2`)
 - NextAuth pour l'auth
-- Anthropic SDK + Google Gemini (`gemini-2.5-flash` primaire, fallback Gemini 2.0/1.5 puis Claude Sonnet 4.6) pour la synthèse Lia (`src/app/api/topo/route.ts`)
+- Anthropic SDK + Google Gemini pour la synthèse Lia (`src/lib/topo.ts`) : `gemini-3.8-flash` primaire, repli `gemini-2.5-pro` puis `gemini-3.5-flash`, filet payant Claude Sonnet 5. OCR des notes L'Équipe (`scripts/process-matchday.ts`) : `gemini-3.8-flash`, repli `gemini-3.5-flash`. **Modèles stables uniquement, jamais de preview** (retrait possible sans préavis).
 
 ## Conventions
 - Scripts diagnostics ad-hoc : `scripts/diag-*.ts`, exécutés via `./node_modules/.bin/tsx scripts/diag-foo.ts` (pas `npx tsx` — npm 11 fait tomber `npx`). Ces scripts importent uniquement `prisma` (pas `db.ts` qui dépend de `react.cache` et plante hors RSC).
