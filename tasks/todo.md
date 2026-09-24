@@ -734,6 +734,19 @@ sur les conventions TheSportsDB.
   2026-2027 n'a été importée automatiquement.
 - [ ] Avant de supprimer le lock : décider si l'import auto doit reprendre
   (il INSÈRE dans SCORE en prod, risque de conflit avec la saisie admin).
-- [ ] `process-matchday.ts 5 --dry-run` sur OVH trouve 0/9 articles L'Équipe :
-  la recherche d'URL (`findArticleUrls`) est à revoir pour la saison 2026-2027.
+- [ ] Test J5 du 2026-09-24 (pipeline vs 225 notes saisies) :
+  - OVH bloqué par L'Équipe ("Access Denied", IP datacenter) ; headless bloqué
+    aussi depuis un Mac. Seul un Chromium visible + profil abonné passe.
+  - Recherche d'articles : 9/9 trouvés mais avec des termes courts ("pfc",
+    "ol") ; les termes actuels ramènent d'anciens articles pour 2 matchs.
+  - `injectScores` associe sur TOUS les joueurs de la base (pas de filtre
+    saison ni club) : 136/188 lignes vers des joueurs d'anciennes saisons.
+  - Lecture des notes (association restreinte saison + clubs du match) :
+    153/157 identiques ; 3 écarts = saisie 5 vs L'Équipe 6 (Monaco), 1 = bug
+    du parser texte sur le bloc compo (Paixão).
+  - Non couverts : ~43 remplaçants "2" (absents de l'infographie, titulaires
+    seulement) + noms mal associés (Golovin/Golovine, Højbjerg, Emerson,
+    Cásseres Jr., Ad. Camara). Gardiens (18) non mesurés.
+  - Buts/passes/rouges parsés dans la prose : 9/44 identiques. À prendre
+    d'une source structurée, pas des articles.
 - [ ] Rendre le lock robuste : `flock` ou lock expiré après N heures.
