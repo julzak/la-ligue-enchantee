@@ -724,3 +724,16 @@ sur les conventions TheSportsDB.
   coupure SSH pendant `next build` (> 4 min, "client_loop: send disconnect:
   Broken pipe"). Ajouter ServerAliveInterval côté action SSH ou lancer le
   build en détaché avec sondage.
+
+## Cron import notes L'Équipe à l'arrêt (constaté 2026-09-24)
+
+- [ ] `scripts/cron-scrape.sh` (lundi 8h) ne tourne plus depuis le 2026-05-18 :
+  `tmp/cron-scrape.lock` est resté en place après un run planté (timeout
+  page.goto + 503 Gemini), aucun process vivant, le trap EXIT n'a pas nettoyé.
+  Toutes les runs depuis : "SKIP: lock file exists". Aucune note de la saison
+  2026-2027 n'a été importée automatiquement.
+- [ ] Avant de supprimer le lock : décider si l'import auto doit reprendre
+  (il INSÈRE dans SCORE en prod, risque de conflit avec la saisie admin).
+- [ ] `process-matchday.ts 5 --dry-run` sur OVH trouve 0/9 articles L'Équipe :
+  la recherche d'URL (`findArticleUrls`) est à revoir pour la saison 2026-2027.
+- [ ] Rendre le lock robuste : `flock` ou lock expiré après N heures.
