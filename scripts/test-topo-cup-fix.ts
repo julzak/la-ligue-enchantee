@@ -4,7 +4,7 @@
  * Cdt de Bord qualifié, alors que les vrais qualifiés sont Nums et Batistuta.
  *
  * Lance le test sur la chaîne Gemini de src/lib/topo.ts (même generationConfig) et
- * sur Claude Sonnet 5 (fallback). 3 runs par modèle pour couvrir la variance.
+ * sur Claude Sonnet 5.5 (fallback). 3 runs par modèle pour couvrir la variance.
  */
 import { config as loadDotenv } from "dotenv";
 import * as path from "path";
@@ -150,7 +150,7 @@ async function callClaude(): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: "claude-sonnet-5", thinking: { type: "disabled" }, max_tokens: 600, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model: "claude-sonnet-5-5", thinking: { type: "between_tools" }, max_tokens: 600, messages: [{ role: "user", content: prompt }] }),
   });
   if (!res.ok) throw new Error(`Claude: ${res.status} — ${await res.text()}`);
   const data = await res.json();
@@ -213,14 +213,14 @@ async function main() {
   }
   console.log(`Détecteur sanity-check : OK (flag attendu sur texte d'origine: ${sanityFlags[0]})\n`);
 
-  console.log(`Test cup-fix : 3 runs par modèle (${GEMINI_MODELS.join(", ")}, claude-sonnet-5)`);
+  console.log(`Test cup-fix : 3 runs par modèle (${GEMINI_MODELS.join(", ")}, claude-sonnet-5-5)`);
   console.log("Ground truth : Batistuta + Nums qualifiés ; Cdt de Bord + Benhijk éliminés\n");
 
   const all: (Verdict & { model: string })[] = [];
   for (const m of GEMINI_MODELS) {
     all.push(...(await runModel(m, () => callGemini(m))).map((r) => ({ ...r, model: m })));
   }
-  all.push(...(await runModel("claude-sonnet-5", () => callClaude())).map((r) => ({ ...r, model: "claude-sonnet-5" })));
+  all.push(...(await runModel("claude-sonnet-5-5", () => callClaude())).map((r) => ({ ...r, model: "claude-sonnet-5-5" })));
 
   console.log("\n\n========== RÉCAP ==========");
   const okCount = all.filter((r) => r.ok).length;

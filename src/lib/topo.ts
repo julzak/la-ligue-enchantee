@@ -42,10 +42,11 @@ async function callClaude(prompt: string): Promise<string> {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-5",
-      // Sonnet 5 : thinking actif par defaut et compte dans max_tokens ;
-      // desactive pour garder le budget 600 et content[0] en bloc text.
-      thinking: { type: "disabled" },
+      model: "claude-sonnet-5-5",
+      // Sonnet 5.5 : thinking actif par defaut et compte dans max_tokens ;
+      // "disabled" renvoie 400, "between_tools" le coupe hors appels d'outils
+      // pour garder le budget 600 et content[0] en bloc text.
+      thinking: { type: "between_tools" },
       max_tokens: 600,
       messages: [{ role: "user", content: prompt }],
     }),
@@ -288,7 +289,7 @@ ${isIncomplete ? `\nATTENTION : cette journée est incomplète (${playedMatches}
   if (!text && ANTHROPIC_KEY) {
     try {
       text = await callClaude(prompt);
-      console.log("Topo: fallback Claude Sonnet 5 OK");
+      console.log("Topo: fallback Claude Sonnet 5.5 OK");
     } catch (e: unknown) {
       console.error("Topo: Claude fallback failed:", (e as Error).message);
     }
