@@ -45,6 +45,15 @@ export default async function EquipeParticipantPage({
     ? await getParticipantDayScores(league.dbId, participantId, selectedJournee)
     : null;
 
+  // Titulaires = compo réellement comptée ce jour-là (getParticipantTeam
+  // retombe sur la dernière compo sauvegardée, pensée pour l'éditeur)
+  const dayLineup = dayScores?.length ? new Map(dayScores.map((s) => [s.playerId, s.indx])) : null;
+  const teamForDay = dayLineup
+    ? team
+        .map((p) => ({ ...p, isStarter: dayLineup.has(p.playerId), indx: dayLineup.get(p.playerId) ?? 99 }))
+        .sort((a, b) => a.indx - b.indx)
+    : team;
+
   const cumulativeStats = showCumul
     ? await getParticipantCumulativeStats(league.dbId, participantId, currentDay)
     : null;
@@ -63,7 +72,7 @@ export default async function EquipeParticipantPage({
       participantId={participantId}
       participantName={participant.cleanName}
       participantTrophies={participant.trophies}
-      team={team}
+      team={teamForDay}
       dayScores={dayScores}
       cumulativeStats={cumulativeStats}
       selectedJournee={showCumul ? null : selectedJournee}

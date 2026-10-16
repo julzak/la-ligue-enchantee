@@ -7,6 +7,7 @@ import { getScoringConfig } from "@/lib/scoring-config";
 import { computePlayerTotal, baseNoteAfterRedCard } from "@/lib/scoring-core";
 import { leagueSlug } from "@/lib/season-key";
 import { generateTopo } from "@/lib/topo";
+import { getEffectiveLineup } from "@/lib/effective-lineup";
 
 function dec(v: unknown): number {
   if (v === null || v === undefined) return 0;
@@ -76,29 +77,11 @@ export async function POST(request: Request) {
         userLineups.set(td.userId, arr);
       });
 
-      // If no lineups for this day, use TEAM table to get default squad
+      // Pas de compo ce jour : même repli que l'affichage (veille, puis TEAM)
       for (const lu of leagueUsers) {
         if (!userLineups.has(lu.userId)) {
-          // Try previous day's lineup first (raw query to avoid DT_VALID crash)
-          const prevLineup = await prisma.$queryRawUnsafe<{ playerId: number }[]>(
-            "SELECT ID_PLAYER as playerId FROM TEAM_DAY WHERE ID_LEAGUE = ? AND ID_USER = ? AND DAY = ?",
-            league.id, lu.userId, day - 1
-          );
-          if (prevLineup.length > 0) {
-            userLineups.set(lu.userId, prevLineup.map((t) => Number(t.playerId)));
-          } else {
-            // Fallback to TEAM table (default squad)
-            const teamMembers = await prisma.team.findMany({
-              where: {
-                leagueId: league.id,
-                userId: lu.userId,
-                dayFirst: { lte: day },
-                dayLast: { gte: day },
-                isSubs: 0,
-              },
-            });
-            userLineups.set(lu.userId, teamMembers.slice(0, 11).map((t) => t.playerId));
-          }
+          const lineup = await getEffectiveLineup(league.id, lu.userId, day);
+          userLineups.set(lu.userId, lineup.map((l) => l.playerId));
         }
       }
 

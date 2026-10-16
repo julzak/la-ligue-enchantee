@@ -6,6 +6,7 @@ import { getScoringConfig, type ScoringConfig } from "./scoring-config";
 import { computePlayerTotal, SCORING_DEFAULTS } from "./scoring-core";
 import { getSeasonScope, getCurrentSeasonKey } from "./season";
 import { jokerTopicTitle } from "./joker-forum";
+import { getEffectiveLineup } from "./effective-lineup";
 import { getLeagueJokerQuotas } from "./joker-quota";
 import { leagueSlug } from "./season-key";
 import { deadlineForDate, matchTimeToWall, type WallTime } from "./match-deadline";
@@ -723,18 +724,8 @@ export async function getFormerPlayers(leagueDbId: number, userId: number, day?:
 // ── Player scores for a participant on a specific day ─────
 export async function getParticipantDayScores(leagueDbId: number, userId: number, day: number) {
   const scoringCfg = await getScoringConfig();
-  let lineup = await prisma.teamDay.findMany({
-    where: { leagueId: leagueDbId, userId, day },
-    orderBy: { indx: "asc" },
-  });
-
-  // Fallback: if no lineup for this day, try previous day (same logic as publish)
-  if (lineup.length === 0 && day > 1) {
-    lineup = await prisma.teamDay.findMany({
-      where: { leagueId: leagueDbId, userId, day: day - 1 },
-      orderBy: { indx: "asc" },
-    });
-  }
+  // Compo comptée par publish (jour, veille, puis titulaires TEAM)
+  const lineup = await getEffectiveLineup(leagueDbId, userId, day);
 
   const playerMap = await getCachedPlayers();
   const clubMap = await getCachedClubNames();
