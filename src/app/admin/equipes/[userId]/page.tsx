@@ -51,6 +51,7 @@ export default async function AdminEquipeUserPage({
         </p>
       </div>
       <MonEquipeContent
+        key={targetDay}
         team={team}
         lastDayScores={lastDayScores}
         currentDay={currentDay}
