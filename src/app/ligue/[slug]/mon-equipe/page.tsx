@@ -67,7 +67,10 @@ export default async function MonEquipePage({
   const lockedClubIdsSet = await getLockedClubIds(selectedDay);
 
   return (
+    // key : remonte l'éditeur à chaque journée, sinon la sélection locale de
+    // la journée précédente survit au changement (et partait à la validation)
     <MonEquipeContent
+      key={selectedDay}
       team={team}
       lastDayScores={lastDayScores}
       currentDay={currentDay}
