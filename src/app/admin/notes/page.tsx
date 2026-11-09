@@ -83,6 +83,7 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: Pl
       </span>
       <input
         type="number"
+        onWheel={(e) => e.currentTarget.blur()}
         value={s.points ?? ""}
         onChange={(e) => onUpdate(s.playerId, "points", e.target.value ? Number(e.target.value) : null)}
         placeholder="—"
@@ -91,6 +92,7 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: Pl
       />
       <input
         type="number"
+        onWheel={(e) => e.currentTarget.blur()}
         value={s.goals || ""}
         onChange={(e) => onUpdate(s.playerId, "goals", Number(e.target.value) || 0)}
         className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -98,6 +100,7 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: Pl
       />
       <input
         type="number"
+        onWheel={(e) => e.currentTarget.blur()}
         value={s.passes || ""}
         onChange={(e) => onUpdate(s.playerId, "passes", Number(e.target.value) || 0)}
         className="w-full bg-surface-2 border border-white/[0.07] rounded px-1 py-0.5 text-xs text-center text-white focus:outline-none focus:border-gold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -106,6 +109,7 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: Pl
       {/* CSC */}
       <input
         type="number"
+        onWheel={(e) => e.currentTarget.blur()}
         value={s.ownGoals || ""}
         onChange={(e) => onUpdate(s.playerId, "ownGoals", Number(e.target.value) || 0)}
         className="w-full bg-surface-2 border border-rouge/20 rounded px-1 py-0.5 text-xs text-center text-rouge focus:outline-none focus:border-rouge [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -125,6 +129,7 @@ const PlayerRow = memo(function PlayerRow({ s, onUpdate, showInitials }: { s: Pl
       {isGK(s.position) ? (
         <input
           type="number"
+          onWheel={(e) => e.currentTarget.blur()}
           value={s.penaltySaved || ""}
           onChange={(e) => onUpdate(s.playerId, "penaltySaved", Number(e.target.value) || 0)}
           className="w-full bg-surface-2 border border-vert/20 rounded px-1 py-0.5 text-xs text-center text-vert focus:outline-none focus:border-vert [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
