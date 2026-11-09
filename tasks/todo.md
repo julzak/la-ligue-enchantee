@@ -727,6 +727,7 @@ sur les conventions TheSportsDB.
 
 ## Cron import notes L'Équipe : ABANDONNÉ (décision Julien 2026-09-24, saisie manuelle conservée)
 
+- [x] **2026-11-09 : ligne `cron-scrape.sh` retirée du crontab d'ubuntu sur OVH et lock supprimé** (sauvegarde `~/crontab.bak-2026-11-09`). Le cron `cron-sync-schedule.sh` de 6h reste en place. Historique ci-dessous conservé.
 - [ ] `scripts/cron-scrape.sh` (lundi 8h) ne tourne plus depuis le 2026-05-18 :
   `tmp/cron-scrape.lock` est resté en place après un run planté (timeout
   page.goto + 503 Gemini), aucun process vivant, le trap EXIT n'a pas nettoyé.
