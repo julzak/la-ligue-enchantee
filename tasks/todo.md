@@ -751,3 +751,13 @@ sur les conventions TheSportsDB.
   - Buts/passes/rouges parsés dans la prose : 9/44 identiques. À prendre
     d'une source structurée, pas des articles.
 - [ ] Rendre le lock robuste : `flock` ou lock expiré après N heures.
+
+## Repli de compo corrigé et classement recalculé depuis J1 (2026-11-10, PR #99)
+- [ ] Supprimer la table de sauvegarde `STATS_USER_BAK_20261110` (prod) une
+  fois le nouveau classement accepté par les admins. Dump aussi dans
+  `~/backups/STATS_USER_avant_repli_compo_20261110.sql` sur le VPS.
+- [ ] Inactivité : Denis (L2, dernière compo J4), Michele69 (L2, J2), Fox (L3,
+  J2) n'ont plus validé de compo. Question posée aux admins : relance ou règle
+  d'inactivité ?
+- [ ] Chroniques Lia des journées passées non régénérées : elles citent les
+  anciens scores des 14 participants concernés.
