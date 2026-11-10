@@ -1,4 +1,4 @@
-import { cache } from "react";
+import * as React from "react";
 import { prisma } from "./prisma";
 import { getCurrentSeasonKey } from "./season";
 import {
@@ -10,6 +10,11 @@ import {
 
 // Re-export du socle pur pour les importeurs existants (db.ts, etc.).
 export { goalBonusForPosition, computePlayerTotal, type ScoringConfig };
+
+// Même repli que season.ts : react.cache n'existe qu'en RSC, identité hors
+// Next (scripts CLI, dont scripts/republish-stats-user.ts).
+const cache: <T extends (...args: never[]) => unknown>(fn: T) => T =
+  (React as { cache?: typeof React.cache }).cache ?? ((fn) => fn);
 
 const DEFAULTS = SCORING_DEFAULTS;
 
