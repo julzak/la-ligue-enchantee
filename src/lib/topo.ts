@@ -57,17 +57,12 @@ async function callClaude(prompt: string): Promise<string> {
 }
 
 async function callGemini(modelId: string, prompt: string): Promise<string> {
-  const isPro = modelId.includes("2.5-pro");
-  // Gemini 2.5 Pro : le "thinking" est obligatoire (thinkingBudget=0 interdit) et
-  // compte dans maxOutputTokens. On le plafonne et on laisse assez de marge pour
-  // que la synthèse (~600 tokens visibles) s'écrive APRÈS le raisonnement, sinon
-  // la réponse revient vide (finishReason=MAX_TOKENS). Le thinking améliore
-  // l'exactitude (pas d'inversion qualifié/éliminé, bonne attribution des joueurs).
   // Flash 3.x : thinking actif PAR DÉFAUT, il faut le couper explicitement sinon
   // il consomme les 600 tokens et la synthèse sort tronquée (MAX_TOKENS).
-  const generationConfig: Record<string, unknown> = isPro
-    ? { maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: 1024 } }
-    : { maxOutputTokens: 600, thinkingConfig: { thinkingBudget: 0 } };
+  const generationConfig: Record<string, unknown> = {
+    maxOutputTokens: 600,
+    thinkingConfig: { thinkingBudget: 0 },
+  };
   const body: Record<string, unknown> = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig,
@@ -243,8 +238,9 @@ ${participantDetails.join("\n\n")}
   // Modèles STABLES uniquement (pas de preview : retrait possible sans préavis).
   // 3.8 Flash en primaire : respecte la consigne 4-5 phrases et les faits (test
   // scripts/test-topo-cup-fix.ts, 2026-09-24), là où 2.5 Pro déborde en 3-4
-  // paragraphes. Repli 2.5 Pro puis 3.5 Flash. gemini-2.0-flash est retiré (404).
-  const MODELS = ["gemini-3.8-flash", "gemini-2.5-pro", "gemini-3.5-flash"];
+  // paragraphes. Repli 3.6 Flash (testé le 2026-11-11). 2.5 Pro (arrêt le
+  // 01/12/2026) et 3.5 Flash (retiré, routé vers 3.6) ont été retirés de la chaîne.
+  const MODELS = ["gemini-3.8-flash", "gemini-3.6-flash"];
 
   const prompt = `Tu es Lia, la chroniqueuse IA de La Ligue Enchantée, un jeu de fantasy football entre potes qui dure depuis 20 ans. Écris la synthèse de la journée ${currentDay} pour la ${league.name}.
 

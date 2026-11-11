@@ -124,12 +124,10 @@ ${context}
 Écris UNIQUEMENT le texte de la synthèse, rien d'autre.`;
 
 // Miroir de la chaîne et de la config de src/lib/topo.ts (non importable hors RSC).
-const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-2.5-pro", "gemini-3.5-flash"];
+const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash"];
 
 async function callGemini(modelId: string): Promise<string> {
-  const generationConfig = modelId.includes("2.5-pro")
-    ? { maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: 1024 } }
-    : { maxOutputTokens: 600, thinkingConfig: { thinkingBudget: 0 } };
+  const generationConfig = { maxOutputTokens: 600, thinkingConfig: { thinkingBudget: 0 } };
   const body: Record<string, unknown> = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig,

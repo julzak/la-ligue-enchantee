@@ -161,8 +161,9 @@ async function extractFromArticles(
   const page = ctx.pages()[0] || await ctx.newPage();
   // Modèles stables uniquement. 3.8 Flash lit mieux les infographies que 2.5
   // (joueurs côte à côte non fusionnés, test scripts/diag-ocr-models.ts du
-  // 2026-09-24) mais renvoie parfois 503 "high demand" : repli sur 3.5 Flash.
-  const OCR_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"];
+  // 2026-09-24) mais renvoie parfois 503 "high demand" : repli sur 3.6 Flash
+  // (3.5 Flash retiré par Google, routé vers 3.6 ; OCR testé le 2026-11-11).
+  const OCR_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash"];
   const allNotes: PlayerNote[] = [];
   const allEvents: PlayerEvents[] = [];
 
